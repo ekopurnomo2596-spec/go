@@ -17,7 +17,7 @@ function Card({ it }: { it: Item }) {
   return (
     <div className={`tx-card${it.done ? " is-done" : ""}`}>
       <div className="tx-body">
-        <span className={`tx-tag ${it.done ? "gry" : t.cls}`}>{it.done ? "Selesai" : t.label}</span>
+        {!it.done && <span className={`tx-tag ${t.cls}`}>{t.label}</span>}
         <h3>{it.title}</h3>
         <p>{it.why}</p>
       </div>
