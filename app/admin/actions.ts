@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { LOGIN_BASE } from "@/lib/login-path";
 import { createSession, destroySession, passwordOk, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/redis";
+import { getTindakan } from "@/lib/tindakan";
 import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, validKey } from "@/lib/ai";
 import type { Flash } from "@/lib/flash";
 import {
@@ -285,10 +286,13 @@ export async function testAiKey(formData: FormData): Promise<Flash> {
 
 export async function askAiAction(formData: FormData): Promise<Flash> {
   await requireAdmin();
-  const ref = str(formData, "ref");
-  const country = str(formData, "country").toUpperCase();
-  if (!/^[\p{L}\p{N} ._-]{1,60}$/u.test(ref) || ref === "Langsung") return err("Sumber tidak valid.");
-  if (!/^[A-Z]{2}$/.test(country) || country === "XX") return err("Negara tidak valid.");
+  const id = str(formData, "id");
+  if (!/^[a-z0-9:_-]{1,100}$/.test(id)) return err("Kartu tidak valid.");
+
+  // isi kartu dihitung ulang di server, bukan dipercaya dari browser
+  const t = await getTindakan();
+  const card = [...t.items, ...t.done].find((x) => x.id === id);
+  if (!card) return err("Kartu sudah berubah. Muat ulang halaman lalu coba lagi.");
 
   // batas pemakaian: maksimal 30 permintaan per jam
   const rl = "rl:ai";
@@ -297,7 +301,7 @@ export async function askAiAction(formData: FormData): Promise<Flash> {
   if (n > 30) return err("Terlalu banyak permintaan AI. Coba lagi dalam satu jam.");
 
   try {
-    await askAi(ref, country);
+    await askAi({ id: card.id, title: card.title, why: card.why, pair: card.pair });
   } catch (e) {
     return aiErr(e);
   }

@@ -623,3 +623,5 @@ tr.zero td { color: var(--muted); }
 .tk-row button { flex: none; }
 .tk-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
 .tk-help { margin: 16px 0 0; font-size: .8rem; line-height: 1.55; color: var(--muted); }
+.ai-steps { margin: 10px 0 0; padding-left: 20px; font-size: .875rem; line-height: 1.55; }
+.ai-steps li + li { margin-top: 4px; }

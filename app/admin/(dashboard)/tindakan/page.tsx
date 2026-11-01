@@ -17,36 +17,43 @@ const TAG: Record<Tone, { cls: string; label: string }> = {
 
 function Card({ it, aiReady }: { it: Item; aiReady: boolean }) {
   const t = TAG[it.tone];
-  const ai = it.ai;
+  const last = it.last;
   return (
-    <div className={`tx-card${it.done ? " is-done" : ""}${ai ? " has-ai" : ""}`}>
+    <div className={`tx-card has-ai${it.done ? " is-done" : ""}`}>
       <div className="tx-body">
         {!it.done && <span className={`tx-tag ${t.cls}`}>{t.label}</span>}
         <h3>{it.title}</h3>
         <p>{it.why}</p>
-        {ai?.last && (
+        {last && (
           <div className="ai-res">
-            <div className="ai-tags">
-              {ai.last.hashtags.map((h) => (
-                <span key={h} className="ai-tag">
-                  {h}
-                </span>
-              ))}
-            </div>
-            {ai.last.saran && <p className="ai-saran">{ai.last.saran}</p>}
+            {last.hashtags.length > 0 && (
+              <div className="ai-tags">
+                {last.hashtags.map((h) => (
+                  <span key={h} className="ai-tag">
+                    {h}
+                  </span>
+                ))}
+              </div>
+            )}
+            {last.saran && <p className="ai-saran">{last.saran}</p>}
+            {last.langkah?.length > 0 && (
+              <ol className="ai-steps">
+                {last.langkah.map((l, i) => (
+                  <li key={i}>{l}</li>
+                ))}
+              </ol>
+            )}
             <p className="ai-meta">
-              {formatTime(ai.last.t)} · {ai.last.model} ·{" "}
-              <Link href="/admin/ai">Riwayat</Link>
+              {formatTime(last.t)} · {last.model} · <Link href="/admin/ai">Riwayat</Link>
             </p>
           </div>
         )}
       </div>
       <div className="tx-btns">
-        {!it.done && ai &&
+        {!it.done &&
           (aiReady ? (
-            <ActionForm action={askAiAction} btnClass={ai.last ? "ghost" : "btn"} label={ai.last ? "Minta ulang" : "Minta saran AI"}>
-              <input type="hidden" name="ref" value={ai.ref} />
-              <input type="hidden" name="country" value={ai.country} />
+            <ActionForm action={askAiAction} btnClass={last ? "ghost" : "btn"} label={last ? "Minta ulang" : "Minta saran AI"}>
+              <input type="hidden" name="id" value={it.id} />
             </ActionForm>
           ) : (
             <Link className="btn" href="/admin/token">
@@ -54,7 +61,7 @@ function Card({ it, aiReady }: { it: Item; aiReady: boolean }) {
             </Link>
           ))}
         {!it.done && (
-          <Link className={ai ? "btn ghost" : "btn"} href={it.href}>
+          <Link className="btn ghost" href={it.href}>
             {it.cta}
           </Link>
         )}
@@ -117,7 +124,7 @@ export default async function TindakanPage() {
 
       {linkCount > 0 && !hasPairs && (
         <p className="tx-note">
-          Kartu saran AI (hashtag per sumber dan negara) muncul setelah ada klik baru dari sumber yang dikenal, misalnya
+          Kartu hashtag AI per sumber dan negara muncul setelah ada klik baru dari sumber yang dikenal, misalnya
           Instagram. Pencatatan pasangan sumber dan negara baru aktif sejak pembaruan ini.
         </p>
       )}

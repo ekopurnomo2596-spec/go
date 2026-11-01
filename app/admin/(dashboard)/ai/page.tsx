@@ -45,16 +45,31 @@ export default async function AiPage() {
             <div key={e.id} className="tx-card has-ai">
               <div className="tx-body">
                 <h3 className="ai-h">
-                  <Flag code={e.country} /> {e.ref} di {countryName(e.country)}
+                  {e.country ? (
+                    <>
+                      <Flag code={e.country} /> {e.ref} di {countryName(e.country)}
+                    </>
+                  ) : (
+                    e.title
+                  )}
                 </h3>
-                <div className="ai-tags">
-                  {e.hashtags.map((h) => (
-                    <span key={h} className="ai-tag">
-                      {h}
-                    </span>
-                  ))}
-                </div>
+                {e.hashtags.length > 0 && (
+                  <div className="ai-tags">
+                    {e.hashtags.map((h) => (
+                      <span key={h} className="ai-tag">
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {e.saran && <p className="ai-saran">{e.saran}</p>}
+                {e.langkah?.length > 0 && (
+                  <ol className="ai-steps">
+                    {e.langkah.map((l, i) => (
+                      <li key={i}>{l}</li>
+                    ))}
+                  </ol>
+                )}
                 <p className="ai-meta">
                   {formatTime(e.t)} · {e.model}
                 </p>

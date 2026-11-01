@@ -24,7 +24,7 @@ Pemendek tautan EMAHAIRSHOP dengan dashboard statistik. Next.js (App Router) + U
 
 ## Saran AI (Gemini)
 - Halaman **Token**: isi token Gemini (disimpan di Redis, bukan di Vercel; tidak perlu env tambahan). Ada tombol Tampilkan dan Tes kunci.
-- Halaman **Tindakan**: kartu Peluang untuk pasangan sumber x negara teratas (mis. Instagram di Amerika Serikat) punya tombol **Minta saran AI**. AI hanya dipanggil saat tombol ditekan (maks. 30 permintaan per jam).
+- Halaman **Tindakan**: setiap kartu punya tombol **Minta saran AI**. Kartu sumber x negara teratas (mis. Instagram di Amerika Serikat) dapat hashtag; kartu lain dapat saran dan langkah umum. AI hanya dipanggil saat tombol ditekan (maks. 30 permintaan per jam).
 - Halaman **AI**: riwayat saran (100 terakhir), bisa dihapus per entri atau semuanya.
 - Model: `gemini-3.5-flash-lite`. Pasangan sumber x negara dicatat di `bd:x:{tanggal}` sejak pembaruan ini, jadi kartu baru muncul setelah ada klik baru.
 

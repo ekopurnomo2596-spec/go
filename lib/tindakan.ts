@@ -13,8 +13,10 @@ export type Item = {
   cta: string;
   /** sudah ditandai selesai (dan masalahnya masih ada) */
   done: boolean;
-  /** kartu saran AI: sumber + negara, dan saran terakhir yang pernah diminta (jika ada) */
-  ai?: { ref: string; country: string; last: AiEntry | null };
+  /** saran AI terakhir yang pernah diminta untuk kartu ini (jika ada) */
+  last: AiEntry | null;
+  /** hanya kartu sumber x negara: AI memberi hashtag, bukan saran umum */
+  pair?: { ref: string; country: string };
 };
 
 const WIN = 14; // rentang yang dinilai (hari)
@@ -87,7 +89,7 @@ export async function getTindakan(): Promise<TindakanResult> {
   });
   const dataDays = first ? Math.floor((Date.parse(today) - Date.parse(first)) / 86400e3) + 1 : 0;
 
-  const out: Omit<Item, "done">[] = [];
+  const out: Omit<Item, "done" | "last">[] = [];
 
   // 1. total klik turun / naik
   if (a.prevTotal !== null && a.prevTotal >= MIN_PREV) {
@@ -212,7 +214,7 @@ export async function getTindakan(): Promise<TindakanResult> {
         why: "Pasangan sumber dan negara dengan klik terbanyak. Minta saran hashtag hair extension yang cocok untuk audiens ini.",
         href: `/admin/analisa?days=${WIN}&src=go`,
         cta: "Buka Analisa",
-        ai: { ref: x.ref, country: x.country, last: last[`${x.ref}|${x.country}`] ?? null },
+        pair: { ref: x.ref, country: x.country },
       });
     });
 
@@ -227,7 +229,7 @@ export async function getTindakan(): Promise<TindakanResult> {
   };
 
   const order: Record<Tone, number> = { penting: 0, peluang: 1, info: 2 };
-  const all = out.map((x) => ({ ...x, done: isDone(x.id) })).sort((x, y) => order[x.tone] - order[y.tone]);
+  const all = out.map((x) => ({ ...x, done: isDone(x.id), last: last[x.id] ?? null })).sort((x, y) => order[x.tone] - order[y.tone]);
   return {
     items: all.filter((x) => !x.done),
     done: all.filter((x) => x.done),

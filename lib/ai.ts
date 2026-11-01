@@ -5,18 +5,28 @@ export const AI_MODEL = "gemini-3.5-flash-lite";
 
 const KEY = "ai:key"; // token Gemini (string)
 const HIST = "ai:hist"; // riwayat saran, terbaru di depan
-const LAST = "ai:last"; // saran terakhir per "{sumber}|{negara}", untuk kartu Tindakan
+const LAST = "ai:last"; // saran terakhir per id kartu Tindakan
 const HIST_MAX = 100;
 const TIMEOUT_MS = 20000;
 
 export type AiEntry = {
   id: string;
   t: number;
-  ref: string; // nama ramah sumber, mis. "Instagram"
-  country: string; // kode 2 huruf
-  hashtags: string[];
+  cardId: string; // id kartu Tindakan yang diminta sarannya
+  title: string; // judul kartu saat diminta
+  ref?: string; // kartu sumber x negara: nama ramah sumber, mis. "Instagram"
+  country?: string; // ...dan kode negara 2 huruf
+  hashtags: string[]; // hanya terisi untuk kartu sumber x negara
   saran: string;
+  langkah: string[]; // hanya terisi untuk kartu umum
   model: string;
+};
+
+export type AiInput = {
+  id: string;
+  title: string;
+  why: string;
+  pair?: { ref: string; country: string };
 };
 
 /** Pesan galat yang aman ditampilkan ke admin (tidak pernah memuat token). */
@@ -67,6 +77,19 @@ function buildPrompt(refLabel: string, country: string): string {
     'Format: {"hashtags": ["#contoh", ...], "saran": "..."}',
     "hashtags: 6 sampai 8 item, tiap item diawali #, tanpa spasi.",
     "saran: 1 sampai 2 kalimat Bahasa Indonesia tentang cara memakai hashtag atau konten itu di platform tersebut.",
+  ].join("\n");
+}
+
+function buildGeneral(title: string, why: string): string {
+  return [
+    "Toko: EMAHAIRSHOP (hair extension). Tautan pendek go.emahairshop.com dibagikan di media sosial dan website toko.",
+    "Dashboard mencatat klik, negara, sumber, dan perangkat. Ini salah satu temuan dari data 14 hari terakhir:",
+    `Judul: ${title}`,
+    `Detail: ${why}`,
+    "Beri saran yang konkret dan realistis untuk pemilik toko berdasarkan temuan itu. Jangan mengarang angka atau data yang tidak ada di atas.",
+    'Format: {"saran": "...", "langkah": ["...", ...]}',
+    "saran: 1 sampai 2 kalimat Bahasa Indonesia tentang apa artinya temuan ini.",
+    "langkah: 2 sampai 4 langkah pendek, tiap langkah satu kalimat Bahasa Indonesia.",
   ].join("\n");
 }
 
@@ -148,6 +171,15 @@ function cleanTags(raw: unknown): string[] {
   return out;
 }
 
+function cleanSteps(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((x): x is string => typeof x === "string")
+    .map((x) => x.replace(/\s+/g, " ").trim().slice(0, 240))
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
 function parseJson(text: string): { hashtags?: unknown; saran?: unknown } | null {
   const t = text.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
   try {
@@ -177,29 +209,34 @@ const asEntry = (v: unknown): AiEntry | null => {
   }
 };
 
-export async function askAi(ref: string, country: string): Promise<AiEntry> {
+export async function askAi(input: AiInput): Promise<AiEntry> {
   const key = await getKey();
   if (!key) throw new AiError("Token AI belum diisi.");
 
-  const text = await callGemini(key, buildPrompt(ref, country));
+  const pair = input.pair;
+  const text = await callGemini(key, pair ? buildPrompt(pair.ref, pair.country) : buildGeneral(input.title, input.why));
   const j = parseJson(text);
-  const hashtags = cleanTags(j?.hashtags);
-  if (hashtags.length < 3) throw new AiError("Hasil AI tidak bisa dipakai. Coba minta ulang.");
   const saran = String(j?.saran ?? "").replace(/\s+/g, " ").trim().slice(0, 400);
+  const hashtags = pair ? cleanTags(j?.hashtags) : [];
+  const langkah = pair ? [] : cleanSteps((j as { langkah?: unknown } | null)?.langkah);
+  const usable = pair ? hashtags.length >= 3 : saran.length > 0 || langkah.length > 0;
+  if (!usable) throw new AiError("Hasil AI tidak bisa dipakai. Coba minta ulang.");
 
   const entry: AiEntry = {
     id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
     t: Date.now(),
-    ref,
-    country,
+    cardId: input.id,
+    title: input.title,
+    ...(pair ? { ref: pair.ref, country: pair.country } : {}),
     hashtags,
     saran,
+    langkah,
     model: AI_MODEL,
   };
   const p = db().pipeline();
   p.lpush(HIST, entry);
   p.ltrim(HIST, 0, HIST_MAX - 1);
-  p.hset(LAST, { [`${ref}|${country}`]: entry });
+  p.hset(LAST, { [input.id]: entry });
   await p.exec();
   return entry;
 }
@@ -209,7 +246,7 @@ export async function listHistory(): Promise<AiEntry[]> {
   return (raw ?? []).map(asEntry).filter((x): x is AiEntry => !!x);
 }
 
-/** Saran terakhir per "{sumber}|{negara}". */
+/** Saran terakhir per id kartu. */
 export async function lastMap(): Promise<Record<string, AiEntry>> {
   const raw = (await db().hgetall(LAST)) as Record<string, unknown> | null;
   const out: Record<string, AiEntry> = {};
@@ -228,11 +265,10 @@ export async function deleteEntry(id: string) {
   p.del(HIST);
   if (kept.length) p.rpush(HIST, ...kept);
   if (gone) {
-    // kalau yang dihapus adalah saran terakhir pasangan itu, ganti dengan entri sebelumnya (jika ada)
-    const field = `${gone.ref}|${gone.country}`;
-    const prev = kept.find((e) => e.ref === gone.ref && e.country === gone.country);
-    if (prev) p.hset(LAST, { [field]: prev });
-    else p.hdel(LAST, field);
+    // kalau yang dihapus adalah saran terakhir kartu itu, ganti dengan entri sebelumnya (jika ada)
+    const prev = kept.find((e) => e.cardId === gone.cardId);
+    if (prev) p.hset(LAST, { [gone.cardId]: prev });
+    else p.hdel(LAST, gone.cardId);
   }
   await p.exec();
 }
