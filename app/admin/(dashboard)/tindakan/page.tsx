@@ -5,6 +5,7 @@ import { askAiAction, doneTindakan, undoTindakan } from "../../actions";
 import { formatTime } from "@/lib/format";
 import { ActionForm } from "../forms";
 import { Collapsible } from "./collapsible";
+import { AiResult } from "./ai-result";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Tindakan" };
@@ -25,7 +26,7 @@ function Card({ it, aiReady }: { it: Item; aiReady: boolean }) {
         <h3>{it.title}</h3>
         <p>{it.why}</p>
         {last && (
-          <div className="ai-res">
+          <AiResult key={last.id} defaultOpen={Date.now() - last.t < 120000}>
             {last.hashtags.length > 0 && (
               <div className="ai-tags">
                 {last.hashtags.map((h) => (
@@ -46,7 +47,7 @@ function Card({ it, aiReady }: { it: Item; aiReady: boolean }) {
             <p className="ai-meta">
               {formatTime(last.t)} · {last.model} · <Link href="/admin/ai">Riwayat</Link>
             </p>
-          </div>
+          </AiResult>
         )}
       </div>
       <div className="tx-btns">
