@@ -84,6 +84,8 @@ a { color: inherit; }
 .linklist .t { flex: 1; min-width: 0; }
 .linklist .dm { display: block; margin-top: 2px; font-size: .78rem; font-weight: 400; color: var(--muted); }
 .linklist .ch { width: 16px; height: 16px; flex: none; stroke: var(--muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.code { font-size: clamp(60px, 18vw, 88px); font-weight: 600; line-height: 1.1; letter-spacing: -2px; color: var(--ink); }
+.divider { width: 56px; height: 2px; background: var(--lineh); margin: 22px auto; }
 .foot { margin-top: 28px; color: var(--muted); font-size: .8rem; }
 .foot a { color: var(--gold); font-weight: 600; text-decoration: none; }
 .empty { color: var(--muted); padding: 24px 0; text-align: center; }
