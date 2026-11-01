@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
-import { listLinks, totals } from "@/lib/links";
+import { listLinksWithCounts } from "@/lib/links";
 import { resetAllStats } from "../../actions";
 import { ConfirmButton } from "../../confirm-button";
 
@@ -15,8 +15,7 @@ export default async function StatistikIndex({
   await requireAdmin();
   const sp = await searchParams;
   const host = (await headers()).get("host") ?? "";
-  const links = await listLinks();
-  const counts = await totals(links.map((l) => l.slug));
+  const { links, counts } = await listLinksWithCounts();
   const rows = links
     .map((l) => ({ ...l, n: counts[l.slug] ?? 0 }))
     .sort((a, b) => b.n - a.n);
