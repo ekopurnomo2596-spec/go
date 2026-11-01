@@ -380,3 +380,13 @@ button.ghost .spin, .btn.ghost .spin { --sc: var(--ink); }
 .switch input:focus-visible + i { outline: 2px solid var(--gold); outline-offset: 2px; }
 
 .resetall { margin-top: 28px; }
+
+/* ---------- Desktop: sidebar menempel di paling kiri layar ---------- */
+@media (min-width: 861px) {
+  .shell { display: block; max-width: none; margin: 0; min-height: 0; }
+  .sidebar {
+    position: fixed; top: 0; bottom: 0; left: 0; width: 224px; margin: 0; min-height: 0;
+    padding: 28px 16px 24px; overflow-y: auto; background: var(--bg);
+  }
+  .content { margin-left: 204px; padding-left: 32px; max-width: 1032px; }
+}
