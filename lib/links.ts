@@ -116,3 +116,65 @@ export async function resetStatsData(slug: string) {
   p.del(`clicks:${slug}`, `country:${slug}`, `daily:${slug}`, `recent:${slug}`);
   await p.exec();
 }
+
+const dayOf = (t: number) => new Date(t + 7 * 3600e3).toISOString().slice(0, 10);
+
+/** Hapus sebagian data statistik: per hari, per negara, atau satu klik. Angka total ikut disesuaikan. */
+export async function removeStats(slug: string, sel: { days?: string[]; country?: string; t?: number }) {
+  const p0 = db().pipeline();
+  p0.get(`clicks:${slug}`);
+  p0.hgetall(`daily:${slug}`);
+  p0.hgetall(`country:${slug}`);
+  p0.lrange(`recent:${slug}`, 0, -1);
+  const [cur, dailyRaw, countryRaw, recentRaw] = await p0.exec<
+    [number | string | null, Record<string, number | string> | null, Record<string, number | string> | null, unknown[]]
+  >();
+
+  const daily: Record<string, number> = Object.fromEntries(Object.entries(dailyRaw ?? {}).map(([k, v]) => [k, Number(v)]));
+  const country: Record<string, number> = Object.fromEntries(Object.entries(countryRaw ?? {}).map(([k, v]) => [k, Number(v)]));
+  const recent = (recentRaw ?? [])
+    .map((x) => (typeof x === "string" ? safeParse(x) : (x as Click)))
+    .filter((x): x is Click => !!x);
+
+  const daySet = new Set(sel.days ?? []);
+  let firstT = true;
+  const removed: Click[] = [];
+  const kept: Click[] = [];
+  for (const c of recent) {
+    let hit = false;
+    if (sel.t !== undefined) {
+      if (c.t === sel.t && firstT) { hit = true; firstT = false; }
+    } else if (sel.country) hit = c.c === sel.country;
+    else hit = daySet.has(dayOf(c.t));
+    (hit ? removed : kept).push(c);
+  }
+
+  let total = 0;
+  if (sel.days) {
+    for (const d of daySet) { total += daily[d] ?? 0; delete daily[d]; }
+    for (const c of removed) country[c.c] = (country[c.c] ?? 0) - 1;
+  } else if (sel.country) {
+    total += country[sel.country] ?? 0;
+    delete country[sel.country];
+    for (const c of removed) daily[dayOf(c.t)] = (daily[dayOf(c.t)] ?? 0) - 1;
+  } else if (sel.t !== undefined) {
+    total += removed.length;
+    for (const c of removed) {
+      country[c.c] = (country[c.c] ?? 0) - 1;
+      daily[dayOf(c.t)] = (daily[dayOf(c.t)] ?? 0) - 1;
+    }
+  }
+
+  const positive = (o: Record<string, number>) => Object.fromEntries(Object.entries(o).filter(([, v]) => v > 0));
+  const d2 = positive(daily);
+  const c2 = positive(country);
+  const newTotal = Math.max(0, Number(cur ?? 0) - total);
+
+  const p = db().pipeline();
+  p.del(`clicks:${slug}`, `daily:${slug}`, `country:${slug}`, `recent:${slug}`);
+  if (newTotal > 0) p.set(`clicks:${slug}`, newTotal);
+  if (Object.keys(d2).length) p.hset(`daily:${slug}`, d2);
+  if (Object.keys(c2).length) p.hset(`country:${slug}`, c2);
+  if (kept.length) p.rpush(`recent:${slug}`, ...kept);
+  await p.exec();
+}

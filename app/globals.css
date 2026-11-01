@@ -188,12 +188,12 @@ details form { display: grid; gap: 8px; margin-top: 6px; min-width: 260px; }
 .stat b { display: block; font-size: 1.8rem; font-weight: 800; }
 .stat span { color: var(--muted); font-size: .8rem; }
 .bars { display: grid; gap: 9px; }
-.bar { display: grid; grid-template-columns: 140px 1fr 46px; gap: 10px; align-items: center; font-size: .85rem; }
+.bar { display: grid; grid-template-columns: 140px 1fr 46px 28px; gap: 10px; align-items: center; font-size: .85rem; }
 .bar .track { background: var(--line); border-radius: 4px; height: 9px; overflow: hidden; }
 .bar .fill { background: var(--gold); height: 100%; }
 .bar .v { text-align: right; font-variant-numeric: tabular-nums; }
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
-@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } .bar { grid-template-columns: 110px 1fr 40px; } }
+@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } .bar { grid-template-columns: 110px 1fr 40px 28px; } }
 
 /* ---------- Login ---------- */
 .login { max-width: 360px; margin: 10vh auto 0; }
@@ -278,3 +278,17 @@ details form { display: grid; gap: 8px; margin-top: 6px; min-width: 260px; }
 .statrow .fill { background: var(--gold); height: 100%; }
 .actions > form { display: flex; margin: 0; }
 .tablewrap:has(.linktable) { overflow: visible; }
+
+/* ---------- Statistik: hapus data ---------- */
+.xf { display: flex; margin: 0; }
+.xbtn { width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 1rem; line-height: 1; }
+.xbtn:hover { color: var(--danger); border-color: var(--danger); opacity: 1; }
+.hapusmenu { position: relative; }
+.hapusmenu > summary { display: inline-flex; align-items: center; height: 38px; padding: 0 16px; border: 1px solid var(--danger); border-radius: 10px; color: var(--danger); font-size: .85rem; font-weight: 600; cursor: pointer; list-style: none; }
+.hapusmenu > summary::-webkit-details-marker { display: none; }
+.hapusmenu .pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 6; width: 300px; display: grid; gap: 14px; padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 40px rgba(0,0,0,.16); }
+.hapusmenu .pop form { display: grid; gap: 10px; margin: 0; }
+.hapusmenu .dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hapusmenu .hint { margin: 0; font-size: .78rem; color: var(--muted); }
+input[type="date"] { width: 100%; padding: 9px 10px; font: inherit; font-size: .88rem; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
+@media (max-width: 640px) { .hapusmenu .pop { position: fixed; left: 16px; right: 16px; width: auto; top: auto; } }

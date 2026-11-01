@@ -9,6 +9,7 @@ import {
   deleteLinkData,
   getLink,
   listLinks,
+  removeStats,
   resetStatsData,
   isReserved,
   validSlugFormat,
@@ -127,4 +128,39 @@ export async function resetAllStats() {
   for (const l of await listLinks()) await resetStatsData(l.slug);
   revalidatePath("/admin/statistik");
   redirect("/admin/statistik?ok=reset");
+}
+
+function dayRange(from: string, to: string): string[] | null {
+  const re = /^\d{4}-\d{2}-\d{2}$/;
+  if (!re.test(from) || !re.test(to) || from > to) return null;
+  const out: string[] = [];
+  const end = new Date(to + "T00:00:00Z").getTime();
+  for (let t = new Date(from + "T00:00:00Z").getTime(); t <= end && out.length < 800; t += 86400e3) {
+    out.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+export async function removeStatsAction(formData: FormData) {
+  await requireAdmin();
+  const slug = str(formData, "slug").toLowerCase();
+  if (!validSlugFormat(slug)) redirect("/admin/statistik");
+  const mode = str(formData, "mode");
+  const back = `/admin/statistik/${slug}`;
+
+  if (mode === "day" && /^\d{4}-\d{2}-\d{2}$/.test(str(formData, "value"))) {
+    await removeStats(slug, { days: [str(formData, "value")] });
+  } else if (mode === "country" && /^[A-Z]{2}$/.test(str(formData, "value"))) {
+    await removeStats(slug, { country: str(formData, "value") });
+  } else if (mode === "click" && Number.isFinite(Number(str(formData, "value")))) {
+    await removeStats(slug, { t: Number(str(formData, "value")) });
+  } else if (mode === "range") {
+    const days = dayRange(str(formData, "from"), str(formData, "to"));
+    if (!days) return redirect(`${back}?ok=badrange`);
+    await removeStats(slug, { days });
+  } else {
+    redirect(back);
+  }
+  revalidatePath("/admin/statistik");
+  redirect(`${back}?ok=removed`);
 }

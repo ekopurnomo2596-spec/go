@@ -3,11 +3,24 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { getLink, getStats, validSlugFormat } from "@/lib/links";
-import { resetStats } from "../../../actions";
+import { removeStatsAction, resetStats } from "../../../actions";
 import { ConfirmButton } from "../../../confirm-button";
 import { countryName, formatTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+
+function X({ slug, mode, value, label }: { slug: string; mode: string; value: string; label: string }) {
+  return (
+    <form action={removeStatsAction} className="xf">
+      <input type="hidden" name="slug" value={slug} />
+      <input type="hidden" name="mode" value={mode} />
+      <input type="hidden" name="value" value={value} />
+      <ConfirmButton className="xbtn" title="Hapus" message={`Hapus data ${label}? Angka total ikut berkurang.`}>
+        &times;
+      </ConfirmButton>
+    </form>
+  );
+}
 
 export default async function StatsPage({
   params,
@@ -36,8 +49,44 @@ export default async function StatsPage({
         <h1>
           /{link.slug} <small>{link.title}</small>
         </h1>
+        <details className="hapusmenu">
+          <summary>Hapus data</summary>
+          <div className="pop">
+            <form action={removeStatsAction}>
+              <input type="hidden" name="slug" value={link.slug} />
+              <input type="hidden" name="mode" value="range" />
+              <strong>Hapus per tanggal (WIB)</strong>
+              <div className="dates">
+                <div>
+                  <label htmlFor="from">Dari</label>
+                  <input id="from" name="from" type="date" required />
+                </div>
+                <div>
+                  <label htmlFor="to">Sampai</label>
+                  <input id="to" name="to" type="date" required />
+                </div>
+              </div>
+              <ConfirmButton className="danger" message="Hapus data klik pada rentang tanggal ini?">
+                Hapus rentang
+              </ConfirmButton>
+            </form>
+            <form action={resetStats}>
+              <input type="hidden" name="slug" value={link.slug} />
+              <ConfirmButton
+                className="danger"
+                message={`Hapus SEMUA data statistik /${link.slug}? Link tetap ada.`}
+              >
+                Hapus semua data
+              </ConfirmButton>
+            </form>
+            <p className="hint">Tombol × di setiap baris menghapus per negara, per hari, atau per klik.</p>
+          </div>
+        </details>
       </div>
+
       {sp.ok === "reset" && <div className="msg ok">Data statistik dihapus.</div>}
+      {sp.ok === "removed" && <div className="msg ok">Data yang dipilih dihapus.</div>}
+      {sp.ok === "badrange" && <div className="msg err">Rentang tanggal tidak valid.</div>}
       <p className="sum">
         {host}/{link.slug} mengarah ke <span className="dest">{link.url}</span>
       </p>
@@ -71,6 +120,7 @@ export default async function StatsPage({
                     <div className="fill" style={{ width: `${(n / maxCountry) * 100}%` }} />
                   </div>
                   <span className="v">{n.toLocaleString("id-ID")}</span>
+                  <X slug={link.slug} mode="country" value={code} label={countryName(code)} />
                 </div>
               ))}
             </div>
@@ -87,6 +137,7 @@ export default async function StatsPage({
                   <div className="fill" style={{ width: `${(n / maxDay) * 100}%` }} />
                 </div>
                 <span className="v">{n.toLocaleString("id-ID")}</span>
+                {n > 0 ? <X slug={link.slug} mode="day" value={day} label={`tanggal ${day}`} /> : <span />}
               </div>
             ))}
           </div>
@@ -106,6 +157,7 @@ export default async function StatsPage({
                   <th>Negara</th>
                   <th>Sumber</th>
                   <th>Perangkat</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -115,6 +167,7 @@ export default async function StatsPage({
                     <td>{countryName(c.c)}</td>
                     <td>{c.r}</td>
                     <td>{c.d}</td>
+                    <td className="num"><X slug={link.slug} mode="click" value={String(c.t)} label="klik ini" /></td>
                   </tr>
                 ))}
               </tbody>
@@ -122,16 +175,6 @@ export default async function StatsPage({
           </div>
         )}
       </section>
-
-      <form action={resetStats} style={{ marginTop: 32 }}>
-        <input type="hidden" name="slug" value={link.slug} />
-        <ConfirmButton
-          className="danger"
-          message={`Hapus semua data statistik /${link.slug}? Total klik, negara, harian, dan klik terbaru akan dikosongkan. Link tetap ada.`}
-        >
-          Hapus data statistik
-        </ConfirmButton>
-      </form>
     </main>
   );
 }
