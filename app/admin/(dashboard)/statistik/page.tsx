@@ -24,14 +24,14 @@ export default async function StatistikIndex() {
         <h1>
           Statistik <small>{host}</small>
         </h1>
-        {sum > 0 && (
+        {rows.length > 0 && (
           <details className="hapusmenu">
             <summary>Hapus data</summary>
             <div className="pop">
               <ActionForm
                 action={resetAllStats}
                 btnClass="danger"
-                confirm="Hapus data statistik SEMUA link? Total klik, negara, harian, dan klik terbaru akan dikosongkan. Link tetap ada."
+                confirm="Hapus data statistik SEMUA link? Total klik, negara, harian, klik terbaru, dan pengunjung unik akan dikosongkan. Link tetap ada."
                 label="Hapus semua data"
               />
               <p className="hint">Menghapus statistik semua tautan sekaligus. Tautannya tetap ada.</p>
