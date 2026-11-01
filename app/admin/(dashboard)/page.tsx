@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { listLinks, totals } from "@/lib/links";
@@ -79,7 +78,7 @@ export default async function AdminPage({
         </div>
       ) : (
         <div className="tablewrap">
-          <table>
+          <table className="linktable">
             <thead>
               <tr>
                 <th>Link</th>
@@ -101,7 +100,6 @@ export default async function AdminPage({
                   <td className="num">{(counts[l.slug] ?? 0).toLocaleString("id-ID")}</td>
                   <td>
                     <div className="actions">
-                      <Link className="btn ghost" href={`/admin/${l.slug}`}>Statistik</Link>
                       <details>
                         <summary>Ubah</summary>
                         <form action={updateLink}>
