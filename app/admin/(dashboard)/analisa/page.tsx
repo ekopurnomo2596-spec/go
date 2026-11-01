@@ -61,7 +61,7 @@ const pctDelta = (cur: number, prev: number | null) =>
   prev !== null && prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null;
 
 function Delta({ v }: { v: number | null }) {
-  if (v === null) return <Pill>Baru</Pill>;
+  if (v === null) return <Pill tone="up">Baru</Pill>;
   return v === 0 ? <Pill>Stabil</Pill> : <Pill tone={v > 0 ? "up" : "down"}>{`${v > 0 ? "+" : ""}${v}%`}</Pill>;
 }
 
@@ -238,7 +238,7 @@ export default async function AnalisaPage({
                   label="Rata-rata CTR"
                   info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat).\nPersen (%) = selisih poin dibanding periode sebelumnya."}
                   pill={
-                    ctrDelta === null ? <Pill>Baru</Pill> : ctrDelta === 0 ? (
+                    ctrDelta === null ? <Pill tone="up">Baru</Pill> : ctrDelta === 0 ? (
                       <Pill>Stabil</Pill>
                     ) : (
                       <Pill tone={ctrDelta > 0 ? "up" : "down"}>{`${ctrDelta > 0 ? "+" : ""}${f1(ctrDelta)}%`}</Pill>
@@ -270,7 +270,7 @@ export default async function AnalisaPage({
                   label="Rata-rata CTR"
                   info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat).\nPersen (%) = selisih poin dibanding periode sebelumnya."}
                   pill={
-                    ctrDelta === null ? <Pill>Baru</Pill> : ctrDelta === 0 ? (
+                    ctrDelta === null ? <Pill tone="up">Baru</Pill> : ctrDelta === 0 ? (
                       <Pill>Stabil</Pill>
                     ) : (
                       <Pill tone={ctrDelta > 0 ? "up" : "down"}>{`${ctrDelta > 0 ? "+" : ""}${f1(ctrDelta)}%`}</Pill>
