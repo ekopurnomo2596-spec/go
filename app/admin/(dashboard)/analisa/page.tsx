@@ -231,8 +231,8 @@ export default async function AnalisaPage({
           <div className="an-kpis">
             {src === "go" && (
               <>
-                <Kpi value={nf(a.total)} label="Total klik" info={`Jumlah klik pada tautan go dalam ${days} hari. Satu orang dihitung sekali per tautan per hari, bot tidak dihitung.\n${CMP}`} delta={deltaPct} />
-                <Kpi value={a.unique !== null ? nf(a.unique) : "-"} label="Pengunjung unik" info={`Perkiraan jumlah orang berbeda yang mengeklik tautan go. Satu perangkat dihitung sekali per hari.\n${CMP}`} delta={uniqDelta} />
+                <Kpi value={nf(a.total)} label="Total klik" info={`Jumlah klik pada tautan go dalam ${days} hari. Satu alamat IP dihitung sekali per tautan per hari, bot tidak dihitung.\n${CMP}`} delta={deltaPct} />
+                <Kpi value={a.unique !== null ? nf(a.unique) : "-"} label="Pengunjung unik" info={`Perkiraan jumlah orang berbeda yang mengeklik tautan go. Satu alamat IP dihitung sekali per hari.\n${CMP}`} delta={uniqDelta} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"

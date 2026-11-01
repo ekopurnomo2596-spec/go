@@ -29,7 +29,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     const device = /mobi|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
 
     const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || req.headers.get("x-real-ip") || "";
-    const visitor = createHash("sha256").update(`${ip}|${ua}`).digest("hex").slice(0, 32);
+    // Satu pengunjung = satu alamat IP (sama seperti penghitung di portal). Browser berbeda dari IP yang sama tidak dihitung dua kali.
+    // Kalau IP tidak terbaca, pakai IP+browser supaya semua yang tak dikenal tidak tergabung jadi satu orang.
+    const visitor = createHash("sha256").update(ip ? ip : `|${ua}`).digest("hex").slice(0, 32);
 
     after(async () => {
       try {
