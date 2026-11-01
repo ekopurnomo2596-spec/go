@@ -360,7 +360,13 @@ export default async function AnalisaPage({
                 </div>
                 <div className="an-xl">
                   {tickIdx.map((i) => (
-                    <span key={dayList[i]} style={{ left: `${px(i)}%` }}>
+                    <span
+                      key={dayList[i]}
+                      style={{
+                        left: `${px(i)}%`,
+                        transform: i === 0 ? "none" : i === N - 1 ? "translateX(-100%)" : undefined,
+                      }}
+                    >
                       {dayLabel(dayList[i])}
                     </span>
                   ))}
@@ -415,7 +421,7 @@ export default async function AnalisaPage({
                         <div className="an-bar" key={r.key}>
                           <span title={r.label}>{r.label}</span>
                           <div className="an-track">
-                            <div className="an-fill" style={{ width: `${pct(r.v, devSum)}%`, background: "var(--ink)" }} />
+                            <div className="an-fill" style={{ width: `${pct(r.v, devSum)}%`, background: "var(--an-acc)" }} />
                           </div>
                           <span className="an-pct">{pct(r.v, devSum)}%</span>
                         </div>
