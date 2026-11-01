@@ -2,15 +2,12 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { getAnalytics } from "@/lib/links";
-import { getWebTotals } from "@/lib/visits";
 import { countryName } from "@/lib/format";
 import { Flag } from "@/lib/flag";
-import { Info } from "../info";
 
 export const dynamic = "force-dynamic";
 
 const nf = (v: number) => v.toLocaleString("id-ID");
-const dec1 = (v: number) => v.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const RANGES = [7, 14, 30] as const;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
@@ -69,23 +66,8 @@ const sum = (rows: [string, number][]) => rows.reduce((s, [, v]) => s + v, 0);
 const pct = (v: number, total: number) => (total > 0 ? Math.round((v / total) * 100) : 0);
 const same = (k: string) => k;
 
-/** Persen naik/turun dibanding periode sebelumnya. */
-function pctChange(cur: number, prev: number | null): number | null {
-  return prev !== null && prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null;
-}
-
-function Pill({ tone, children, title }: { tone?: "up" | "down"; children: React.ReactNode; title?: string }) {
-  return (
-    <span className={`an-pill${tone ? ` ${tone}` : ""}`} title={title}>
-      {children}
-    </span>
-  );
-}
-
-function DeltaPill({ delta }: { delta: number | null }) {
-  if (delta === null) return null;
-  if (delta === 0) return <Pill>stabil</Pill>;
-  return <Pill tone={delta > 0 ? "up" : "down"}>{`${delta > 0 ? "+" : ""}${delta}%`}</Pill>;
+function Pill({ tone, children }: { tone?: "up" | "down"; children: React.ReactNode }) {
+  return <span className={`an-pill${tone ? ` ${tone}` : ""}`}>{children}</span>;
 }
 
 export default async function AnalisaPage({
@@ -97,31 +79,20 @@ export default async function AnalisaPage({
   const sp = await searchParams;
   const days = (RANGES as readonly number[]).includes(Number(sp.days)) ? Number(sp.days) : 14;
   const host = (await headers()).get("host") ?? "";
-  const [a, web] = await Promise.all([getAnalytics(days), getWebTotals(days).catch(() => null)]);
+  const a = await getAnalytics(days);
 
-  // ---- KPI ----
-  const clickDelta = pctChange(a.total, a.prevTotal);
+  const deltaPct =
+    a.prevTotal !== null && a.prevTotal > 0 ? Math.round(((a.total - a.prevTotal) / a.prevTotal) * 100) : null;
 
-  const hasWeb = !!web && web.daysWithData > 0;
-  const visitorDelta = hasWeb ? pctChange(web.visitors, web.prevVisitors) : null;
-
-  const ctr = hasWeb && web.pageviews > 0 ? (a.total / web.pageviews) * 100 : null;
-  const prevCtr =
-    hasWeb && a.prevTotal !== null && web.prevPageviews !== null && web.prevPageviews > 0
-      ? (a.prevTotal / web.prevPageviews) * 100
-      : null;
-  const ctrDiff = ctr !== null && prevCtr !== null ? Math.round((ctr - prevCtr) * 10) / 10 : null;
-
-  // ---- grafik tren (area + garis) ----
+  // ---- grafik tren: satu kolom per hari, titik berada di tengah kolom ----
   const N = a.daily.length;
   const maxDay = Math.max(1, ...a.daily.map(([, v]) => v));
-  const step = N > 1 ? 760 / (N - 1) : 0;
-  const pts = a.daily.map(
-    ([, v], i) => [Number((i * step).toFixed(1)), Number((150 - (v / maxDay) * 140).toFixed(1))] as const,
-  );
+  const px = (i: number) => Number((((i + 0.5) / N) * 100).toFixed(2));
+  const py = (v: number) => Number((94 - (v / maxDay) * 88).toFixed(2));
+  const pts = a.daily.map(([, v], i) => [px(i), py(v)] as const);
   const linePath = pts.map(([x, y], i) => `${i ? "L" : "M"}${x},${y}`).join(" ");
-  const areaPath = N ? `M0,150 ${pts.map(([x, y]) => `L${x},${y}`).join(" ")} L${pts[N - 1][0]},150 Z` : "";
-  const ticks = N ? Array.from({ length: 6 }, (_, k) => a.daily[Math.round((k * (N - 1)) / 5)][0]) : [];
+  const areaPath = N ? `M${pts[0][0]},94 ${pts.map(([x, y]) => `L${x},${y}`).join(" ")} L${pts[N - 1][0]},94 Z` : "";
+  const tickIdx = N ? [...new Set(Array.from({ length: 6 }, (_, k) => Math.round((k * (N - 1)) / 5)))] : [];
 
   // ---- tautan teratas ----
   const maxTop = Math.max(1, ...a.topLinks.map((l) => l.n));
@@ -161,38 +132,29 @@ export default async function AnalisaPage({
             <div className="an-kpi">
               <div className="an-kpi-top">
                 <b>{nf(a.total)}</b>
-                <DeltaPill delta={clickDelta} />
+                {deltaPct !== null &&
+                  (deltaPct === 0 ? (
+                    <Pill>stabil</Pill>
+                  ) : (
+                    <Pill tone={deltaPct > 0 ? "up" : "down"}>{`${deltaPct > 0 ? "+" : ""}${deltaPct}%`}</Pill>
+                  ))}
               </div>
               <span className="an-kpi-l">Total klik</span>
             </div>
 
             <div className="an-kpi">
               <div className="an-kpi-top">
-                <b>{hasWeb ? nf(web.visitors) : "-"}</b>
-                <DeltaPill delta={visitorDelta} />
+                <b>{nf(a.avgPerDay)}</b>
               </div>
-              <span className="an-kpi-l">
-                Pengunjung unik
-                <Info text="Pengunjung website utama pada periode ini. Dihitung satu kali per alamat IP per hari, lalu dijumlahkan. Riwayat website baru tersimpan sejak dashboard pertama kali dibuka." />
-              </span>
+              <span className="an-kpi-l">Rata-rata klik/hari</span>
             </div>
 
             <div className="an-kpi">
               <div className="an-kpi-top">
-                <b>{ctr !== null ? `${dec1(ctr)}%` : "-"}</b>
-                {ctrDiff !== null &&
-                  (ctrDiff === 0 ? (
-                    <Pill>stabil</Pill>
-                  ) : (
-                    <Pill tone={ctrDiff > 0 ? "up" : "down"} title="Selisih poin persentase dibanding periode sebelumnya">
-                      {`${ctrDiff > 0 ? "+" : ""}${dec1(ctrDiff)}%`}
-                    </Pill>
-                  ))}
+                <b>{a.peak ? nf(a.peak.n) : "-"}</b>
+                {a.peak && <Pill>{dayLabel(a.peak.day)}</Pill>}
               </div>
-              <span className="an-kpi-l">
-                Rata-rata CTR
-                <Info text="Total klik tautan dibagi total halaman yang dilihat di website pada periode yang sama. Bisa lebih dari 100% bila banyak klik datang dari luar website (Instagram, WhatsApp, dll)." />
-              </span>
+              <span className="an-kpi-l">Puncak harian</span>
             </div>
 
             <div className="an-kpi">
@@ -211,21 +173,36 @@ export default async function AnalisaPage({
               <p className="an-empty-s">Belum ada klik dalam {days} hari terakhir.</p>
             ) : (
               <>
-                <svg viewBox="0 0 780 170" width="100%" height="190" role="img" aria-label={`Grafik tren klik ${days} hari terakhir`}>
-                  <line className="an-g" x1="0" y1="10" x2="760" y2="10" />
-                  <line className="an-g" x1="0" y1="80" x2="760" y2="80" />
-                  <line className="an-g base" x1="0" y1="150" x2="760" y2="150" />
-                  <path className="an-area" d={areaPath} />
-                  <path className="an-ln" d={linePath} />
-                  {pts.map(([x, y], i) => (
-                    <circle key={a.daily[i][0]} cx={x} cy={y} r="9" fill="transparent">
-                      <title>{`${dayLabel(a.daily[i][0])}: ${nf(a.daily[i][1])} klik`}</title>
-                    </circle>
-                  ))}
-                </svg>
+                <div className="an-plot" role="img" aria-label={`Grafik tren klik ${days} hari terakhir`}>
+                  <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                    <line className="an-g" x1="0" y1="6" x2="100" y2="6" />
+                    <line className="an-g" x1="0" y1="50" x2="100" y2="50" />
+                    <line className="an-g base" x1="0" y1="94" x2="100" y2="94" />
+                    <path className="an-area" d={areaPath} />
+                    <path className="an-ln" d={linePath} />
+                  </svg>
+                  <div className="an-hov">
+                    {a.daily.map(([day, v], i) => (
+                      <div
+                        key={day}
+                        className={`an-hc${pts[i][1] < 35 ? " lo" : ""}`}
+                        style={{ "--y": `${pts[i][1]}%` } as React.CSSProperties}
+                      >
+                        <i className="an-hl" />
+                        <i className="an-hdot" />
+                        <span className="an-tp">
+                          <b>{dayLabel(day)}</b>
+                          {nf(v)} klik
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 <div className="an-xl">
-                  {ticks.map((d, i) => (
-                    <span key={`${d}-${i}`}>{dayLabel(d)}</span>
+                  {tickIdx.map((i) => (
+                    <span key={a.daily[i][0]} style={{ left: `${pts[i][0]}%` }}>
+                      {dayLabel(a.daily[i][0])}
+                    </span>
                   ))}
                 </div>
               </>
