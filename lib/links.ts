@@ -1,4 +1,5 @@
 import { db } from "./redis";
+import { ADMIN_PATH } from "./admin-path";
 import { jakartaDay } from "./format";
 
 export type Link = {
@@ -23,7 +24,7 @@ export type Stats = {
 const RESERVED = new Set(["admin", "api", "_next"]);
 
 export function isReserved(slug: string): boolean {
-  return RESERVED.has(slug);
+  return RESERVED.has(slug) || slug === ADMIN_PATH;
 }
 
 export function validSlugFormat(slug: string): boolean {

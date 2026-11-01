@@ -1,3 +1,4 @@
+import { ADMIN_BASE } from "@/lib/admin-path";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
@@ -40,7 +41,7 @@ export default async function StatistikIndex() {
       ) : (
         <div className="statlist">
           {rows.map((r) => (
-            <Link key={r.slug} className="statrow" href={`/admin/statistik/${r.slug}`}>
+            <Link key={r.slug} className="statrow" href={`${ADMIN_BASE}/statistik/${r.slug}`}>
               <span className="nm">
                 {host}/{r.slug}
                 <small>{r.title}</small>

@@ -1,3 +1,4 @@
+import { ADMIN_BASE } from "@/lib/admin-path";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -53,5 +54,5 @@ export async function isAdmin(): Promise<boolean> {
 }
 
 export async function requireAdmin() {
-  if (!(await isAdmin())) redirect("/admin/login");
+  if (!(await isAdmin())) redirect(`${ADMIN_BASE}/login`);
 }

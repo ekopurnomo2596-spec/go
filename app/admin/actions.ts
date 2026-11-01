@@ -1,5 +1,6 @@
 "use server";
 
+import { ADMIN_BASE } from "@/lib/admin-path";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -32,18 +33,18 @@ export async function login(formData: FormData) {
   const key = `rl:login:${ip}`;
   const attempts = await db().incr(key);
   if (attempts === 1) await db().expire(key, 900);
-  if (attempts > 5) redirect("/admin/login?err=limit");
+  if (attempts > 5) redirect(`${ADMIN_BASE}/login?err=limit`);
 
-  if (!passwordOk(String(formData.get("password") ?? ""))) redirect("/admin/login?err=bad");
+  if (!passwordOk(String(formData.get("password") ?? ""))) redirect(`${ADMIN_BASE}/login?err=bad`);
 
   await db().del(key);
   await createSession();
-  redirect("/admin");
+  redirect(ADMIN_BASE);
 }
 
 export async function logout() {
   await destroySession();
-  redirect("/admin/login");
+  redirect(`${ADMIN_BASE}/login`);
 }
 
 const ok = (text: string): Flash => ({ kind: "ok", text });

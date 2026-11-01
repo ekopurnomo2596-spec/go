@@ -1,3 +1,4 @@
+import { ADMIN_BASE } from "@/lib/admin-path";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/auth";
 import { login } from "../actions";
@@ -11,7 +12,7 @@ const ERR: Record<string, string> = {
 };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ err?: string }> }) {
-  if (await isAdmin()) redirect("/admin");
+  if (await isAdmin()) redirect(ADMIN_BASE);
   const { err } = await searchParams;
 
   return (

@@ -1,6 +1,13 @@
+const ADMIN = (process.env.NEXT_PUBLIC_ADMIN_PATH || "admin").replace(/^\/+|\/+$/g, "") || "admin";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  async rewrites() {
+    // Path rahasia dashboard diteruskan ke halaman /admin di dalam aplikasi.
+    if (ADMIN === "admin") return [];
+    return { beforeFiles: [{ source: `/${ADMIN}/:path*`, destination: "/admin/:path*" }] };
+  },
   async headers() {
     return [
       {
@@ -11,7 +18,7 @@ const nextConfig = {
         ],
       },
       {
-        source: "/admin/:path*",
+        source: `/${ADMIN}/:path*`,
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Cache-Control", value: "no-store" },
