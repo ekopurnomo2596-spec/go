@@ -276,6 +276,7 @@ details form { display: grid; gap: 8px; margin-top: 6px; min-width: 260px; }
 .statrow .rk { font-size: .78rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
 .statrow .nm { min-width: 0; display: block; }
 .statrow .nm b { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.statrow .nm b em { font-style: normal; font-weight: 500; font-size: .8rem; color: var(--muted); margin-left: 8px; }
 .statrow .nm small { display: block; font-size: .78rem; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .statrow .meter { display: flex; align-items: center; gap: 10px; }
 .statrow .track { flex: 1; height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }

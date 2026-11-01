@@ -54,8 +54,11 @@ export default async function StatistikIndex() {
               >
                 <span className="rk">{i + 1}</span>
                 <span className="nm">
-                  <b>/{r.slug}</b>
-                  <small>{r.title}</small>
+                  <b>
+                    /{r.slug}
+                    {r.title && r.title !== r.slug && <em>{r.title}</em>}
+                  </b>
+                  <small title={r.url}>&rarr; {r.url}</small>
                 </span>
                 <span className="meter" aria-hidden="true">
                   <span className="track">
