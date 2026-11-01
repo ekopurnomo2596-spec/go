@@ -56,37 +56,69 @@ function Btn({ pending, className, children }: { pending: boolean; className?: s
 }
 
 export function CreateForm() {
+  const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (pending) return;
-        const form = e.currentTarget;
-        const fd = new FormData(form);
-        start(async () => {
-          const r = await run(() => createLink(fd));
-          flash(r);
-          if (r.kind === "ok") form.reset();
-        });
-      }}
-    >
-      <div className="grid">
-        <div>
-          <label htmlFor="slug">Slug</label>
-          <input id="slug" name="slug" type="text" placeholder="promo" required maxLength={40} />
+    <>
+      <button type="button" className="btn" onClick={() => setOpen(true)}>
+        + Tambah
+      </button>
+      {open && (
+        <div className="modal-back" onClick={() => !pending && setOpen(false)}>
+          <div className="modal" role="dialog" aria-modal="true" aria-label="Buat link baru" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <strong>Buat link baru</strong>
+              <button type="button" className="modal-x" aria-label="Tutup" onClick={() => setOpen(false)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+              </button>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (pending) return;
+                const form = e.currentTarget;
+                const fd = new FormData(form);
+                start(async () => {
+                  const r = await run(() => createLink(fd));
+                  flash(r);
+                  if (r.kind === "ok") {
+                    form.reset();
+                    setOpen(false);
+                  }
+                });
+              }}
+            >
+              <div>
+                <label htmlFor="slug">Slug</label>
+                <input id="slug" name="slug" type="text" placeholder="promo" required maxLength={40} />
+              </div>
+              <div>
+                <label htmlFor="url">URL tujuan</label>
+                <input id="url" name="url" type="url" placeholder="https://..." required />
+              </div>
+              <div>
+                <label htmlFor="title">Judul</label>
+                <input id="title" name="title" type="text" placeholder="Promo November" maxLength={80} />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="ghost" onClick={() => setOpen(false)} disabled={pending}>Batal</button>
+                <Btn pending={pending}>Buat</Btn>
+              </div>
+            </form>
+          </div>
         </div>
-        <div>
-          <label htmlFor="url">URL tujuan</label>
-          <input id="url" name="url" type="url" placeholder="https://..." required />
-        </div>
-        <div>
-          <label htmlFor="title">Judul</label>
-          <input id="title" name="title" type="text" placeholder="Promo November" maxLength={80} />
-        </div>
-        <Btn pending={pending}>Buat</Btn>
-      </div>
-    </form>
+      )}
+    </>
   );
 }
 

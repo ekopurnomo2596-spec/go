@@ -21,6 +21,7 @@ export default async function AdminPage() {
         <h1>
           Semua tautan <small>{host}</small>
         </h1>
+        <CreateForm />
       </div>
 
       <div className="stats">
@@ -37,11 +38,6 @@ export default async function AdminPage() {
           <span>Terpopuler</span>
         </div>
       </div>
-
-      <section className="card">
-        <h2>Buat link baru</h2>
-        <CreateForm />
-      </section>
 
       {links.length === 0 ? (
         <div className="empty">
