@@ -1,5 +1,4 @@
 import { requireAdmin } from "@/lib/auth";
-import { listLinksWithCounts } from "@/lib/links";
 import { getWebStats } from "@/lib/visits";
 import { countryName } from "@/lib/format";
 import { Flag } from "@/lib/flag";
@@ -10,8 +9,7 @@ const n = (v: number) => v.toLocaleString("id-ID");
 
 export default async function DashboardPage() {
   await requireAdmin();
-  const [w, { counts }] = await Promise.all([getWebStats(), listLinksWithCounts()]);
-  const clicks = Object.values(counts).reduce((a, b) => a + b, 0);
+  const w = await getWebStats();
 
   const maxDay = Math.max(1, ...w.days.map((d) => d.visitors));
   const maxCountry = Math.max(1, ...w.countries.map(([, c]) => c));
@@ -20,7 +18,7 @@ export default async function DashboardPage() {
     <main className="wrap">
       <div className="top">
         <h1>
-          Dashboard <small>Website emahairshop.com dan tautan</small>
+          Dashboard <small>Website emahairshop.com</small>
         </h1>
       </div>
 
@@ -28,7 +26,7 @@ export default async function DashboardPage() {
         Pengunjung dihitung satu kali per alamat IP per hari. Hari tanpa data tampil 0. Angka ini sama dengan laporan statistik di Telegram.
       </p>
 
-      <div className="stats" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
+      <div className="stats">
         <div className="stat">
           <b>{n(w.today.visitors)}</b>
           <span>Pengunjung hari ini</span>
@@ -44,14 +42,6 @@ export default async function DashboardPage() {
         <div className="stat">
           <b>{n(w.sum.pageviews)}</b>
           <span>Halaman dilihat 14 hari</span>
-        </div>
-        <div className="stat">
-          <b>{n(w.sum.chats)}</b>
-          <span>Chat AI 14 hari</span>
-        </div>
-        <div className="stat">
-          <b>{n(clicks)}</b>
-          <span>Total klik tautan</span>
         </div>
       </div>
 
@@ -109,8 +99,6 @@ export default async function DashboardPage() {
                     <th>Tanggal</th>
                     <th className="num">Pengunjung</th>
                     <th className="num">Halaman dilihat</th>
-                    <th className="num">Chat AI</th>
-                    <th className="num">Lead</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -119,8 +107,6 @@ export default async function DashboardPage() {
                       <td>{d.day}</td>
                       <td className="num">{n(d.visitors)}</td>
                       <td className="num">{n(d.pageviews)}</td>
-                      <td className="num">{n(d.chats)}</td>
-                      <td className="num">{n(d.leads)}</td>
                     </tr>
                   ))}
                 </tbody>
