@@ -1,6 +1,7 @@
 import { db } from "./redis";
 import { LOGIN_PATH } from "./login-path";
 import { jakartaDay } from "./format";
+import { getPageviewsByDay } from "./visits";
 
 export type Link = {
   slug: string;
@@ -108,6 +109,12 @@ export type Analytics = {
   total: number;
   prevTotal: number | null;
   avgPerDay: number;
+  /** Pengunjung unik (perkiraan HyperLogLog) di jendela ini; null jika belum ada data */
+  unique: number | null;
+  prevUnique: number | null;
+  /** CTR (%) = klik tautan / pageviews website utama pada hari yang punya data kunjungan; null jika belum ada data */
+  ctr: number | null;
+  prevCtr: number | null;
   daily: [string, number][];
   peak: { day: string; n: number } | null;
   topLinks: { slug: string; title: string; n: number }[];
@@ -126,6 +133,10 @@ export async function getAnalytics(windowDays: number): Promise<Analytics> {
     total: 0,
     prevTotal: null,
     avgPerDay: 0,
+    unique: null,
+    prevUnique: null,
+    ctr: null,
+    prevCtr: null,
     daily: [],
     peak: null,
     topLinks: [],
@@ -148,16 +159,22 @@ export async function getAnalytics(windowDays: number): Promise<Analytics> {
   for (const s of slugs) p.hgetall(`country:${s}`);
   for (const s of slugs) p.hgetall(`device:${s}`);
   for (const s of slugs) p.hgetall(`ref:${s}`);
-  const res = await p.exec<Record<string, number | string>[]>();
+  p.pfcount(...(days.map((d) => `uv:${d}`) as [string, ...string[]]));
+  p.pfcount(...(prevDays.map((d) => `uv:${d}`) as [string, ...string[]]));
+  const res = await p.exec<(Record<string, number | string> | number)[]>();
+  const [uv, prevUv] = [Number(res[4 * slugs.length] ?? 0), Number(res[4 * slugs.length + 1] ?? 0)];
+  const pvByDay = await getPageviewsByDay([...prevDays, ...days]).catch(() => ({}) as Record<string, number>);
 
   const n = slugs.length;
-  const dailyHashes = res.slice(0, n);
-  const countryHashes = res.slice(n, 2 * n);
-  const deviceHashes = res.slice(2 * n, 3 * n);
-  const refHashes = res.slice(3 * n, 4 * n);
+  const hashes = res.slice(0, 4 * n) as Record<string, number | string>[];
+  const dailyHashes = hashes.slice(0, n);
+  const countryHashes = hashes.slice(n, 2 * n);
+  const deviceHashes = hashes.slice(2 * n, 3 * n);
+  const refHashes = hashes.slice(3 * n, 4 * n);
 
   const dayTotals: Record<string, number> = Object.fromEntries(days.map((d) => [d, 0]));
   const perLink: Record<string, number> = {};
+  const prevDayTotals: Record<string, number> = {};
   let prevTotal = 0;
   let hasPrevData = false;
   dailyHashes.forEach((h, i) => {
@@ -169,6 +186,7 @@ export async function getAnalytics(windowDays: number): Promise<Analytics> {
         t += num;
       } else if (prevSet.has(day)) {
         prevTotal += num;
+        prevDayTotals[day] = (prevDayTotals[day] ?? 0) + num;
         hasPrevData = true;
       }
     }
@@ -179,6 +197,18 @@ export async function getAnalytics(windowDays: number): Promise<Analytics> {
     const out: Record<string, number> = {};
     for (const h of hashes) for (const [k, v] of Object.entries(h ?? {})) out[k] = (out[k] ?? 0) + Number(v);
     return Object.entries(out).sort((a, b) => b[1] - a[1]);
+  };
+
+  // CTR: hanya hari yang punya data kunjungan website, supaya pembilang & penyebut sebanding
+  const ctrOf = (list: string[], clicks: Record<string, number>) => {
+    let c = 0;
+    let v = 0;
+    for (const d of list) {
+      if (pvByDay[d] === undefined) continue;
+      c += clicks[d] ?? 0;
+      v += pvByDay[d];
+    }
+    return v > 0 ? (c / v) * 100 : null;
   };
 
   const total = Object.values(dayTotals).reduce((a, b) => a + b, 0);
@@ -199,6 +229,10 @@ export async function getAnalytics(windowDays: number): Promise<Analytics> {
     total,
     prevTotal: hasPrevData ? prevTotal : null,
     avgPerDay: windowDays > 0 ? Math.round(total / windowDays) : 0,
+    unique: uv > 0 ? uv : null,
+    prevUnique: prevUv > 0 ? prevUv : null,
+    ctr: ctrOf(days, dayTotals),
+    prevCtr: ctrOf(prevDays, prevDayTotals),
     daily,
     peak,
     topLinks,
@@ -216,13 +250,22 @@ function safeParse(s: string): Click | null {
   }
 }
 
-export async function recordClick(slug: string, info: { country: string; referrer: string; device: string }) {
+export async function recordClick(
+  slug: string,
+  info: { country: string; referrer: string; device: string; visitor?: string },
+) {
   const p = db().pipeline();
   p.incr(`clicks:${slug}`);
   p.hincrby(`country:${slug}`, info.country, 1);
   p.hincrby(`device:${slug}`, info.device, 1);
   p.hincrby(`ref:${slug}`, info.referrer, 1);
   p.hincrby(`daily:${slug}`, jakartaDay(0), 1);
+  if (info.visitor) {
+    // pengunjung unik per hari (HyperLogLog, hanya hash — tanpa IP mentah); simpan ~100 hari
+    const uvKey = `uv:${jakartaDay(0)}`;
+    p.pfadd(uvKey, info.visitor);
+    p.expire(uvKey, 100 * 86400);
+  }
   const click: Click = { t: Date.now(), c: info.country, r: info.referrer, d: info.device };
   p.lpush(`recent:${slug}`, click);
   p.ltrim(`recent:${slug}`, 0, 99);

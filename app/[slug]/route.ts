@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { after, NextRequest, NextResponse } from "next/server";
 import { notFoundResponse } from "@/lib/notfound";
 import { getLink, recordClick, validSlugFormat } from "@/lib/links";
@@ -27,9 +28,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     }
     const device = /mobi|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
 
+    const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || req.headers.get("x-real-ip") || "";
+    const visitor = createHash("sha256").update(`${ip}|${ua}`).digest("hex").slice(0, 32);
+
     after(async () => {
       try {
-        await recordClick(slug, { country, referrer, device });
+        await recordClick(slug, { country, referrer, device, visitor });
       } catch (e) {
         console.error("recordClick gagal", e);
       }

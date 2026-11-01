@@ -84,6 +84,13 @@ export default async function AnalisaPage({
   const deltaPct =
     a.prevTotal !== null && a.prevTotal > 0 ? Math.round(((a.total - a.prevTotal) / a.prevTotal) * 100) : null;
 
+  const uniqDelta =
+    a.unique !== null && a.prevUnique !== null && a.prevUnique > 0
+      ? Math.round(((a.unique - a.prevUnique) / a.prevUnique) * 100)
+      : null;
+  const f1 = (v: number) => v.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const ctrDelta = a.ctr !== null && a.prevCtr !== null ? Math.round((a.ctr - a.prevCtr) * 10) / 10 : null;
+
   // ---- grafik tren: satu kolom per hari, titik berada di tengah kolom ----
   const N = a.daily.length;
   const maxDay = Math.max(1, ...a.daily.map(([, v]) => v));
@@ -144,17 +151,28 @@ export default async function AnalisaPage({
 
             <div className="an-kpi">
               <div className="an-kpi-top">
-                <b>{nf(a.avgPerDay)}</b>
+                <b>{a.unique !== null ? nf(a.unique) : "-"}</b>
+                {uniqDelta !== null &&
+                  (uniqDelta === 0 ? (
+                    <Pill>stabil</Pill>
+                  ) : (
+                    <Pill tone={uniqDelta > 0 ? "up" : "down"}>{`${uniqDelta > 0 ? "+" : ""}${uniqDelta}%`}</Pill>
+                  ))}
               </div>
-              <span className="an-kpi-l">Rata-rata klik/hari</span>
+              <span className="an-kpi-l">Pengunjung unik</span>
             </div>
 
             <div className="an-kpi">
               <div className="an-kpi-top">
-                <b>{a.peak ? nf(a.peak.n) : "-"}</b>
-                {a.peak && <Pill>{dayLabel(a.peak.day)}</Pill>}
+                <b>{a.ctr !== null ? `${f1(a.ctr)}%` : "-"}</b>
+                {ctrDelta !== null &&
+                  (ctrDelta === 0 ? (
+                    <Pill>stabil</Pill>
+                  ) : (
+                    <Pill tone={ctrDelta > 0 ? "up" : "down"}>{`${ctrDelta > 0 ? "+" : ""}${f1(ctrDelta)}%`}</Pill>
+                  ))}
               </div>
-              <span className="an-kpi-l">Puncak harian</span>
+              <span className="an-kpi-l">Rata-rata CTR</span>
             </div>
 
             <div className="an-kpi">

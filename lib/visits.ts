@@ -93,3 +93,28 @@ export async function getWebStats(): Promise<WebStats> {
     daysWithData,
   };
 }
+
+/** Pageviews website utama per hari (hanya hari yang punya snapshot). Snapshot yang masih hidup ikut disalin ke webhist agar riwayat tidak hilang. */
+export async function getPageviewsByDay(days: string[]): Promise<Record<string, number>> {
+  if (!days.length) return {};
+  const raw = await db().mget<unknown[]>(...days.map((d) => `statsday:${d}`), ...days.map((d) => `webhist:${d}`));
+  const out: Record<string, number> = {};
+  const save: [string, Snap][] = [];
+  days.forEach((day, i) => {
+    const live = parse(raw[i]);
+    const s = live ?? parse(raw[days.length + i]);
+    if (!s) return;
+    out[day] = Number(s.pageviews ?? 0);
+    if (live) save.push([day, { pageviews: live.pageviews, visitors: live.visitors, chats: live.chats, leads: live.leads, vc: live.vc }]);
+  });
+  if (save.length) {
+    try {
+      const p = db().pipeline();
+      for (const [day, snap] of save) p.set(`webhist:${day}`, JSON.stringify(snap));
+      await p.exec();
+    } catch (e) {
+      console.error("simpan riwayat gagal", e);
+    }
+  }
+  return out;
+}
