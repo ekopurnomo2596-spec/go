@@ -343,8 +343,8 @@ export default async function AnalisaPage({
                           <span className="an-tp">
                             <b>{dayLabel(day)}</b>
                             {drawn.map((d) => (
-                              <span key={d.unit} style={{ display: "block" }}>
-                                {src === "semua" ? `${d.name}: ` : ""}
+                              <span key={d.unit} className="an-tl">
+                                {src === "semua" && <i className={d.cls === "b" ? "k" : "g"} />}
                                 {nf(d.data[i][1])} {d.unit}
                               </span>
                             ))}
