@@ -13,23 +13,29 @@ async function run(fn: () => Promise<Flash>): Promise<Flash> {
 }
 
 export function Toast() {
-  const [f, setF] = useState<Flash | null>(null);
+  const [f, setF] = useState<(Flash & { id: number }) | null>(null);
+  const [out, setOut] = useState(false);
   useEffect(() => {
-    let t: ReturnType<typeof setTimeout> | undefined;
+    let hide: ReturnType<typeof setTimeout> | undefined;
+    let gone: ReturnType<typeof setTimeout> | undefined;
     const on = (e: Event) => {
-      setF((e as CustomEvent<Flash>).detail);
-      clearTimeout(t);
-      t = setTimeout(() => setF(null), 4500);
+      clearTimeout(hide);
+      clearTimeout(gone);
+      setOut(false);
+      setF({ ...(e as CustomEvent<Flash>).detail, id: Date.now() });
+      hide = setTimeout(() => setOut(true), 4000);
+      gone = setTimeout(() => setF(null), 4300);
     };
     window.addEventListener("flash", on);
     return () => {
       window.removeEventListener("flash", on);
-      clearTimeout(t);
+      clearTimeout(hide);
+      clearTimeout(gone);
     };
   }, []);
   if (!f) return null;
   return (
-    <div className={`msg toast ${f.kind}`} role="status">
+    <div key={f.id} className={`msg toast ${f.kind}${out ? " out" : ""}`} role="status">
       {f.text}
     </div>
   );
