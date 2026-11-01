@@ -1,4 +1,5 @@
 import { listLinks } from "@/lib/links";
+import { LinkIcon } from "@/lib/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -12,25 +13,43 @@ export default async function Home() {
 
   return (
     <main className="public">
-      <h1>
-        EMAHAIRSHOP
-        <small>Extension 2019</small>
-      </h1>
+      <div className="brand center">
+        <span className="badge">E</span>
+        <span className="rule" />
+        <span className="brandText">
+          GO
+          <small>emahairshop.com</small>
+        </span>
+      </div>
       <p className="lead">
-        Pemasok human hair extension dari Indonesia. Pilih tautan di bawah untuk menghubungi kami atau melihat produk.
+        Satu tautan untuk semua kanal resmi EMAHAIRSHOP &mdash; pilih salah satu di bawah ini.
       </p>
-      <ul className="linklist">
-        {links.map((l) => (
-          <li key={l.slug}>
-            <a href={`/${l.slug}`}>
-              <span className="name">{l.title}</span>
-              <span className="slug">/{l.slug}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
+
+      {links.length === 0 ? (
+        <p className="empty">Belum ada tautan yang ditampilkan.</p>
+      ) : (
+        <ul className="linklist">
+          {links.map((l) => (
+            <li key={l.slug}>
+              <a href={`/${l.slug}`}>
+                <span className="ico">
+                  <LinkIcon slug={l.slug} title={l.title} />
+                </span>
+                <span className="t">
+                  {l.title}
+                  <small className="dm">go.emahairshop.com/{l.slug}</small>
+                </span>
+                <svg className="ch" viewBox="0 0 24 24">
+                  <path d="m9 6 6 6-6 6" />
+                </svg>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+
       <p className="foot">
-        &copy; 2026 EMAHAIRSHOP. <a href="https://emahairshop.com">emahairshop.com</a>
+        &copy; 2026 EMAHAIRSHOP &middot; <a href="https://emahairshop.com">emahairshop.com</a>
       </p>
     </main>
   );

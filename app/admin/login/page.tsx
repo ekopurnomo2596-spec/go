@@ -15,15 +15,25 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
   return (
     <main className="login">
-      <h1>Masuk ke dashboard</h1>
-      {err && ERR[err] && <div className="msg err">{ERR[err]}</div>}
-      <form action={login}>
-        <div className="row">
-          <label htmlFor="password">Password</label>
-          <input id="password" name="password" type="password" autoComplete="current-password" required autoFocus />
-        </div>
-        <button type="submit">Masuk</button>
-      </form>
+      <div className="brand center">
+        <span className="badge">E</span>
+        <span className="rule" />
+        <span className="brandText">
+          GO
+          <small>emahairshop.com</small>
+        </span>
+      </div>
+      <div className="card">
+        <h1>Masuk ke dashboard</h1>
+        {err && ERR[err] && <div className="msg err">{ERR[err]}</div>}
+        <form action={login}>
+          <div className="row">
+            <label htmlFor="password">Password</label>
+            <input id="password" name="password" type="password" autoComplete="current-password" required autoFocus />
+          </div>
+          <button type="submit">Masuk</button>
+        </form>
+      </div>
     </main>
   );
 }

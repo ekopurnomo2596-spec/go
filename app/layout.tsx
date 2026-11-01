@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Montserrat } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const font = Montserrat({ subsets: ["latin"], weight: ["500", "600", "700", "800"] });
+const font = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
 
 export const metadata: Metadata = {
   title: "Tautan EMAHAIRSHOP",
