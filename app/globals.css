@@ -555,3 +555,6 @@ tr.zero td { color: var(--muted); }
 .an-lg i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
 .an-lg i.g { background: var(--an-acc); }
 .an-lg i.k { background: var(--ink); }
+.an-cols.one { grid-template-columns: 1fr; }
+.an-stack.row { grid-template-columns: 1fr 1fr; }
+@media (max-width: 860px) { .an-stack.row { grid-template-columns: 1fr; } }

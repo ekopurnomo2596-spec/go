@@ -143,6 +143,12 @@ export default async function AnalisaPage({
   // bandingkan rata-rata per hari yang punya data, supaya hari tanpa snapshot tidak dianggap penurunan
   const avgDelta = (k: "visitors" | "pageviews") =>
     curN > 0 && prevN > 0 ? pctDelta(sumOf(dayList, k) / curN, sumOf(prevList, k) / prevN) : null;
+  const emaDev: Record<string, number> = {};
+  const emaRef: Record<string, number> = {};
+  for (const d of dayList) {
+    for (const [k, n] of Object.entries(snaps[d]?.vd ?? {})) emaDev[k] = (emaDev[k] ?? 0) + Number(n || 0);
+    for (const [k, n] of Object.entries(snaps[d]?.vr ?? {})) emaRef[k] = (emaRef[k] ?? 0) + Number(n || 0);
+  }
   const emaDaily: [string, number][] = dayList.map((d) => [d, snaps[d]?.visitors ?? 0]);
   const emaCountry: Record<string, number> = {};
   for (const d of dayList)
@@ -180,8 +186,14 @@ export default async function AnalisaPage({
   const maxTop = Math.max(1, ...a.topLinks.map((l) => l.n));
 
   // ---- perangkat / sumber / negara ----
-  const devGroups = group(a.devices, labelDevice);
-  const refGroups = group(a.referrers, labelRef);
+  const devGroups = group(
+    [...(showGo ? a.devices : []), ...(showEma ? Object.entries(emaDev) : [])] as [string, number][],
+    labelDevice,
+  );
+  const refGroups = group(
+    [...(showGo ? a.referrers : []), ...(showEma ? Object.entries(emaRef) : [])] as [string, number][],
+    labelRef,
+  );
   const devSum = sum(devGroups);
   const refSum = sum(refGroups);
   const countryMap: Record<string, number> = {};
@@ -353,8 +365,8 @@ export default async function AnalisaPage({
           </section>
 
           {/* Tautan teratas + perangkat + sumber (data go) */}
-          {showGo && (
-            <div className="an-cols">
+          <div className={`an-cols${showGo ? "" : " one"}`}>
+              {showGo && (
               <section className="an-card">
                 <h2>Tautan teratas</h2>
                 {a.topLinks.every((l) => l.n === 0) ? (
@@ -383,11 +395,12 @@ export default async function AnalisaPage({
                   </div>
                 )}
               </section>
+              )}
 
-              <div className="an-stack">
+              <div className={`an-stack${showGo ? "" : " row"}`}>
                 <section className="an-card">
                   <h2>
-                    Perangkat <small>sepanjang waktu</small>
+                    Perangkat <small>{ctryNote}</small>
                   </h2>
                   {devices.length === 0 ? (
                     <p className="an-empty-s">Belum ada data.</p>
@@ -408,7 +421,7 @@ export default async function AnalisaPage({
 
                 <section className="an-card">
                   <h2>
-                    Sumber trafik <small>sepanjang waktu</small>
+                    Sumber trafik <small>{ctryNote}</small>
                   </h2>
                   {refs.length === 0 ? (
                     <p className="an-empty-s">Belum ada data.</p>
@@ -427,8 +440,7 @@ export default async function AnalisaPage({
                   )}
                 </section>
               </div>
-            </div>
-          )}
+          </div>
 
           {/* Negara */}
           <section className="an-card">
