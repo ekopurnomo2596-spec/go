@@ -24,7 +24,7 @@ export default async function DashboardPage() {
         </h1>
       </div>
 
-      <div className="stats">
+      <div className="stats" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
         <div className="stat">
           <b>{n(w.today.visitors)}</b>
           <span>Pengunjung hari ini</span>
