@@ -169,7 +169,8 @@ export default async function AnalisaPage({
   if (showEma) series.push({ cls: showGo ? "b" : "", unit: "pengunjung", name: emaName, data: emaDaily });
   const N = dayList.length;
   const maxDay = Math.max(1, ...series.flatMap((x) => x.data.map(([, v]) => v)));
-  const px = (i: number) => Number((((i + 0.5) / N) * 100).toFixed(2));
+  const px = (i: number) => (N > 1 ? Number(((i / (N - 1)) * 100).toFixed(2)) : 50);
+  const colW = N > 1 ? 100 / (N - 1) : 100;
   const py = (v: number) => Number((94 - (v / maxDay) * 88).toFixed(2));
   const drawn = series.map((x) => {
     const pts = x.data.map(([, v], i) => [px(i), py(v)] as const);
@@ -181,7 +182,10 @@ export default async function AnalisaPage({
     };
   });
   const trendTotal = series.reduce((t, x) => t + x.data.reduce((u, [, v]) => u + v, 0), 0);
-  const tickIdx = N ? [...new Set(Array.from({ length: 6 }, (_, k) => Math.round((k * (N - 1)) / 5)))] : [];
+  // label sumbu X: interval tetap, dihitung mundur dari hari terakhir supaya jaraknya rata
+  const tickStep = Math.max(1, Math.ceil((N - 1) / 5));
+  const tickIdx: number[] = [];
+  for (let i = N - 1; i >= 0; i -= tickStep) tickIdx.unshift(i);
 
   // ---- tautan teratas ----
   const maxTop = Math.max(1, ...a.topLinks.map((l) => l.n));
@@ -336,7 +340,7 @@ export default async function AnalisaPage({
                         <div
                           key={day}
                           className={`an-hc${Math.min(...ys) < 35 ? " lo" : ""}`}
-                          style={{ "--y": `${Math.min(...ys)}%` } as React.CSSProperties}
+                          style={{ "--y": `${Math.min(...ys)}%`, left: `${px(i) - colW / 2}%`, width: `${colW}%` } as React.CSSProperties}
                         >
                           <i className="an-hl" />
                           <i className="an-hdot" />
