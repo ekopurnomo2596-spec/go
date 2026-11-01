@@ -30,6 +30,18 @@ function X({ slug, mode, value, label }: { slug: string; mode: string; value: st
   );
 }
 
+function Info({ text }: { text: string }) {
+  return (
+    <span className="info" tabIndex={0} role="img" aria-label={text}>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 11v5M12 8h.01" />
+      </svg>
+      <span className="tip" role="tooltip">{text}</span>
+    </span>
+  );
+}
+
 function tally(items: string[]): [string, number][] {
   const m = new Map<string, number>();
   for (const i of items) {
@@ -190,6 +202,7 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
         <section className="panel">
           <h2>
             Sumber &amp; perangkat <small>dari {stats.recent.length} klik terbaru</small>
+            <Info text="Dihitung dari maksimal 50 klik terbaru, bukan hanya hari ini dan bukan total semua klik. Sumber adalah situs asal pengunjung. Tulisan “langsung” berarti asalnya tidak terdeteksi, misalnya link diketik atau dibuka dari aplikasi seperti WhatsApp dan Telegram." />
           </h2>
           <Mini title="Sumber" rows={tally(stats.recent.map((c) => c.r))} total={stats.recent.length} />
           <Mini title="Perangkat" rows={tally(stats.recent.map((c) => c.d))} total={stats.recent.length} />
