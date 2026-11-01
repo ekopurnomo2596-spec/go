@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
         referrer = "langsung";
       }
     }
-    const device = /mobi|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
+    const device = /ipad|tablet|(android(?!.*mobile))/i.test(ua) ? "tablet" : /mobi|android|iphone/i.test(ua) ? "mobile" : "desktop";
 
     after(async () => {
       try {

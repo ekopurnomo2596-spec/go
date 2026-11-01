@@ -103,6 +103,8 @@ export async function getStats(slug: string): Promise<Stats> {
 export type Analytics = {
   windowDays: number;
   linkCount: number;
+  /** Jumlah tautan yang dibuat dalam jendela windowDays terakhir */
+  newLinks: number;
   total: number;
   prevTotal: number | null;
   avgPerDay: number;
@@ -120,6 +122,7 @@ export async function getAnalytics(windowDays: number): Promise<Analytics> {
   const empty: Analytics = {
     windowDays,
     linkCount: 0,
+    newLinks: 0,
     total: 0,
     prevTotal: null,
     avgPerDay: 0,
@@ -192,6 +195,7 @@ export async function getAnalytics(windowDays: number): Promise<Analytics> {
   return {
     windowDays,
     linkCount: links.length,
+    newLinks: links.filter((l) => l.createdAt >= Date.now() - windowDays * 86400e3).length,
     total,
     prevTotal: hasPrevData ? prevTotal : null,
     avgPerDay: windowDays > 0 ? Math.round(total / windowDays) : 0,
