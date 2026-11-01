@@ -65,8 +65,8 @@ function Delta({ v }: { v: number | null }) {
   return v === 0 ? <Pill>stabil</Pill> : <Pill tone={v > 0 ? "up" : "down"}>{`${v > 0 ? "+" : ""}${v}%`}</Pill>;
 }
 
-const CMP = "Persen = naik/turun dibanding periode sebelumnya.\n“baru” = periode sebelumnya belum ada data.";
-const CMP_AVG = "Persen = perubahan rata-rata harian dibanding periode sebelumnya.\n“baru” = periode sebelumnya belum ada data.";
+const CMP = "Persen (%) = naik/turun dibanding periode sebelumnya.\n“baru” = periode sebelumnya belum ada data.";
+const CMP_AVG = "Persen (%) = perubahan rata-rata harian dibanding periode sebelumnya.\n“baru” = periode sebelumnya belum ada data.";
 
 function Kpi({
   value,
@@ -236,7 +236,7 @@ export default async function AnalisaPage({
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
-                  info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat).\nPersen = selisih poin dibanding periode sebelumnya."}
+                  info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat).\nPersen (%) = selisih poin dibanding periode sebelumnya."}
                   pill={
                     ctrDelta === null ? <Pill>baru</Pill> : ctrDelta === 0 ? (
                       <Pill>stabil</Pill>
@@ -268,7 +268,7 @@ export default async function AnalisaPage({
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
-                  info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat).\nPersen = selisih poin dibanding periode sebelumnya."}
+                  info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat).\nPersen (%) = selisih poin dibanding periode sebelumnya."}
                   pill={
                     ctrDelta === null ? <Pill>baru</Pill> : ctrDelta === 0 ? (
                       <Pill>stabil</Pill>
