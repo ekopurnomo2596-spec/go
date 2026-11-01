@@ -150,6 +150,27 @@ async function webKeys(): Promise<string[]> {
   return out;
 }
 
+const wibToday = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+
+/** Hapus penanda "sudah dihitung" di portal (supaya kunjungan berikutnya dihitung dari nol), lalu beri tahu portal. */
+async function syncPortal(days: string[] | "all") {
+  const today = wibToday();
+  const yesterday = new Date(Date.now() + 7 * 3600e3 - 86400e3).toISOString().slice(0, 10);
+  const targets = days === "all" ? [today, yesterday] : days.filter((d) => d === today || d === yesterday);
+  for (const d of targets) {
+    for (const match of [`visited:${d}:*`, `vcountry:${d}:*`]) {
+      let cursor: string | number = 0;
+      do {
+        const [next, keys]: [string | number, string[]] = await db().scan(cursor, { match, count: 200 });
+        if (keys.length) await db().del(...keys);
+        cursor = next;
+      } while (String(cursor) !== "0");
+    }
+  }
+  // Portal membaca penanda ini; kalau lebih baru dari yang ia terapkan, memori + pesan Telegram ikut direset.
+  await db().set("statsreset", Date.now());
+}
+
 function refreshWeb() {
   revalidatePath("/admin");
   revalidatePath("/admin/dashboard");
@@ -160,6 +181,7 @@ export async function resetWebStats(): Promise<Flash> {
   await requireAdmin();
   const keys = await webKeys();
   if (keys.length) await db().del(...keys);
+  await syncPortal("all");
   refreshWeb();
   return ok("Data dashboard dihapus.");
 }
@@ -178,6 +200,7 @@ export async function removeWebStatsAction(formData: FormData): Promise<Flash> {
         : dayRange(str(formData, "from"), str(formData, "to"));
     if (!days) return err("Tanggal tidak valid.");
     await db().del(...days.flatMap((d) => [`statsday:${d}`, `webhist:${d}`]));
+    await syncPortal(days);
   } else if (mode === "country" && /^[A-Za-z]{2}$/.test(str(formData, "value"))) {
     const code = str(formData, "value").toUpperCase();
     for (const key of await webKeys()) {
@@ -201,6 +224,7 @@ export async function removeWebStatsAction(formData: FormData): Promise<Flash> {
       snap.visitors = Math.max(0, Number(snap.visitors ?? 0) - removed);
       await db().set(key, JSON.stringify(snap));
     }
+    await syncPortal([]);
   } else {
     return err("Permintaan tidak valid.");
   }
