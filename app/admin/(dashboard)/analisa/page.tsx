@@ -106,7 +106,7 @@ function Kpi({
         {pill ?? (delta !== undefined && <Delta v={delta} />)}
       </div>
       <span className="an-kpi-l">
-        {label}
+        <span>{label}</span>
         {info && <Info text={info} />}
       </span>
     </div>

@@ -543,7 +543,8 @@ tr.zero td { color: var(--muted); }
 .an-ln.b { stroke: var(--ink); }
 .an-area.b { fill: var(--ink); opacity: .06; }
 .an-sub { color: var(--muted); font-size: .82rem; margin-top: 4px; }
-.an-kpi-l .info { margin-left: 6px; }
+.an-kpi-l { display: flex; align-items: flex-start; gap: 6px; }
+.an-kpi-l .info { margin-left: 0; flex: none; }
 @media (max-width: 860px) { .an-card, .an-kpi { position: relative; } }
 .an-lg { display: inline-flex; gap: 14px; margin-left: 10px; font-size: .74rem; font-weight: 400; color: var(--muted); vertical-align: middle; flex-wrap: wrap; }
 .an-lg span { display: inline-flex; align-items: center; gap: 6px; }
