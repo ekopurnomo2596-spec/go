@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { getLink, getStats, validSlugFormat } from "@/lib/links";
@@ -31,6 +30,40 @@ function X({ slug, mode, value, label }: { slug: string; mode: string; value: st
   );
 }
 
+function tally(items: string[]): [string, number][] {
+  const m = new Map<string, number>();
+  for (const i of items) {
+    const k = i?.trim() || "Tidak diketahui";
+    m.set(k, (m.get(k) ?? 0) + 1);
+  }
+  return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+}
+
+function Mini({ title, rows, total }: { title: string; rows: [string, number][]; total: number }) {
+  const max = Math.max(1, ...rows.map(([, n]) => n));
+  return (
+    <div className="minigroup">
+      <h3>{title}</h3>
+      {rows.length === 0 ? (
+        <p className="empty">Belum ada data.</p>
+      ) : (
+        <div className="rbars">
+          {rows.map(([k, n]) => (
+            <div className="rbar mini" key={k}>
+              <span className="cn">{k}</span>
+              <div className="track">
+                <div className="fill" style={{ width: `${(n / max) * 100}%` }} />
+              </div>
+              <span className="v">{n.toLocaleString("id-ID")}</span>
+              <span className="pct">{total > 0 ? Math.round((n / total) * 100) : 0}%</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default async function StatsPage({ params }: { params: Promise<{ slug: string }> }) {
   await requireAdmin();
   const { slug } = await params;
@@ -38,7 +71,6 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
   const link = await getLink(slug);
   if (!link) notFound();
 
-  const host = (await headers()).get("host") ?? "";
   const stats = await getStats(slug);
   const maxCountry = Math.max(1, ...stats.countries.map(([, n]) => n));
   const maxDay = Math.max(1, ...stats.daily.map(([, n]) => n));
@@ -49,7 +81,8 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
       <Link className="back" href="/admin/statistik">&larr; Semua statistik</Link>
       <div className="top">
         <h1>
-          /{link.slug} <small>{link.title}</small>
+          /{link.slug}
+          {link.title && link.title !== link.slug && <small>{link.title}</small>}
         </h1>
         <details className="hapusmenu">
           <summary>Hapus data</summary>
@@ -88,13 +121,20 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
       </div>
 
       <p className="sum">
-        {host}/{link.slug} mengarah ke <span className="dest">{link.url}</span>
+        Tujuan:{" "}
+        <a className="destlink" href={link.url} target="_blank" rel="noopener noreferrer">
+          {link.url}
+        </a>
       </p>
 
       <div className="stats">
         <div className="stat">
           <b>{stats.total.toLocaleString("id-ID")}</b>
           <span>Total klik</span>
+        </div>
+        <div className="stat">
+          <b>{(stats.daily[stats.daily.length - 1]?.[1] ?? 0).toLocaleString("id-ID")}</b>
+          <span>Hari ini</span>
         </div>
         <div className="stat">
           <b>{last14.toLocaleString("id-ID")}</b>
@@ -106,15 +146,31 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
         </div>
       </div>
 
+      <section className="panel">
+        <h2>Klik per hari (WIB)</h2>
+        <div className="dchart">
+          {stats.daily.map(([day, n]) => (
+            <div className="dcol" key={day}>
+              <span className="dn">{n > 0 ? n.toLocaleString("id-ID") : ""}</span>
+              <div className="dbar">
+                <div className={`dfill${n === 0 ? " nol" : ""}`} style={{ height: n > 0 ? `${(n / maxDay) * 100}%` : undefined }} />
+              </div>
+              <span className="dl">{day.slice(8)}/{day.slice(5, 7)}</span>
+              {n > 0 ? <X slug={link.slug} mode="day" value={day} label={`tanggal ${day}`} /> : <span className="xs" />}
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div className="cols">
-        <section>
-          <h2 style={{ fontSize: "1rem" }}>Negara</h2>
+        <section className="panel">
+          <h2>Negara</h2>
           {stats.countries.length === 0 ? (
             <p className="empty">Belum ada klik.</p>
           ) : (
-            <div className="bars">
+            <div className="rbars">
               {stats.countries.map(([code, n]) => (
-                <div className="bar" key={code}>
+                <div className="rbar" key={code}>
                   <span className="cn">
                     <Flag code={code} />
                     {countryName(code)}
@@ -123,6 +179,7 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
                     <div className="fill" style={{ width: `${(n / maxCountry) * 100}%` }} />
                   </div>
                   <span className="v">{n.toLocaleString("id-ID")}</span>
+                  <span className="pct">{stats.total > 0 ? Math.round((n / stats.total) * 100) : 0}%</span>
                   <X slug={link.slug} mode="country" value={code} label={countryName(code)} />
                 </div>
               ))}
@@ -130,25 +187,17 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
           )}
         </section>
 
-        <section>
-          <h2 style={{ fontSize: "1rem" }}>Klik per hari (WIB)</h2>
-          <div className="bars">
-            {[...stats.daily].reverse().map(([day, n]) => (
-              <div className="bar" key={day}>
-                <span>{day.slice(5)}</span>
-                <div className="track">
-                  <div className="fill" style={{ width: `${(n / maxDay) * 100}%` }} />
-                </div>
-                <span className="v">{n.toLocaleString("id-ID")}</span>
-                {n > 0 ? <X slug={link.slug} mode="day" value={day} label={`tanggal ${day}`} /> : <span />}
-              </div>
-            ))}
-          </div>
+        <section className="panel">
+          <h2>
+            Sumber &amp; perangkat <small>dari {stats.recent.length} klik terbaru</small>
+          </h2>
+          <Mini title="Sumber" rows={tally(stats.recent.map((c) => c.r))} total={stats.recent.length} />
+          <Mini title="Perangkat" rows={tally(stats.recent.map((c) => c.d))} total={stats.recent.length} />
         </section>
       </div>
 
-      <section style={{ marginTop: 32 }}>
-        <h2 style={{ fontSize: "1rem" }}>Klik terbaru</h2>
+      <section className="panel">
+        <h2>Klik terbaru</h2>
         {stats.recent.length === 0 ? (
           <p className="empty">Belum ada klik.</p>
         ) : (
