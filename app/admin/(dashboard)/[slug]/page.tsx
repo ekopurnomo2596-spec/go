@@ -1,4 +1,3 @@
-import { ADMIN_BASE } from "@/lib/admin-path";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
@@ -23,7 +22,7 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
 
   return (
     <main className="wrap">
-      <Link className="back" href={ADMIN_BASE}>&larr; Semua tautan</Link>
+      <Link className="back" href="/admin">&larr; Semua tautan</Link>
       <div className="top">
         <h1>
           /{link.slug} <small>{link.title}</small>

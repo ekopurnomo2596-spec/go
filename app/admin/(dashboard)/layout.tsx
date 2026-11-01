@@ -1,4 +1,3 @@
-import { ADMIN_BASE } from "@/lib/admin-path";
 import { requireAdmin } from "@/lib/auth";
 import { logout } from "../actions";
 import { Logo } from "@/lib/logo";
@@ -14,7 +13,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <label htmlFor="nav" className="navBackdrop" aria-hidden="true" />
 
       <aside className="sidebar">
-        <Logo href={ADMIN_BASE} />
+        <Logo href="/admin" />
 
         <nav className="snav">
           <SideNav />

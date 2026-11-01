@@ -1,7 +1,7 @@
-import { ADMIN_BASE } from "@/lib/admin-path";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { LOGIN_PATH } from "./login-path";
 
 const COOKIE = "go_session";
 const TTL_SECONDS = 60 * 60 * 24 * 7; // 7 hari
@@ -54,5 +54,9 @@ export async function isAdmin(): Promise<boolean> {
 }
 
 export async function requireAdmin() {
-  if (!(await isAdmin())) redirect(`${ADMIN_BASE}/login`);
+  if (!(await isAdmin())) {
+    // Login disembunyikan: yang belum login melihat 404, bukan halaman login.
+    if (LOGIN_PATH) notFound();
+    redirect("/admin/login");
+  }
 }

@@ -1,12 +1,12 @@
-const ADMIN = (process.env.NEXT_PUBLIC_ADMIN_PATH || "admin").replace(/^\/+|\/+$/g, "") || "admin";
+const LOGIN = (process.env.LOGIN_PATH || process.env.NEXT_PUBLIC_ADMIN_PATH || "").replace(/^\/+|\/+$/g, "");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
   async rewrites() {
-    // Path rahasia dashboard diteruskan ke halaman /admin di dalam aplikasi.
-    if (ADMIN === "admin") return [];
-    return { beforeFiles: [{ source: `/${ADMIN}/:path*`, destination: "/admin/:path*" }] };
+    // Path login rahasia diteruskan ke halaman login di dalam aplikasi.
+    if (!LOGIN) return [];
+    return { beforeFiles: [{ source: `/${LOGIN}`, destination: "/admin/login" }] };
   },
   async headers() {
     return [
@@ -17,8 +17,9 @@ const nextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         ],
       },
+      ...(LOGIN ? [{ source: `/${LOGIN}`, headers: [{ key: "X-Frame-Options", value: "DENY" }, { key: "Cache-Control", value: "no-store" }] }] : []),
       {
-        source: `/${ADMIN}/:path*`,
+        source: "/admin/:path*",
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Cache-Control", value: "no-store" },
