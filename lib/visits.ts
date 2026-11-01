@@ -94,17 +94,19 @@ export async function getWebStats(): Promise<WebStats> {
   };
 }
 
-/** Pageviews website utama per hari (hanya hari yang punya snapshot). Snapshot yang masih hidup ikut disalin ke webhist agar riwayat tidak hilang. */
-export async function getPageviewsByDay(days: string[]): Promise<Record<string, number>> {
+export type WebSnap = { visitors: number; pageviews: number; vc: Record<string, number> };
+
+/** Snapshot kunjungan website utama per hari (hanya hari yang punya data). Snapshot yang masih hidup ikut disalin ke webhist agar riwayat tidak hilang. */
+export async function getWebSnaps(days: string[]): Promise<Record<string, WebSnap>> {
   if (!days.length) return {};
   const raw = await db().mget<unknown[]>(...days.map((d) => `statsday:${d}`), ...days.map((d) => `webhist:${d}`));
-  const out: Record<string, number> = {};
+  const out: Record<string, WebSnap> = {};
   const save: [string, Snap][] = [];
   days.forEach((day, i) => {
     const live = parse(raw[i]);
     const s = live ?? parse(raw[days.length + i]);
     if (!s) return;
-    out[day] = Number(s.pageviews ?? 0);
+    out[day] = { visitors: Number(s.visitors ?? 0), pageviews: Number(s.pageviews ?? 0), vc: s.vc ?? {} };
     if (live) save.push([day, { pageviews: live.pageviews, visitors: live.visitors, chats: live.chats, leads: live.leads, vc: live.vc }]);
   });
   if (save.length) {
@@ -117,4 +119,10 @@ export async function getPageviewsByDay(days: string[]): Promise<Record<string, 
     }
   }
   return out;
+}
+
+/** Pageviews website utama per hari (hanya hari yang punya snapshot). */
+export async function getPageviewsByDay(days: string[]): Promise<Record<string, number>> {
+  const snaps = await getWebSnaps(days);
+  return Object.fromEntries(Object.entries(snaps).map(([d, v]) => [d, v.pageviews]));
 }
