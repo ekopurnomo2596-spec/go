@@ -354,3 +354,7 @@ button.ghost .spin, .btn.ghost .spin { --sc: var(--ink); }
 
 /* ---------- Hilangkan highlight biru saat tap di HP ---------- */
 * { -webkit-tap-highlight-color: transparent; }
+
+/* ---------- Loading halaman admin (ganti layar kosong saat pindah/reload) ---------- */
+.pageload { display: grid; place-items: center; min-height: 60vh; }
+.pageload .spin { position: static; margin: 0; width: 30px; height: 30px; border-width: 3px; --sc: var(--gold); }
