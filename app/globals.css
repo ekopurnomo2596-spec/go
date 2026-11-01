@@ -459,3 +459,15 @@ button.ghost .spin, .btn.ghost .spin { --sc: var(--ink); }
   .info { position: static; }
   .info .tip { left: 16px; right: 16px; top: 46px; width: auto; }
 }
+
+/* ---------- Dashboard ---------- */
+.top h1 .info { margin-left: 10px; }
+.top h1 .info + small { margin-top: 4px; }
+tr.zero td { color: var(--muted); }
+.panel .tablewrap table { font-size: .85rem; }
+.panel .tablewrap th, .panel .tablewrap td { padding: 10px 8px; }
+.panel .tablewrap tbody tr:last-child td { border-bottom: 0; }
+@media (max-width: 860px) {
+  .top { position: relative; }
+  .top .info .tip { top: calc(100% + 4px); }
+}

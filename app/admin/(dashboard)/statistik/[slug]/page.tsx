@@ -6,6 +6,7 @@ import { removeStatsAction, resetStats } from "../../../actions";
 import { ActionForm } from "../../forms";
 import { countryName, formatTime } from "@/lib/format";
 import { Flag } from "@/lib/flag";
+import { Info } from "../../info";
 
 export const dynamic = "force-dynamic";
 
@@ -27,18 +28,6 @@ function X({ slug, mode, value, label }: { slug: string; mode: string; value: st
       <input type="hidden" name="mode" value={mode} />
       <input type="hidden" name="value" value={value} />
     </ActionForm>
-  );
-}
-
-function Info({ text }: { text: string }) {
-  return (
-    <span className="info" tabIndex={0} role="img" aria-label={text}>
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 11v5M12 8h.01" />
-      </svg>
-      <span className="tip" role="tooltip">{text}</span>
-    </span>
   );
 }
 
