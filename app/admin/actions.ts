@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createSession, destroySession, passwordOk, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/redis";
+import type { Flash } from "@/lib/flash";
 import {
   deleteLinkData,
   getLink,
@@ -45,51 +46,56 @@ export async function logout() {
   redirect("/admin/login");
 }
 
-export async function createLink(formData: FormData) {
+const ok = (text: string): Flash => ({ kind: "ok", text });
+const err = (text: string): Flash => ({ kind: "err", text });
+
+// Aksi di bawah ini TIDAK redirect. Hasilnya dikembalikan ke browser, dan revalidatePath
+// membuat Next mengirim daftar terbaru dalam respons yang sama. Halaman lama tetap tampil
+// (tombol berputar) sampai data baru siap, jadi tidak ada layar kosong.
+export async function createLink(formData: FormData): Promise<Flash> {
   await requireAdmin();
   const slug = str(formData, "slug").toLowerCase();
   const url = str(formData, "url");
   const title = str(formData, "title").slice(0, 80) || slug;
-  const listed = true;
 
-  if (isReserved(slug)) redirect("/admin?err=reserved");
-  if (!validSlugFormat(slug)) redirect("/admin?err=slug");
-  if (!validUrl(url)) redirect("/admin?err=url");
+  if (isReserved(slug)) return err("Slug itu dipakai sistem. Pilih yang lain.");
+  if (!validSlugFormat(slug)) return err("Slug tidak valid. Pakai huruf kecil, angka, - atau _ (maksimal 40 karakter).");
+  if (!validUrl(url)) return err("URL tujuan harus diawali http:// atau https://.");
 
-  const link: Link = { slug, url, title, listed, createdAt: Date.now() };
+  const link: Link = { slug, url, title, listed: true, createdAt: Date.now() };
   const created = await db().set(`link:${slug}`, link, { nx: true });
-  if (!created) redirect("/admin?err=exists");
+  if (!created) return err("Slug itu sudah ada.");
   await db().sadd("links", slug);
 
   refresh();
-  redirect("/admin?ok=created");
+  return ok("Link dibuat.");
 }
 
-export async function updateLink(formData: FormData) {
+export async function updateLink(formData: FormData): Promise<Flash> {
   await requireAdmin();
   const slug = str(formData, "slug").toLowerCase();
   const url = str(formData, "url");
   const title = str(formData, "title").slice(0, 80);
 
-  if (!validSlugFormat(slug)) redirect("/admin?err=slug");
-  if (!validUrl(url)) redirect("/admin?err=url");
+  if (!validSlugFormat(slug)) return err("Slug tidak valid.");
+  if (!validUrl(url)) return err("URL tujuan harus diawali http:// atau https://.");
 
   const existing = await getLink(slug);
-  if (!existing) redirect("/admin");
+  if (!existing) return err("Link tidak ditemukan.");
   await db().set(`link:${slug}`, { ...existing, url, title: title || slug });
 
   refresh();
-  redirect("/admin?ok=updated");
+  return ok("Link diperbarui.");
 }
 
-export async function deleteLink(formData: FormData) {
+export async function deleteLink(formData: FormData): Promise<Flash> {
   await requireAdmin();
   const slug = str(formData, "slug").toLowerCase();
-  if (!validSlugFormat(slug)) redirect("/admin?err=slug");
+  if (!validSlugFormat(slug)) return err("Slug tidak valid.");
   await deleteLinkData(slug);
 
   refresh();
-  redirect("/admin?ok=deleted");
+  return ok("Link dihapus beserta datanya.");
 }
 
 export async function resetStats(formData: FormData) {
