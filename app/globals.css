@@ -8,8 +8,8 @@
   --lineh: #c4c4c4;
   --ico: #f0f0f0;
   --icos: #404040;
-  --gold: #a8802f;
-  --glow: rgba(201, 164, 106, .22);
+  --gold: #111111;
+  --glow: rgba(0, 0, 0, .10);
   --hover: #f5f3ee;
   --danger: #b3261e;
   --ok: #1c6b3a;
@@ -32,8 +32,8 @@
     --lineh: #3a3a3a;
     --ico: #201f1c;
     --icos: #cfcfcb;
-    --gold: #d4a84b;
-    --glow: rgba(212, 168, 75, .16);
+    --gold: #f4f4f2;
+    --glow: rgba(255, 255, 255, .10);
     --hover: #1a1a18;
     --danger: #ff8a80;
     --ok: #7bd99a;

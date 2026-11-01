@@ -17,14 +17,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
         <nav className="snav">
           <SideNav />
-          <a href="/" target="_blank" rel="noreferrer" className="snavLink">
-            <svg viewBox="0 0 24 24"><path d="M14 3h7v7M10 14 21 3M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" /></svg>
-            Lihat halaman publik
-          </a>
-          <a href="https://emahairshop.com" target="_blank" rel="noreferrer" className="snavLink">
-            <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></svg>
-            emahairshop.com
-          </a>
         </nav>
 
         <form action={logout} className="snavFoot">
