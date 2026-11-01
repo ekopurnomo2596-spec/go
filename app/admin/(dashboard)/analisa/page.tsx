@@ -264,9 +264,9 @@ export default async function AnalisaPage({
             )}
             {src === "semua" && (
               <>
-                <Kpi value={nf(a.total)} label={`Total klik ${goName}`} info={`Jumlah klik tautan go dalam ${days} hari terakhir. ${CMP}`} delta={deltaPct} />
-                <Kpi value={nf(eVis)} label={`Pengunjung ${emaName}`} info={`Pengunjung website utama, satu kali per alamat IP per hari. ${CMP}`} delta={avgDelta("visitors")} />
-                <Kpi value={nf(ePv)} label={`Halaman dilihat ${emaName}`} info="Total halaman website utama yang dibuka dalam rentang waktu ini." delta={avgDelta("pageviews")} />
+                <Kpi value={nf(a.total)} label="Total klik" info={`Sumber: ${goName}. Jumlah klik tautan dalam ${days} hari terakhir. ${CMP}`} delta={deltaPct} />
+                <Kpi value={nf(eVis)} label="Pengunjung" info={`Sumber: ${emaName}. Satu pengunjung per alamat IP per hari, lalu dijumlahkan. Persen membandingkan rata-rata per hari yang punya data. ${CMP}`} delta={avgDelta("visitors")} />
+                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Sumber: ${emaName}. Total halaman yang dibuka dalam rentang waktu ini. Persen membandingkan rata-rata per hari yang punya data.`} delta={avgDelta("pageviews")} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
