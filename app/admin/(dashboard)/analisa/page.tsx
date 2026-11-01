@@ -6,6 +6,7 @@ import { countryName, jakartaDay } from "@/lib/format";
 import { getWebSnaps } from "@/lib/visits";
 import { SourceSelect } from "./source-select";
 import { Info } from "../info";
+import { CountryList } from "./country-list";
 import { Flag } from "@/lib/flag";
 
 export const dynamic = "force-dynamic";
@@ -450,15 +451,29 @@ export default async function AnalisaPage({
             {countries.length === 0 ? (
               <p className="an-empty-s">Belum ada data.</p>
             ) : (
-              <div className="an-ctry">
-                {countries.map((r) => (
-                  <div className="an-ci" key={r.key}>
-                    {r.rest ? <span className="an-rest" aria-hidden="true">…</span> : <Flag code={r.key} />}
-                    <span className="an-cn">{r.label}</span>
-                    <span className="an-pct">{pct(r.v, ctrySum)}%</span>
-                  </div>
-                ))}
-              </div>
+              <CountryList
+                top={countries
+                  .filter((r) => !r.rest)
+                  .map((r) => (
+                    <div className="an-ci" key={r.key}>
+                      <Flag code={r.key} />
+                      <span className="an-cn">{r.label}</span>
+                      <span className="an-pct">{pct(r.v, ctrySum)}%</span>
+                    </div>
+                  ))}
+                more={
+                  countries.some((r) => r.rest)
+                    ? countryRows.slice(4).map(([code, v]) => (
+                        <div className="an-ci" key={code}>
+                          <Flag code={code} />
+                          <span className="an-cn">{countryName(code)}</span>
+                          <span className="an-pct">{pct(v, ctrySum)}%</span>
+                        </div>
+                      ))
+                    : undefined
+                }
+                restPct={pct(countries.find((r) => r.rest)?.v ?? 0, ctrySum)}
+              />
             )}
           </section>
         </>

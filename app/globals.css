@@ -558,3 +558,5 @@ tr.zero td { color: var(--muted); }
 .an-cols.one { grid-template-columns: 1fr; }
 .an-stack.row { grid-template-columns: 1fr 1fr; }
 @media (max-width: 860px) { .an-stack.row { grid-template-columns: 1fr; } }
+.an-more { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.an-more:hover .an-cn { text-decoration: underline; }
