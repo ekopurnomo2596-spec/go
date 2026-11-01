@@ -1,4 +1,4 @@
-:root {
+l:root {
   --bg: #fafafa;
   --card: #ffffff;
   --panel: #fafaf8;
@@ -358,3 +358,9 @@ button.ghost .spin, .btn.ghost .spin { --sc: var(--ink); }
 /* ---------- Loading halaman admin (ganti layar kosong saat pindah/reload) ---------- */
 .pageload { display: grid; place-items: center; min-height: 60vh; }
 .pageload .spin { position: static; margin: 0; width: 30px; height: 30px; border-width: 3px; --sc: var(--gold); }
+
+/* ---------- Toast pesan sukses/gagal (tanpa pindah halaman) ---------- */
+.msg.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 70;
+  max-width: calc(100% - 32px); margin: 0; background: var(--card); box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
