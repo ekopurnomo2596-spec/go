@@ -138,15 +138,11 @@ export default async function AnalisaPage({
   const countries = withRest(a.countries, 4, countryName);
 
   return (
-    <main className="an">
-      {/* Header */}
-      <div className="an-hd">
-        <div>
-          <h1 className="an-h1">Analisa</h1>
-          <div className="an-sub">
-            {host ? `${host} · ` : ""}menampilkan data {days} Hari terakhir
-          </div>
-        </div>
+    <main className="wrap an">
+      <div className="top">
+        <h1>
+          Analisa <small>{host}</small>
+        </h1>
         <nav className="an-tabs" aria-label="Rentang waktu">
           {RANGES.map((r) => (
             <Link key={r} href={`/admin/analisa?days=${r}`} aria-current={r === days ? "page" : undefined}>
@@ -177,7 +173,7 @@ export default async function AnalisaPage({
               </div>
               <span className="an-kpi-l">
                 Pengunjung unik
-                <Info text="Pengunjung website emahairshop.com pada periode ini. Dihitung satu kali per alamat IP per hari, lalu dijumlahkan. Riwayat website baru tersimpan sejak dashboard pertama kali dibuka." />
+                <Info text="Pengunjung website utama pada periode ini. Dihitung satu kali per alamat IP per hari, lalu dijumlahkan. Riwayat website baru tersimpan sejak dashboard pertama kali dibuka." />
               </span>
             </div>
 

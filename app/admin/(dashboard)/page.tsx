@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { getWebStats } from "@/lib/visits";
 import { countryName } from "@/lib/format";
@@ -10,6 +11,7 @@ const n = (v: number) => v.toLocaleString("id-ID");
 
 export default async function DashboardPage() {
   await requireAdmin();
+  const host = (await headers()).get("host") ?? "";
   const w = await getWebStats();
 
   const maxDay = Math.max(1, ...w.days.map((d) => d.visitors));
@@ -22,7 +24,7 @@ export default async function DashboardPage() {
         <h1>
           Dashboard
           <Info text="Pengunjung dihitung satu kali per alamat IP per hari, dan hari tanpa data tampil 0. Angkanya sama dengan laporan statistik di Telegram. Data dari website hanya bertahan 3 hari lalu dihapus otomatis, jadi buka dashboard ini minimal sekali dalam 3 hari supaya riwayatnya tersimpan lengkap." />
-          <small>Website emahairshop.com</small>
+          <small>{host}</small>
         </h1>
       </div>
 
