@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { listLinks, totals } from "@/lib/links";
 import { createLink, deleteLink, seedLinks, updateLink } from "../actions";
 import { ConfirmButton, SubmitButton } from "../confirm-button";
+import { EditLink } from "./edit-link";
 
 export const dynamic = "force-dynamic";
 
@@ -96,15 +97,13 @@ export default async function AdminPage({
                   <td className="num">{(counts[l.slug] ?? 0).toLocaleString("id-ID")}</td>
                   <td>
                     <div className="actions">
-                      <details>
-                        <summary>Ubah</summary>
-                        <form action={updateLink}>
-                          <input type="hidden" name="slug" value={l.slug} />
-                          <input name="title" type="text" defaultValue={l.title} aria-label="Judul" maxLength={80} />
-                          <input name="url" type="url" defaultValue={l.url} aria-label="URL tujuan" required />
-                          <SubmitButton>Simpan</SubmitButton>
-                        </form>
-                      </details>
+                      <EditLink
+                        key={`${l.slug}:${l.title}:${l.url}`}
+                        slug={l.slug}
+                        title={l.title}
+                        url={l.url}
+                        action={updateLink}
+                      />
                       <form action={deleteLink}>
                         <input type="hidden" name="slug" value={l.slug} />
                         <ConfirmButton
