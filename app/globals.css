@@ -277,3 +277,4 @@ details form { display: grid; gap: 8px; margin-top: 6px; min-width: 260px; }
 .statrow .track { grid-column: 1 / -1; background: var(--line); border-radius: 4px; height: 7px; overflow: hidden; }
 .statrow .fill { background: var(--gold); height: 100%; }
 .actions > form { display: flex; margin: 0; }
+.tablewrap:has(.linktable) { overflow: visible; }
