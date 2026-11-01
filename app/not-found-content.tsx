@@ -93,7 +93,7 @@ export default function NotFoundContent() {
       <p className="lead" style={{ margin: "8px 0 32px", fontSize: ".81rem" }}>{d[1]}</p>
 
       <div className="linklist">
-        <a href="/">
+        <a href="https://emahairshop.com/">
           <span className="ico">
             <svg viewBox="0 0 24 24">
               <path d="M3 11l9-8 9 8" />
