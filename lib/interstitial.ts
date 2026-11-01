@@ -14,7 +14,7 @@ export function interstitialResponse(url: string) {
 :root{color-scheme:light dark;--bg:#fafafa;--ink:#111;--muted:#666;--line:#e5e5e5;--btn:#1b1b1b;--btnt:#fff}
 @media(prefers-color-scheme:dark){:root{--bg:#0e0e0e;--ink:#f3f3f3;--muted:#a0a0a0;--line:#2a2a2a;--btn:#f3f3f3;--btnt:#111}}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{margin:0;min-height:100vh;display:grid;place-items:start center;padding:22vh 16px 16px;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 main{width:min(420px,100%);text-align:center}
 h1{font-size:1.05rem;font-weight:600;margin:0 0 6px}
 .to{font-weight:600;word-break:break-all;font-size:.95rem}
