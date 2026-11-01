@@ -124,7 +124,8 @@ export default async function AnalisaPage({
   const src: Src = (SRC as readonly string[]).includes(sp.src ?? "") ? (sp.src as Src) : "semua";
   const showGo = src !== "ema";
   const showEma = src !== "go";
-  const host = (await headers()).get("host") ?? "";
+  const goName = (await headers()).get("host") ?? "go.emahairshop.com";
+  const emaName = "emahairshop.com";
   const a = await getAnalytics(days);
 
   // ---- data website utama (ema) ----
@@ -156,9 +157,9 @@ export default async function AnalisaPage({
   const ctrDelta = a.ctr !== null && a.prevCtr !== null ? Math.round((a.ctr - a.prevCtr) * 10) / 10 : null;
 
   // ---- grafik tren: satu kolom per hari, titik berada di tengah kolom ----
-  const series: { cls: string; unit: string; data: [string, number][] }[] = [];
-  if (showGo) series.push({ cls: "", unit: "klik", data: a.daily });
-  if (showEma) series.push({ cls: showGo ? "b" : "", unit: "pengunjung", data: emaDaily });
+  const series: { cls: string; unit: string; name: string; data: [string, number][] }[] = [];
+  if (showGo) series.push({ cls: "", unit: "klik", name: goName, data: a.daily });
+  if (showEma) series.push({ cls: showGo ? "b" : "", unit: "pengunjung", name: emaName, data: emaDaily });
   const N = dayList.length;
   const maxDay = Math.max(1, ...series.flatMap((x) => x.data.map(([, v]) => v)));
   const px = (i: number) => Number((((i + 0.5) / N) * 100).toFixed(2));
@@ -192,12 +193,12 @@ export default async function AnalisaPage({
   const devices = withRest(devGroups, 4, same);
   const refs = withRest(refGroups, 4, same);
   const countries = withRest(countryRows, 4, countryName);
-  const ctryNote = src === "go" ? "sepanjang waktu" : src === "ema" ? `${days} hari` : `go: sepanjang waktu · ema: ${days} hari`;
-  const subtitle = src === "go" ? host : src === "ema" ? "emahairshop.com" : `${host} + emahairshop.com`;
+  const ctryNote = src === "go" ? "sepanjang waktu" : src === "ema" ? `${days} hari` : `${goName}: sepanjang waktu · ${emaName}: ${days} hari`;
+  const subtitle = src === "go" ? goName : src === "ema" ? emaName : `${goName} + ${emaName}`;
   const srcOptions = [
     { value: "semua", label: "Semua" },
-    { value: "go", label: host || "go" },
-    { value: "ema", label: "emahairshop.com" },
+    { value: "go", label: goName },
+    { value: "ema", label: emaName },
   ];
   const empty = src === "go" && a.linkCount === 0;
 
@@ -206,9 +207,7 @@ export default async function AnalisaPage({
       <div className="top">
         <div>
           <h1>Analisa</h1>
-          <div className="an-sub">
-            {subtitle} · menampilkan data {days} Hari terakhir
-          </div>
+          <div className="an-sub">{subtitle}</div>
         </div>
         <div className="an-ctl">
           <SourceSelect value={src} days={days} options={srcOptions} />
@@ -265,9 +264,9 @@ export default async function AnalisaPage({
             )}
             {src === "semua" && (
               <>
-                <Kpi value={nf(a.total)} label="Total klik (go)" info={`Jumlah klik tautan go dalam ${days} hari terakhir. ${CMP}`} delta={deltaPct} />
-                <Kpi value={nf(eVis)} label="Pengunjung (ema)" info={`Pengunjung website utama (emahairshop.com), satu kali per alamat IP per hari. ${CMP}`} delta={avgDelta("visitors")} />
-                <Kpi value={nf(ePv)} label="Halaman dilihat (ema)" info="Total halaman website utama yang dibuka dalam rentang waktu ini." delta={avgDelta("pageviews")} />
+                <Kpi value={nf(a.total)} label={`Total klik ${goName}`} info={`Jumlah klik tautan go dalam ${days} hari terakhir. ${CMP}`} delta={deltaPct} />
+                <Kpi value={nf(eVis)} label={`Pengunjung ${emaName}`} info={`Pengunjung website utama, satu kali per alamat IP per hari. ${CMP}`} delta={avgDelta("visitors")} />
+                <Kpi value={nf(ePv)} label={`Halaman dilihat ${emaName}`} info="Total halaman website utama yang dibuka dalam rentang waktu ini." delta={avgDelta("pageviews")} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
@@ -288,7 +287,18 @@ export default async function AnalisaPage({
           <section className="an-card an-mb an-trend">
             <h2>
               {src === "go" ? "Tren klik harian" : src === "ema" ? "Tren pengunjung harian" : "Tren harian"}
-              {src === "semua" && <small>hitam: pengunjung ema · hijau: klik go</small>}
+              {src === "semua" && (
+                <span className="an-lg">
+                  <span>
+                    <i className="g" />
+                    {goName}
+                  </span>
+                  <span>
+                    <i className="k" />
+                    {emaName}
+                  </span>
+                </span>
+              )}
             </h2>
             {trendTotal === 0 ? (
               <p className="an-empty-s">Belum ada data dalam {days} hari terakhir.</p>
@@ -321,6 +331,7 @@ export default async function AnalisaPage({
                             <b>{dayLabel(day)}</b>
                             {drawn.map((d) => (
                               <span key={d.unit} style={{ display: "block" }}>
+                                {src === "semua" ? `${d.name}: ` : ""}
                                 {nf(d.data[i][1])} {d.unit}
                               </span>
                             ))}

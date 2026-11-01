@@ -545,3 +545,8 @@ tr.zero td { color: var(--muted); }
 .an-sub { color: var(--muted); font-size: .82rem; margin-top: 4px; }
 .an-kpi-l .info { margin-left: 6px; }
 @media (max-width: 860px) { .an-card, .an-kpi { position: relative; } }
+.an-lg { display: inline-flex; gap: 14px; margin-left: 10px; font-size: .74rem; font-weight: 400; color: var(--muted); vertical-align: middle; flex-wrap: wrap; }
+.an-lg span { display: inline-flex; align-items: center; gap: 6px; }
+.an-lg i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.an-lg i.g { background: var(--an-acc); }
+.an-lg i.k { background: var(--ink); }
