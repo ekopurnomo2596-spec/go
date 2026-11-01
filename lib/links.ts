@@ -292,6 +292,19 @@ export async function recordClick(
   slug: string,
   info: { country: string; referrer: string; device: string; visitor?: string },
 ) {
+  // satu pengunjung dihitung sekali per tautan per hari (tautan lain tetap dihitung sendiri)
+  if (info.visitor) {
+    try {
+      const seenKey = `seen:${jakartaDay(0)}:${slug}`;
+      const sp = db().pipeline();
+      sp.sadd(seenKey, info.visitor);
+      sp.expire(seenKey, 2 * 86400);
+      const [added] = await sp.exec<[number, number]>();
+      if (Number(added) === 0) return;
+    } catch {
+      // jika pengecekan gagal, klik tetap dicatat
+    }
+  }
   const p = db().pipeline();
   p.incr(`clicks:${slug}`);
   p.hincrby(`country:${slug}`, info.country, 1);
@@ -321,6 +334,7 @@ export async function deleteLinkData(slug: string) {
   p.del(`link:${slug}`);
   p.srem("links", slug);
   p.del(`clicks:${slug}`, `country:${slug}`, `device:${slug}`, `ref:${slug}`, `daily:${slug}`, `recent:${slug}`);
+  p.del(`seen:${jakartaDay(0)}:${slug}`, `seen:${jakartaDay(1)}:${slug}`);
   await p.exec();
   await purgeBreakdown(slug, bdAllDays());
 }
@@ -328,6 +342,7 @@ export async function deleteLinkData(slug: string) {
 export async function resetStatsData(slug: string) {
   const p = db().pipeline();
   p.del(`clicks:${slug}`, `country:${slug}`, `device:${slug}`, `ref:${slug}`, `daily:${slug}`, `recent:${slug}`);
+  p.del(`seen:${jakartaDay(0)}:${slug}`, `seen:${jakartaDay(1)}:${slug}`);
   await p.exec();
   await purgeBreakdown(slug, bdAllDays());
 }

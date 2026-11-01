@@ -250,7 +250,7 @@ export default async function AnalisaPage({
           <div className="an-kpis">
             {src === "go" && (
               <>
-                <Kpi value={nf(a.total)} label="Total klik" info={`Jumlah klik tautan go dalam ${days} hari terakhir. Bot, pratinjau, dan prefetch tidak dihitung. ${CMP}`} delta={deltaPct} />
+                <Kpi value={nf(a.total)} label="Total klik" info={`Jumlah klik tautan go dalam ${days} hari terakhir. Satu pengunjung dihitung sekali per tautan per hari. Bot, pratinjau, dan prefetch tidak dihitung. ${CMP}`} delta={deltaPct} />
                 <Kpi value={a.unique !== null ? nf(a.unique) : "-"} label="Pengunjung unik" info={`Perkiraan jumlah pengunjung berbeda yang mengeklik tautan go, dihitung satu kali per perangkat per hari. Baru terhitung sejak fitur ini aktif. ${CMP}`} delta={uniqDelta} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
