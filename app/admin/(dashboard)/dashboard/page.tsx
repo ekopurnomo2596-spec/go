@@ -25,6 +25,9 @@ export default async function DashboardPage() {
       <p className="sum" style={{ margin: "0 0 4px" }}>
         Pengunjung dihitung satu kali per alamat IP per hari. Hari tanpa data tampil 0. Angka ini sama dengan laporan statistik di Telegram.
       </p>
+      <p className="sum" style={{ margin: "0 0 4px" }}>
+        Data dari website hanya bertahan 3 hari lalu dihapus otomatis. Buka dashboard ini minimal sekali dalam 3 hari supaya riwayatnya tersimpan lengkap.
+      </p>
 
       <div className="stats">
         <div className="stat">
@@ -53,7 +56,7 @@ export default async function DashboardPage() {
             <section>
               <h2 style={{ fontSize: "1rem" }}>Pengunjung per hari (WIB)</h2>
               <div className="bars">
-                {w.days.map((d) => (
+                {[...w.days].reverse().map((d) => (
                   <div className="bar" key={d.day}>
                     <span>{d.day.slice(5)}</span>
                     <div className="track">

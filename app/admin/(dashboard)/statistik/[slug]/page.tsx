@@ -133,7 +133,7 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
         <section>
           <h2 style={{ fontSize: "1rem" }}>Klik per hari (WIB)</h2>
           <div className="bars">
-            {stats.daily.map(([day, n]) => (
+            {[...stats.daily].reverse().map(([day, n]) => (
               <div className="bar" key={day}>
                 <span>{day.slice(5)}</span>
                 <div className="track">
