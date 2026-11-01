@@ -5,27 +5,43 @@ import { CreateForm, DeleteLink, EditLink } from "./forms";
 
 export const dynamic = "force-dynamic";
 
+const n = (v: number) => v.toLocaleString("id-ID");
+
 export default async function AdminPage() {
   await requireAdmin();
   const host = (await headers()).get("host") ?? "";
   const { links, counts } = await listLinksWithCounts();
   const sum = Object.values(counts).reduce((a, b) => a + b, 0);
+  const top = [...links].sort((a, b) => (counts[b.slug] ?? 0) - (counts[a.slug] ?? 0))[0];
+  const topN = top ? counts[top.slug] ?? 0 : 0;
 
   return (
     <main className="wrap">
       <div className="top">
-        <h1>Semua tautan</h1>
+        <h1>
+          Semua tautan <small>{host}</small>
+        </h1>
       </div>
 
+      <div className="stats">
+        <div className="stat">
+          <b>{n(links.length)}</b>
+          <span>Tautan</span>
+        </div>
+        <div className="stat">
+          <b>{n(sum)}</b>
+          <span>Klik total</span>
+        </div>
+        <div className="stat">
+          <b className="stat-top">{top && topN > 0 ? `/${top.slug}` : "-"}</b>
+          <span>Terpopuler</span>
+        </div>
+      </div>
 
       <section className="card">
         <h2>Buat link baru</h2>
         <CreateForm />
       </section>
-
-      <p className="sum">
-        {links.length} link &middot; {sum.toLocaleString("id-ID")} klik total
-      </p>
 
       {links.length === 0 ? (
         <div className="empty">
@@ -53,7 +69,7 @@ export default async function AdminPage() {
                     {l.interstitial && <div className="sum">Halaman perantara aktif</div>}
                   </td>
                   <td className="dest">{l.url}</td>
-                  <td className="num">{(counts[l.slug] ?? 0).toLocaleString("id-ID")}</td>
+                  <td className="num">{n(counts[l.slug] ?? 0)}</td>
                   <td>
                     <div className="actions">
                       <EditLink slug={l.slug} title={l.title} url={l.url} interstitial={!!l.interstitial} />
