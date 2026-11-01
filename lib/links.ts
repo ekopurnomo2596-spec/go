@@ -50,6 +50,19 @@ export async function listLinks(): Promise<Link[]> {
     .sort((a, b) => b.createdAt - a.createdAt);
 }
 
+/** Daftar link + jumlah klik dengan 2 round-trip ke Redis (bukan 3). */
+export async function listLinksWithCounts(): Promise<{ links: Link[]; counts: Record<string, number> }> {
+  const slugs = (await db().smembers("links")) as string[];
+  if (!slugs.length) return { links: [], counts: {} };
+  const p = db().pipeline();
+  p.mget(...slugs.map((s) => `link:${s}`));
+  p.mget(...slugs.map((s) => `clicks:${s}`));
+  const [items, vals] = await p.exec<[(Link | null)[], (number | string | null)[]]>();
+  const counts: Record<string, number> = Object.fromEntries(slugs.map((s, i) => [s, Number(vals[i] ?? 0)]));
+  const links = items.filter((l): l is Link => !!l).sort((a, b) => b.createdAt - a.createdAt);
+  return { links, counts };
+}
+
 export async function totals(slugs: string[]): Promise<Record<string, number>> {
   if (!slugs.length) return {};
   const vals = await db().mget<(number | string | null)[]>(...slugs.map((s) => `clicks:${s}`));
