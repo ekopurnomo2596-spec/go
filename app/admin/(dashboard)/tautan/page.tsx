@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { listLinksWithCounts } from "@/lib/links";
-import { CreateForm, DeleteLink, EditLink } from "./forms";
+import { CreateForm, DeleteLink, EditLink } from "../forms";
 
 export const dynamic = "force-dynamic";
 
