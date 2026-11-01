@@ -560,7 +560,8 @@ tr.zero td { color: var(--muted); }
 @media (max-width: 860px) { .an-stack.row { grid-template-columns: 1fr; } }
 .an-more { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
 .an-more:hover .an-cn { text-decoration: underline; }
-.an-tl { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.an-tl { display: flex; align-items: center; justify-content: flex-start; gap: 6px; text-align: left; }
+.an-tp b { text-align: center; }
 .an-tl i { width: 9px; height: 9px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(255, 255, 255, .55); }
 .an-tl i.g { background: var(--an-acc); }
 .an-tl i.k { background: #111; }
