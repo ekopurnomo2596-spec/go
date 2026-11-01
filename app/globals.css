@@ -539,7 +539,10 @@ tr.zero td { color: var(--muted); }
   .an-cols { grid-template-columns: 1fr; }
 }
 .an-ctl { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.an-src { font: inherit; font-size: .82rem; font-weight: 600; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+.an-ctl .an-tabs { box-sizing: border-box; height: 46px; align-items: stretch; }
+.an-ctl .an-tabs a { display: flex; align-items: center; }
+.an-src { box-sizing: border-box; height: 46px; font: inherit; font-size: .82rem; font-weight: 600; padding: 0 36px 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 14px; color: var(--ink); cursor: pointer; -webkit-appearance: none; appearance: none; outline: none; }
+.an-src:focus-visible { border-color: var(--an-acc); }
 .an-ln.b { stroke: var(--ink); }
 .an-area.b { fill: var(--ink); opacity: .06; }
 .an-sub { color: var(--muted); font-size: .82rem; margin-top: 4px; }
