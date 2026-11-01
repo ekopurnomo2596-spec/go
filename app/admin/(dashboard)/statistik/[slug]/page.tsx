@@ -151,7 +151,7 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
         <h2>Klik per hari (WIB)</h2>
         <div className="dchart">
           {stats.daily.map(([day, n]) => (
-            <div className="dcol" key={day}>
+            <div className="dcol" key={day} title={`${day}: ${n.toLocaleString("id-ID")} klik`}>
               <span className="dn">{n > 0 ? n.toLocaleString("id-ID") : ""}</span>
               <div className="dbar">
                 <div className={`dfill${n === 0 ? " nol" : ""}`} style={{ height: n > 0 ? `${(n / maxDay) * 100}%` : undefined }} />
@@ -165,7 +165,9 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
 
       <div className="cols">
         <section className="panel">
-          <h2>Negara</h2>
+          <h2>
+            Negara <small>sepanjang waktu</small>
+          </h2>
           {stats.countries.length === 0 ? (
             <p className="empty">Belum ada klik.</p>
           ) : (
