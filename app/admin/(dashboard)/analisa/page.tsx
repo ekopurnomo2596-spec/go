@@ -61,12 +61,12 @@ const pctDelta = (cur: number, prev: number | null) =>
   prev !== null && prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null;
 
 function Delta({ v }: { v: number | null }) {
-  if (v === null) return <Pill>baru</Pill>;
-  return v === 0 ? <Pill>stabil</Pill> : <Pill tone={v > 0 ? "up" : "down"}>{`${v > 0 ? "+" : ""}${v}%`}</Pill>;
+  if (v === null) return <Pill>Baru</Pill>;
+  return v === 0 ? <Pill>Stabil</Pill> : <Pill tone={v > 0 ? "up" : "down"}>{`${v > 0 ? "+" : ""}${v}%`}</Pill>;
 }
 
-const CMP = "Persen (%) = naik/turun dibanding periode sebelumnya.\n“baru” = periode sebelumnya belum ada data.";
-const CMP_AVG = "Persen (%) = perubahan rata-rata harian dibanding periode sebelumnya.\n“baru” = periode sebelumnya belum ada data.";
+const CMP = "Persen (%) = naik/turun dibanding periode sebelumnya.\nBaru = periode sebelumnya belum ada data.";
+const CMP_AVG = "Persen (%) = perubahan rata-rata harian dibanding periode sebelumnya.\nBaru = periode sebelumnya belum ada data.";
 
 function Kpi({
   value,
@@ -238,8 +238,8 @@ export default async function AnalisaPage({
                   label="Rata-rata CTR"
                   info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat).\nPersen (%) = selisih poin dibanding periode sebelumnya."}
                   pill={
-                    ctrDelta === null ? <Pill>baru</Pill> : ctrDelta === 0 ? (
-                      <Pill>stabil</Pill>
+                    ctrDelta === null ? <Pill>Baru</Pill> : ctrDelta === 0 ? (
+                      <Pill>Stabil</Pill>
                     ) : (
                       <Pill tone={ctrDelta > 0 ? "up" : "down"}>{`${ctrDelta > 0 ? "+" : ""}${f1(ctrDelta)}%`}</Pill>
                     )
@@ -248,8 +248,8 @@ export default async function AnalisaPage({
                 <Kpi
                   value={nf(a.linkCount)}
                   label="Tautan aktif"
-                  info="Jumlah tautan yang ada sekarang. “+N baru” = dibuat dalam periode ini."
-                  pill={a.newLinks > 0 ? <Pill tone="up">{`+${a.newLinks} baru`}</Pill> : <Pill>stabil</Pill>}
+                  info="Jumlah tautan yang ada sekarang. +N Baru = dibuat dalam periode ini."
+                  pill={a.newLinks > 0 ? <Pill tone="up">{`+${a.newLinks} Baru`}</Pill> : <Pill>Stabil</Pill>}
                 />
               </>
             )}
@@ -270,8 +270,8 @@ export default async function AnalisaPage({
                   label="Rata-rata CTR"
                   info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat).\nPersen (%) = selisih poin dibanding periode sebelumnya."}
                   pill={
-                    ctrDelta === null ? <Pill>baru</Pill> : ctrDelta === 0 ? (
-                      <Pill>stabil</Pill>
+                    ctrDelta === null ? <Pill>Baru</Pill> : ctrDelta === 0 ? (
+                      <Pill>Stabil</Pill>
                     ) : (
                       <Pill tone={ctrDelta > 0 ? "up" : "down"}>{`${ctrDelta > 0 ? "+" : ""}${f1(ctrDelta)}%`}</Pill>
                     )
