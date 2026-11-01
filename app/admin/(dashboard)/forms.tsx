@@ -157,7 +157,7 @@ export function EditLink({ slug, title, url, interstitial }: { slug: string; tit
                 <input id={`u-${slug}`} name="url" type="url" defaultValue={url} required />
               </div>
               <label className="switch" htmlFor={`i-${slug}`}>
-                <span>Halaman perantara (hitung mundur 5 detik)</span>
+                <span>Halaman perantara (pindah otomatis 3 detik)</span>
                 <input id={`i-${slug}`} name="interstitial" type="checkbox" defaultChecked={interstitial} />
                 <i aria-hidden="true" />
               </label>
