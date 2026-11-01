@@ -22,6 +22,12 @@ Pemendek tautan EMAHAIRSHOP dengan dashboard statistik. Next.js (App Router) + U
 6. **Settings, Domains**: tambahkan `go.emahairshop.com`, lalu di DNS buat CNAME `go` ke nilai yang ditampilkan Vercel.
 7. Buka `https://go.emahairshop.com/admin`, login, lalu klik tombol untuk menambahkan 7 link awal.
 
+## Saran AI (Gemini)
+- Halaman **Token**: isi token Gemini (disimpan di Redis, bukan di Vercel; tidak perlu env tambahan). Ada tombol Tampilkan dan Tes kunci.
+- Halaman **Tindakan**: kartu Peluang untuk pasangan sumber x negara teratas (mis. Instagram di Amerika Serikat) punya tombol **Minta saran AI**. AI hanya dipanggil saat tombol ditekan (maks. 30 permintaan per jam).
+- Halaman **AI**: riwayat saran (100 terakhir), bisa dihapus per entri atau semuanya.
+- Model: `gemini-3.5-flash-lite`. Pasangan sumber x negara dicatat di `bd:x:{tanggal}` sejak pembaruan ini, jadi kartu baru muncul setelah ada klik baru.
+
 ## Menjalankan lokal
 ```
 cp .env.example .env.local   # isi nilainya

@@ -601,3 +601,25 @@ tr.zero td { color: var(--muted); }
   .tx-btns { flex-wrap: wrap; }
   .tx-btns .btn, .tx-btns button { flex: 1; }
 }
+
+/* ---- Saran AI (Tindakan, AI, Token) ---- */
+.tx-card.has-ai { align-items: flex-start; flex-wrap: wrap; }
+.tx-card.has-ai .tx-body { flex: 1 1 320px; }
+.tx-card.has-ai .tx-btns { flex-wrap: wrap; }
+.tx-btns .btn.ghost { background: var(--card); color: var(--ink); border-color: var(--line); }
+.tx-btns button.danger { background: transparent; }
+.ai-res { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.ai-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+.ai-tag { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 99px; background: var(--hover); border: 1px solid var(--line); font-size: .8125rem; font-weight: 600; overflow-wrap: anywhere; }
+.tx-body p.ai-saran { margin: 10px 0 0; color: var(--ink); }
+.tx-body p.ai-meta { margin: 8px 0 0; font-size: .78rem; color: var(--muted); }
+.ai-meta a { color: inherit; text-decoration: underline; }
+.ai-h { display: flex; align-items: center; gap: 8px; }
+.tk-state { margin: 0 0 16px; font-size: .9rem; color: var(--muted); }
+.tk-state code { color: var(--ink); background: var(--hover); padding: 2px 8px; border-radius: 6px; }
+.tk-form { display: grid; gap: 8px; }
+.tk-row { display: flex; gap: 8px; }
+.tk-row input { flex: 1; min-width: 0; }
+.tk-row button { flex: none; }
+.tk-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.tk-help { margin: 16px 0 0; font-size: .8rem; line-height: 1.55; color: var(--muted); }

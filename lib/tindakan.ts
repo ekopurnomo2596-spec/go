@@ -1,6 +1,7 @@
 import { db } from "./redis";
-import { jakartaDay } from "./format";
-import { getAnalytics, listLinks } from "./links";
+import { countryName, jakartaDay } from "./format";
+import { getAnalytics, listLinks, topPairs, type Pair } from "./links";
+import { hasKey, lastMap, type AiEntry } from "./ai";
 
 export type Tone = "penting" | "peluang" | "info";
 export type Item = {
@@ -12,6 +13,8 @@ export type Item = {
   cta: string;
   /** sudah ditandai selesai (dan masalahnya masih ada) */
   done: boolean;
+  /** kartu saran AI: sumber + negara, dan saran terakhir yang pernah diminta (jika ada) */
+  ai?: { ref: string; country: string; last: AiEntry | null };
 };
 
 const WIN = 14; // rentang yang dinilai (hari)
@@ -27,6 +30,8 @@ const RISE_LINK_MIN = 5; // ...dan minimal 5 klik
 const CTR_DROP = 1.5; // CTR turun >= 1,5 poin
 const DEV_MIN = 10; // minimal 10 klik untuk menilai perangkat
 const MAX_PER_RULE = 3;
+const PAIR_MIN = 3; // minimal klik satu pasangan sumber x negara untuk dapat kartu saran AI
+const PAIR_MAX = 3;
 
 const f1 = (v: number) => v.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const ago = (d: number) => (d <= 0 ? "hari ini" : d === 1 ? "kemarin" : `${d} hari lalu`);
@@ -38,11 +43,15 @@ export type TindakanResult = {
   /** berapa hari data klik sudah terkumpul (0 = belum ada) */
   dataDays: number;
   linkCount: number;
+  /** token AI sudah diisi */
+  aiReady: boolean;
+  /** sudah ada data pasangan sumber x negara */
+  hasPairs: boolean;
 };
 
 export async function getTindakan(): Promise<TindakanResult> {
   const links = await listLinks();
-  if (!links.length) return { items: [], done: [], dataDays: 0, linkCount: 0 };
+  if (!links.length) return { items: [], done: [], dataDays: 0, linkCount: 0, aiReady: false, hasPairs: false };
 
   const now = Date.now();
   const today = jakartaDay(0);
@@ -52,9 +61,13 @@ export async function getTindakan(): Promise<TindakanResult> {
   const p = db().pipeline();
   for (const l of links) p.hgetall(`daily:${l.slug}`);
   p.hgetall(DONE_KEY);
-  const [a, res] = await Promise.all([
+  // bagian AI tidak boleh membuat halaman Tindakan error
+  const [a, res, pairs, last, aiReady] = await Promise.all([
     getAnalytics(WIN),
     p.exec<(Record<string, number | string> | null)[]>(),
+    topPairs(WIN).catch((): Pair[] => []),
+    lastMap().catch((): Record<string, AiEntry> => ({})),
+    hasKey().catch(() => false),
   ]);
   const doneMap = (res[links.length] ?? {}) as Record<string, number | string>;
 
@@ -186,6 +199,23 @@ export async function getTindakan(): Promise<TindakanResult> {
       }),
     );
 
+  // 7. saran AI per pasangan sumber x negara (mis. Instagram di Amerika)
+  pairs
+    .filter((x) => x.n >= PAIR_MIN && x.country !== "XX" && x.ref !== "Langsung")
+    .slice(0, PAIR_MAX)
+    .forEach((x) => {
+      const slug = x.ref.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x";
+      out.push({
+        id: `ai:${slug}:${x.country.toLowerCase()}`,
+        tone: "peluang",
+        title: `${x.ref} di ${countryName(x.country)}: ${x.n} klik dalam ${WIN} hari`,
+        why: "Pasangan sumber dan negara dengan klik terbanyak. Minta saran hashtag hair extension yang cocok untuk audiens ini.",
+        href: `/admin/analisa?days=${WIN}&src=go`,
+        cta: "Buka Analisa",
+        ai: { ref: x.ref, country: x.country, last: last[`${x.ref}|${x.country}`] ?? null },
+      });
+    });
+
   // tanda selesai: berlaku 14 hari; yang sudah kedaluwarsa dibersihkan
   const stale = Object.entries(doneMap)
     .filter(([, t]) => now - Number(t) >= DONE_TTL)
@@ -198,5 +228,12 @@ export async function getTindakan(): Promise<TindakanResult> {
 
   const order: Record<Tone, number> = { penting: 0, peluang: 1, info: 2 };
   const all = out.map((x) => ({ ...x, done: isDone(x.id) })).sort((x, y) => order[x.tone] - order[y.tone]);
-  return { items: all.filter((x) => !x.done), done: all.filter((x) => x.done), dataDays, linkCount: links.length };
+  return {
+    items: all.filter((x) => !x.done),
+    done: all.filter((x) => x.done),
+    dataDays,
+    linkCount: links.length,
+    aiReady,
+    hasPairs: pairs.length > 0,
+  };
 }

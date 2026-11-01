@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { LOGIN_BASE } from "@/lib/login-path";
 import { createSession, destroySession, passwordOk, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/redis";
+import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, validKey } from "@/lib/ai";
 import type { Flash } from "@/lib/flash";
 import {
   deleteLinkData,
@@ -239,4 +240,86 @@ export async function removeStatsAction(formData: FormData): Promise<Flash> {
   revalidatePath("/admin/statistik");
   revalidatePath(`/admin/statistik/${slug}`);
   return ok("Data yang dipilih dihapus.");
+}
+
+// ---------- AI (token + saran) ----------
+
+function aiErr(e: unknown): Flash {
+  return err(e instanceof AiError ? e.message : "Terjadi kesalahan saat memanggil AI.");
+}
+
+export async function saveAiKey(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const key = str(formData, "key");
+  if (!validKey(key)) return err("Token tidak valid. Tempel token utuh tanpa spasi.");
+  await setKey(key);
+  revalidatePath("/admin/token");
+  revalidatePath("/admin/tindakan");
+  revalidatePath("/admin/ai");
+  return ok("Token disimpan.");
+}
+
+export async function deleteAiKey(): Promise<Flash> {
+  await requireAdmin();
+  await deleteKey();
+  revalidatePath("/admin/token");
+  revalidatePath("/admin/tindakan");
+  revalidatePath("/admin/ai");
+  return ok("Token dihapus.");
+}
+
+/** Tes token: pakai yang diketik kalau ada, kalau kosong pakai yang tersimpan. */
+export async function testAiKey(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const typed = str(formData, "key");
+  const key = typed || (await getKey());
+  if (!key) return err("Isi token dulu.");
+  if (!validKey(key)) return err("Token tidak valid. Tempel token utuh tanpa spasi.");
+  try {
+    await testKey(key);
+    return ok("Token berfungsi.");
+  } catch (e) {
+    return aiErr(e);
+  }
+}
+
+export async function askAiAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const ref = str(formData, "ref");
+  const country = str(formData, "country").toUpperCase();
+  if (!/^[\p{L}\p{N} ._-]{1,60}$/u.test(ref) || ref === "Langsung") return err("Sumber tidak valid.");
+  if (!/^[A-Z]{2}$/.test(country) || country === "XX") return err("Negara tidak valid.");
+
+  // batas pemakaian: maksimal 30 permintaan per jam
+  const rl = "rl:ai";
+  const n = await db().incr(rl);
+  if (n === 1) await db().expire(rl, 3600);
+  if (n > 30) return err("Terlalu banyak permintaan AI. Coba lagi dalam satu jam.");
+
+  try {
+    await askAi(ref, country);
+  } catch (e) {
+    return aiErr(e);
+  }
+  revalidatePath("/admin/tindakan");
+  revalidatePath("/admin/ai");
+  return ok("Saran AI dibuat.");
+}
+
+export async function deleteAiEntry(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  if (!/^[a-z0-9]{1,30}$/.test(id)) return err("Entri tidak valid.");
+  await deleteEntry(id);
+  revalidatePath("/admin/tindakan");
+  revalidatePath("/admin/ai");
+  return ok("Entri dihapus.");
+}
+
+export async function clearAiHistory(): Promise<Flash> {
+  await requireAdmin();
+  await clearHistory();
+  revalidatePath("/admin/tindakan");
+  revalidatePath("/admin/ai");
+  return ok("Riwayat dihapus.");
 }

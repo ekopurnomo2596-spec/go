@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { getTindakan, type Item, type Tone } from "@/lib/tindakan";
-import { doneTindakan, undoTindakan } from "../../actions";
+import { askAiAction, doneTindakan, undoTindakan } from "../../actions";
+import { formatTime } from "@/lib/format";
 import { ActionForm } from "../forms";
 import { Collapsible } from "./collapsible";
 
@@ -14,18 +15,46 @@ const TAG: Record<Tone, { cls: string; label: string }> = {
   info: { cls: "gry", label: "Info" },
 };
 
-function Card({ it }: { it: Item }) {
+function Card({ it, aiReady }: { it: Item; aiReady: boolean }) {
   const t = TAG[it.tone];
+  const ai = it.ai;
   return (
-    <div className={`tx-card${it.done ? " is-done" : ""}`}>
+    <div className={`tx-card${it.done ? " is-done" : ""}${ai ? " has-ai" : ""}`}>
       <div className="tx-body">
         {!it.done && <span className={`tx-tag ${t.cls}`}>{t.label}</span>}
         <h3>{it.title}</h3>
         <p>{it.why}</p>
+        {ai?.last && (
+          <div className="ai-res">
+            <div className="ai-tags">
+              {ai.last.hashtags.map((h) => (
+                <span key={h} className="ai-tag">
+                  {h}
+                </span>
+              ))}
+            </div>
+            {ai.last.saran && <p className="ai-saran">{ai.last.saran}</p>}
+            <p className="ai-meta">
+              {formatTime(ai.last.t)} · {ai.last.model} ·{" "}
+              <Link href="/admin/ai">Riwayat</Link>
+            </p>
+          </div>
+        )}
       </div>
       <div className="tx-btns">
+        {!it.done && ai &&
+          (aiReady ? (
+            <ActionForm action={askAiAction} btnClass={ai.last ? "ghost" : "btn"} label={ai.last ? "Minta ulang" : "Minta saran AI"}>
+              <input type="hidden" name="ref" value={ai.ref} />
+              <input type="hidden" name="country" value={ai.country} />
+            </ActionForm>
+          ) : (
+            <Link className="btn" href="/admin/token">
+              Isi token AI
+            </Link>
+          ))}
         {!it.done && (
-          <Link className="btn" href={it.href}>
+          <Link className={ai ? "btn ghost" : "btn"} href={it.href}>
             {it.cta}
           </Link>
         )}
@@ -41,9 +70,9 @@ function Card({ it }: { it: Item }) {
   );
 }
 
-function Section({ title, items, limit }: { title: string; items: Item[]; limit?: number }) {
+function Section({ title, items, limit, aiReady }: { title: string; items: Item[]; limit?: number; aiReady: boolean }) {
   if (!items.length) return null;
-  const cards = items.map((it) => <Card key={it.id} it={it} />);
+  const cards = items.map((it) => <Card key={it.id} it={it} aiReady={aiReady} />);
   return (
     <section>
       <div className="tx-sec">{title}</div>
@@ -54,7 +83,7 @@ function Section({ title, items, limit }: { title: string; items: Item[]; limit?
 
 export default async function TindakanPage() {
   await requireAdmin();
-  const { items, done, dataDays, linkCount } = await getTindakan();
+  const { items, done, dataDays, linkCount, aiReady, hasPairs } = await getTindakan();
   const by = (t: Tone) => items.filter((i) => i.tone === t);
   const penting = by("penting");
   const peluang = by("peluang");
@@ -86,6 +115,13 @@ export default async function TindakanPage() {
         </p>
       )}
 
+      {linkCount > 0 && !hasPairs && (
+        <p className="tx-note">
+          Kartu saran AI (hashtag per sumber dan negara) muncul setelah ada klik baru dari sumber yang dikenal, misalnya
+          Instagram. Pencatatan pasangan sumber dan negara baru aktif sejak pembaruan ini.
+        </p>
+      )}
+
       {linkCount === 0 ? (
         <div className="an-empty">Belum ada tautan. Buat tautan dulu di halaman Tautan.</div>
       ) : items.length === 0 && done.length === 0 ? (
@@ -93,10 +129,10 @@ export default async function TindakanPage() {
       ) : (
         <>
           {items.length === 0 && <div className="an-empty">Semua tindakan sudah ditandai selesai.</div>}
-          <Section title="Perlu perhatian" items={penting} limit={5} />
-          <Section title="Peluang" items={peluang} limit={3} />
-          <Section title="Info" items={info} limit={3} />
-          <Section title="Selesai" items={done} limit={3} />
+          <Section title="Perlu perhatian" items={penting} limit={5} aiReady={aiReady} />
+          <Section title="Peluang" items={peluang} limit={3} aiReady={aiReady} />
+          <Section title="Info" items={info} limit={3} aiReady={aiReady} />
+          <Section title="Selesai" items={done} limit={3} aiReady={aiReady} />
         </>
       )}
     </main>

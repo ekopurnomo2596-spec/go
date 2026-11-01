@@ -1,6 +1,7 @@
 import { db } from "./redis";
 import { LOGIN_PATH } from "./login-path";
 import { jakartaDay } from "./format";
+import { labelRef } from "./sumber";
 import { getPageviewsByDay } from "./visits";
 
 export type Link = {
@@ -130,14 +131,17 @@ export type Analytics = {
  */
 type BdKind = "c" | "d" | "r";
 const BD_KINDS: BdKind[] = ["c", "d", "r"];
+/** "x" = gabungan negara x sumber, field `{slug}|{negara}|{sumber}`. Tidak ikut BD_KINDS karena Analisa membacanya terpisah. */
+type BdAny = BdKind | "x";
+const BD_PURGE: BdAny[] = [...BD_KINDS, "x"];
 const BD_KEEP_DAYS = 100;
-const bdKey = (k: BdKind, day: string) => `bd:${k}:${day}`;
+const bdKey = (k: BdAny, day: string) => `bd:${k}:${day}`;
 const bdAllDays = () => Array.from({ length: BD_KEEP_DAYS }, (_, i) => jakartaDay(i));
 
 /** Hapus semua field milik slug pada hari-hari tertentu (semua jenis). */
 async function purgeBreakdown(slug: string, days: string[]) {
   if (!days.length) return;
-  const keys = days.flatMap((d) => BD_KINDS.map((k) => bdKey(k, d)));
+  const keys = days.flatMap((d) => BD_PURGE.map((k) => bdKey(k, d)));
   const p = db().pipeline();
   for (const key of keys) p.hgetall(key);
   const res = await p.exec<(Record<string, number | string> | null)[]>();
@@ -151,6 +155,56 @@ async function purgeBreakdown(slug: string, days: string[]) {
     }
   });
   if (any) await q.exec();
+}
+
+/** Hapus pasangan negara x sumber milik slug untuk satu negara (semua hari). */
+async function purgeCountryPairs(slug: string, country: string) {
+  const keys = bdAllDays().map((d) => bdKey("x", d));
+  const p = db().pipeline();
+  for (const key of keys) p.hgetall(key);
+  const res = await p.exec<(Record<string, number | string> | null)[]>();
+  const prefix = `${slug}|${country}|`;
+  const q = db().pipeline();
+  let any = false;
+  res.forEach((h, i) => {
+    const fields = Object.keys(h ?? {}).filter((f) => f.startsWith(prefix));
+    if (fields.length) {
+      q.hdel(keys[i], ...fields);
+      any = true;
+    }
+  });
+  if (any) await q.exec();
+}
+
+export type Pair = { country: string; ref: string; n: number };
+
+/**
+ * Pasangan negara x sumber teratas dalam windowDays terakhir. Sumber digabung per nama ramah
+ * (l.instagram.com + instagram.com = Instagram). Hanya klik yang dicatat sejak pencatatan ini aktif.
+ */
+export async function topPairs(windowDays: number): Promise<Pair[]> {
+  const links = await listLinks();
+  if (!links.length) return [];
+  const slugSet = new Set(links.map((l) => l.slug));
+  const p = db().pipeline();
+  for (let i = 0; i < windowDays; i++) p.hgetall(bdKey("x", jakartaDay(i)));
+  const res = await p.exec<(Record<string, number | string> | null)[]>();
+  const out = new Map<string, Pair>();
+  for (const h of res)
+    for (const [f, v] of Object.entries(h ?? {})) {
+      const i = f.indexOf("|");
+      const j = f.indexOf("|", i + 1);
+      if (i < 0 || j < 0 || !slugSet.has(f.slice(0, i))) continue;
+      const country = f.slice(i + 1, j);
+      const ref = labelRef(f.slice(j + 1));
+      const n = Number(v);
+      if (!n || n < 0) continue;
+      const k = `${ref}|${country}`;
+      const cur = out.get(k);
+      if (cur) cur.n += n;
+      else out.set(k, { country, ref, n });
+    }
+  return [...out.values()].filter((x) => x.n > 0).sort((a, b) => b.n - a.n);
 }
 
 /** Ringkasan klik seluruh tautan untuk halaman Analisa. Semua angka (tren, tautan teratas, negara, perangkat, sumber) mengikuti jendela windowDays. */
@@ -317,6 +371,8 @@ export async function recordClick(
     p.hincrby(bdKey(k, today), `${slug}|${v}`, 1);
     p.expire(bdKey(k, today), BD_KEEP_DAYS * 86400);
   }
+  p.hincrby(bdKey("x", today), `${slug}|${info.country}|${info.referrer}`, 1);
+  p.expire(bdKey("x", today), BD_KEEP_DAYS * 86400);
   if (info.visitor) {
     // pengunjung unik per hari (HyperLogLog, hanya hash — tanpa IP mentah); simpan ~100 hari
     const uvKey = `uv:${jakartaDay(0)}`;
@@ -438,7 +494,9 @@ export async function removeStats(slug: string, sel: { days?: string[]; country?
       if (!sel.country) q.hincrby(bdKey("c", day), `${slug}|${c.c}`, -1);
       if (c.d) q.hincrby(bdKey("d", day), `${slug}|${c.d}`, -1);
       if (c.r) q.hincrby(bdKey("r", day), `${slug}|${c.r}`, -1);
+      if (!sel.country && c.r) q.hincrby(bdKey("x", day), `${slug}|${c.c}|${c.r}`, -1);
     }
     await q.exec();
+    if (sel.country) await purgeCountryPairs(slug, sel.country);
   }
 }

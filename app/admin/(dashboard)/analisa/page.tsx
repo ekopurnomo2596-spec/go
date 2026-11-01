@@ -8,6 +8,7 @@ import { SourceSelect } from "./source-select";
 import { Info } from "../info";
 import { CountryList } from "./country-list";
 import { Flag } from "@/lib/flag";
+import { labelRef } from "@/lib/sumber";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Analisa" };
@@ -26,28 +27,6 @@ function labelDevice(d: string): string {
   if (d === "desktop") return "Desktop";
   if (d === "tablet") return "Tablet";
   return d || "Tidak diketahui";
-}
-
-// Nama sumber trafik yang ramah (hostname -> Instagram, WhatsApp, dst), seperti di demo.
-const REF_NAMES: [RegExp, string][] = [
-  [/(^|\.)instagram\.com$/, "Instagram"],
-  [/(^|\.)facebook\.com$|(^|\.)fb\.com$|^fb\.me$/, "Facebook"],
-  [/(^|\.)whatsapp\.com$|^wa\.me$/, "WhatsApp"],
-  [/(^|\.)google\.[a-z.]+$/, "Google"],
-  [/(^|\.)bing\.com$/, "Bing"],
-  [/^t\.co$|(^|\.)twitter\.com$|(^|\.)x\.com$/, "X"],
-  [/(^|\.)tiktok\.com$/, "TikTok"],
-  [/(^|\.)youtube\.com$|^youtu\.be$/, "YouTube"],
-  [/^t\.me$|(^|\.)telegram\.org$/, "Telegram"],
-  [/(^|\.)linkedin\.com$|^lnkd\.in$/, "LinkedIn"],
-  [/(^|\.)pinterest\.[a-z.]+$/, "Pinterest"],
-];
-
-function labelRef(r: string): string {
-  if (!r || r === "langsung") return "Langsung";
-  const h = r.toLowerCase();
-  for (const [re, name] of REF_NAMES) if (re.test(h)) return name;
-  return h.replace(/^www\./, "");
 }
 
 /** Gabungkan baris yang labelnya sama (mis. l.instagram.com + instagram.com), urut terbesar dulu. */
