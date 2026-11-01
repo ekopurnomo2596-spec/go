@@ -1,35 +1,14 @@
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
-import { listLinks, totals } from "@/lib/links";
-import { createLink, deleteLink, updateLink } from "../actions";
-import { ConfirmButton, SubmitButton } from "../confirm-button";
-import { EditLink } from "./edit-link";
+import { listLinksWithCounts } from "@/lib/links";
+import { CreateForm, DeleteLink, EditLink } from "./forms";
 
 export const dynamic = "force-dynamic";
 
-const ERR: Record<string, string> = {
-  slug: "Slug tidak valid. Pakai huruf kecil, angka, - atau _ (maksimal 40 karakter).",
-  reserved: "Slug itu dipakai sistem. Pilih yang lain.",
-  url: "URL tujuan harus diawali http:// atau https://.",
-  exists: "Slug itu sudah ada.",
-};
-const OK: Record<string, string> = {
-  created: "Link dibuat.",
-  updated: "Link diperbarui.",
-  deleted: "Link dihapus beserta datanya.",
-  seeded: "Link awal ditambahkan.",
-};
-
-export default async function AdminPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ err?: string; ok?: string }>;
-}) {
+export default async function AdminPage() {
   await requireAdmin();
-  const sp = await searchParams;
   const host = (await headers()).get("host") ?? "";
-  const links = await listLinks();
-  const counts = await totals(links.map((l) => l.slug));
+  const { links, counts } = await listLinksWithCounts();
   const sum = Object.values(counts).reduce((a, b) => a + b, 0);
 
   return (
@@ -38,28 +17,10 @@ export default async function AdminPage({
         <h1>Semua tautan</h1>
       </div>
 
-      {sp.err && ERR[sp.err] && <div className="msg err">{ERR[sp.err]}</div>}
-      {sp.ok && OK[sp.ok] && <div className="msg ok">{OK[sp.ok]}</div>}
 
       <section className="card">
         <h2>Buat link baru</h2>
-        <form action={createLink}>
-          <div className="grid">
-            <div>
-              <label htmlFor="slug">Slug</label>
-              <input id="slug" name="slug" type="text" placeholder="promo" required maxLength={40} />
-            </div>
-            <div>
-              <label htmlFor="url">URL tujuan</label>
-              <input id="url" name="url" type="url" placeholder="https://..." required />
-            </div>
-            <div>
-              <label htmlFor="title">Judul</label>
-              <input id="title" name="title" type="text" placeholder="Promo November" maxLength={80} />
-            </div>
-            <SubmitButton>Buat</SubmitButton>
-          </div>
-        </form>
+        <CreateForm />
       </section>
 
       <p className="sum">
@@ -94,22 +55,8 @@ export default async function AdminPage({
                   <td className="num">{(counts[l.slug] ?? 0).toLocaleString("id-ID")}</td>
                   <td>
                     <div className="actions">
-                      <EditLink
-                        key={`${l.slug}:${l.title}:${l.url}`}
-                        slug={l.slug}
-                        title={l.title}
-                        url={l.url}
-                        action={updateLink}
-                      />
-                      <form action={deleteLink}>
-                        <input type="hidden" name="slug" value={l.slug} />
-                        <ConfirmButton
-                          className="danger"
-                          message={`Hapus /${l.slug}? Link dan semua data kliknya akan hilang permanen.`}
-                        >
-                          Hapus
-                        </ConfirmButton>
-                      </form>
+                      <EditLink slug={l.slug} title={l.title} url={l.url} />
+                      <DeleteLink slug={l.slug} />
                     </div>
                   </td>
                 </tr>
