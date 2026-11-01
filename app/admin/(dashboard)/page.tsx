@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { listLinks, totals } from "@/lib/links";
-import { createLink, deleteLink, seedLinks, updateLink } from "../actions";
+import { createLink, deleteLink, updateLink } from "../actions";
 import { ConfirmButton, SubmitButton } from "../confirm-button";
 import { EditLink } from "./edit-link";
 
@@ -69,9 +69,6 @@ export default async function AdminPage({
       {links.length === 0 ? (
         <div className="empty">
           <p>Belum ada link.</p>
-          <form action={seedLinks}>
-            <SubmitButton className="ghost">Tambahkan 7 link awal (wa, tg, shop, blog, help, chat, web)</SubmitButton>
-          </form>
         </div>
       ) : (
         <div className="tablewrap">
