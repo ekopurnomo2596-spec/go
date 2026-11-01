@@ -100,6 +100,110 @@ export async function getStats(slug: string): Promise<Stats> {
   return { total: Number(total ?? 0), countries: countryList, daily: dailyList, recent: recentList };
 }
 
+export type Analytics = {
+  windowDays: number;
+  linkCount: number;
+  total: number;
+  prevTotal: number | null;
+  avgPerDay: number;
+  daily: [string, number][];
+  peak: { day: string; n: number } | null;
+  topLinks: { slug: string; title: string; n: number }[];
+  countries: [string, number][];
+  devices: [string, number][];
+  referrers: [string, number][];
+};
+
+/** Ringkasan klik seluruh tautan untuk halaman Analisa. Negara/perangkat/sumber bersifat akumulatif (sepanjang waktu), sedang tren harian & tautan teratas mengikuti jendela windowDays. */
+export async function getAnalytics(windowDays: number): Promise<Analytics> {
+  const links = await listLinks();
+  const empty: Analytics = {
+    windowDays,
+    linkCount: 0,
+    total: 0,
+    prevTotal: null,
+    avgPerDay: 0,
+    daily: [],
+    peak: null,
+    topLinks: [],
+    countries: [],
+    devices: [],
+    referrers: [],
+  };
+  if (!links.length) return empty;
+
+  const slugs = links.map((l) => l.slug);
+  const days: string[] = [];
+  for (let i = windowDays - 1; i >= 0; i--) days.push(jakartaDay(i));
+  const prevDays: string[] = [];
+  for (let i = windowDays * 2 - 1; i >= windowDays; i--) prevDays.push(jakartaDay(i));
+  const daySet = new Set(days);
+  const prevSet = new Set(prevDays);
+
+  const p = db().pipeline();
+  for (const s of slugs) p.hgetall(`daily:${s}`);
+  for (const s of slugs) p.hgetall(`country:${s}`);
+  for (const s of slugs) p.hgetall(`device:${s}`);
+  for (const s of slugs) p.hgetall(`ref:${s}`);
+  const res = await p.exec<Record<string, number | string>[]>();
+
+  const n = slugs.length;
+  const dailyHashes = res.slice(0, n);
+  const countryHashes = res.slice(n, 2 * n);
+  const deviceHashes = res.slice(2 * n, 3 * n);
+  const refHashes = res.slice(3 * n, 4 * n);
+
+  const dayTotals: Record<string, number> = Object.fromEntries(days.map((d) => [d, 0]));
+  const perLink: Record<string, number> = {};
+  let prevTotal = 0;
+  let hasPrevData = false;
+  dailyHashes.forEach((h, i) => {
+    let t = 0;
+    for (const [day, v] of Object.entries(h ?? {})) {
+      const num = Number(v);
+      if (daySet.has(day)) {
+        dayTotals[day] += num;
+        t += num;
+      } else if (prevSet.has(day)) {
+        prevTotal += num;
+        hasPrevData = true;
+      }
+    }
+    perLink[slugs[i]] = t;
+  });
+
+  const sumHashes = (hashes: (Record<string, number | string> | null)[]) => {
+    const out: Record<string, number> = {};
+    for (const h of hashes) for (const [k, v] of Object.entries(h ?? {})) out[k] = (out[k] ?? 0) + Number(v);
+    return Object.entries(out).sort((a, b) => b[1] - a[1]);
+  };
+
+  const total = Object.values(dayTotals).reduce((a, b) => a + b, 0);
+  const daily = days.map((d) => [d, dayTotals[d]] as [string, number]);
+  const peak = daily.reduce<{ day: string; n: number } | null>(
+    (best, [day, n]) => (n > 0 && (!best || n > best.n) ? { day, n } : best),
+    null,
+  );
+  const topLinks = links
+    .map((l) => ({ slug: l.slug, title: l.title, n: perLink[l.slug] ?? 0 }))
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 5);
+
+  return {
+    windowDays,
+    linkCount: links.length,
+    total,
+    prevTotal: hasPrevData ? prevTotal : null,
+    avgPerDay: windowDays > 0 ? Math.round(total / windowDays) : 0,
+    daily,
+    peak,
+    topLinks,
+    countries: sumHashes(countryHashes),
+    devices: sumHashes(deviceHashes),
+    referrers: sumHashes(refHashes),
+  };
+}
+
 function safeParse(s: string): Click | null {
   try {
     return JSON.parse(s) as Click;
@@ -112,6 +216,8 @@ export async function recordClick(slug: string, info: { country: string; referre
   const p = db().pipeline();
   p.incr(`clicks:${slug}`);
   p.hincrby(`country:${slug}`, info.country, 1);
+  p.hincrby(`device:${slug}`, info.device, 1);
+  p.hincrby(`ref:${slug}`, info.referrer, 1);
   p.hincrby(`daily:${slug}`, jakartaDay(0), 1);
   const click: Click = { t: Date.now(), c: info.country, r: info.referrer, d: info.device };
   p.lpush(`recent:${slug}`, click);
@@ -123,13 +229,13 @@ export async function deleteLinkData(slug: string) {
   const p = db().pipeline();
   p.del(`link:${slug}`);
   p.srem("links", slug);
-  p.del(`clicks:${slug}`, `country:${slug}`, `daily:${slug}`, `recent:${slug}`);
+  p.del(`clicks:${slug}`, `country:${slug}`, `device:${slug}`, `ref:${slug}`, `daily:${slug}`, `recent:${slug}`);
   await p.exec();
 }
 
 export async function resetStatsData(slug: string) {
   const p = db().pipeline();
-  p.del(`clicks:${slug}`, `country:${slug}`, `daily:${slug}`, `recent:${slug}`);
+  p.del(`clicks:${slug}`, `country:${slug}`, `device:${slug}`, `ref:${slug}`, `daily:${slug}`, `recent:${slug}`);
   await p.exec();
 }
 
@@ -141,13 +247,24 @@ export async function removeStats(slug: string, sel: { days?: string[]; country?
   p0.get(`clicks:${slug}`);
   p0.hgetall(`daily:${slug}`);
   p0.hgetall(`country:${slug}`);
+  p0.hgetall(`device:${slug}`);
+  p0.hgetall(`ref:${slug}`);
   p0.lrange(`recent:${slug}`, 0, -1);
-  const [cur, dailyRaw, countryRaw, recentRaw] = await p0.exec<
-    [number | string | null, Record<string, number | string> | null, Record<string, number | string> | null, unknown[]]
+  const [cur, dailyRaw, countryRaw, deviceRaw, refRaw, recentRaw] = await p0.exec<
+    [
+      number | string | null,
+      Record<string, number | string> | null,
+      Record<string, number | string> | null,
+      Record<string, number | string> | null,
+      Record<string, number | string> | null,
+      unknown[],
+    ]
   >();
 
   const daily: Record<string, number> = Object.fromEntries(Object.entries(dailyRaw ?? {}).map(([k, v]) => [k, Number(v)]));
   const country: Record<string, number> = Object.fromEntries(Object.entries(countryRaw ?? {}).map(([k, v]) => [k, Number(v)]));
+  const device: Record<string, number> = Object.fromEntries(Object.entries(deviceRaw ?? {}).map(([k, v]) => [k, Number(v)]));
+  const ref: Record<string, number> = Object.fromEntries(Object.entries(refRaw ?? {}).map(([k, v]) => [k, Number(v)]));
   const recent = (recentRaw ?? [])
     .map((x) => (typeof x === "string" ? safeParse(x) : (x as Click)))
     .filter((x): x is Click => !!x);
@@ -180,17 +297,25 @@ export async function removeStats(slug: string, sel: { days?: string[]; country?
       daily[dayOf(c.t)] = (daily[dayOf(c.t)] ?? 0) - 1;
     }
   }
+  for (const c of removed) {
+    if (c.d) device[c.d] = (device[c.d] ?? 0) - 1;
+    if (c.r) ref[c.r] = (ref[c.r] ?? 0) - 1;
+  }
 
   const positive = (o: Record<string, number>) => Object.fromEntries(Object.entries(o).filter(([, v]) => v > 0));
   const d2 = positive(daily);
   const c2 = positive(country);
+  const dev2 = positive(device);
+  const ref2 = positive(ref);
   const newTotal = Math.max(0, Number(cur ?? 0) - total);
 
   const p = db().pipeline();
-  p.del(`clicks:${slug}`, `daily:${slug}`, `country:${slug}`, `recent:${slug}`);
+  p.del(`clicks:${slug}`, `daily:${slug}`, `country:${slug}`, `device:${slug}`, `ref:${slug}`, `recent:${slug}`);
   if (newTotal > 0) p.set(`clicks:${slug}`, newTotal);
   if (Object.keys(d2).length) p.hset(`daily:${slug}`, d2);
   if (Object.keys(c2).length) p.hset(`country:${slug}`, c2);
+  if (Object.keys(dev2).length) p.hset(`device:${slug}`, dev2);
+  if (Object.keys(ref2).length) p.hset(`ref:${slug}`, ref2);
   if (kept.length) p.rpush(`recent:${slug}`, ...kept);
   await p.exec();
 }
