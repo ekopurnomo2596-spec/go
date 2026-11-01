@@ -117,20 +117,75 @@ export async function resetAllStats(): Promise<Flash> {
   return ok("Data statistik dihapus.");
 }
 
-export async function resetWebStats(): Promise<Flash> {
-  await requireAdmin();
+async function webKeys(): Promise<string[]> {
+  const out: string[] = [];
   for (const match of ["statsday:*", "webhist:*"]) {
     let cursor: string | number = 0;
     do {
       const [next, keys]: [string | number, string[]] = await db().scan(cursor, { match, count: 200 });
-      if (keys.length) await db().del(...keys);
+      out.push(...keys);
       cursor = next;
     } while (String(cursor) !== "0");
   }
+  return out;
+}
+
+function refreshWeb() {
   revalidatePath("/admin");
   revalidatePath("/admin/dashboard");
   revalidatePath("/admin/analisa");
+}
+
+export async function resetWebStats(): Promise<Flash> {
+  await requireAdmin();
+  const keys = await webKeys();
+  if (keys.length) await db().del(...keys);
+  refreshWeb();
   return ok("Data dashboard dihapus.");
+}
+
+/** Hapus sebagian data kunjungan website: per hari, per negara, atau rentang tanggal. */
+export async function removeWebStatsAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const mode = str(formData, "mode");
+
+  if (mode === "day" || mode === "range") {
+    const days =
+      mode === "day"
+        ? /^\d{4}-\d{2}-\d{2}$/.test(str(formData, "value"))
+          ? [str(formData, "value")]
+          : null
+        : dayRange(str(formData, "from"), str(formData, "to"));
+    if (!days) return err("Tanggal tidak valid.");
+    await db().del(...days.flatMap((d) => [`statsday:${d}`, `webhist:${d}`]));
+  } else if (mode === "country" && /^[A-Za-z]{2}$/.test(str(formData, "value"))) {
+    const code = str(formData, "value").toUpperCase();
+    for (const key of await webKeys()) {
+      const raw = await db().get<unknown>(key);
+      type WebSnap = { visitors?: number; vc?: Record<string, number> };
+      let snap: WebSnap | null = null;
+      if (typeof raw === "string") {
+        try {
+          snap = JSON.parse(raw);
+        } catch {}
+      } else if (raw && typeof raw === "object") snap = raw as WebSnap;
+      if (!snap?.vc) continue;
+      // negara tak valid/tak dikenal dikelompokkan sebagai XX di dashboard
+      const hit = Object.keys(snap.vc).filter((k) => (/^[A-Za-z]{2}$/.test(k) ? k.toUpperCase() : "XX") === code);
+      if (!hit.length) continue;
+      let removed = 0;
+      for (const k of hit) {
+        removed += Number(snap.vc[k] || 0);
+        delete snap.vc[k];
+      }
+      snap.visitors = Math.max(0, Number(snap.visitors ?? 0) - removed);
+      await db().set(key, JSON.stringify(snap));
+    }
+  } else {
+    return err("Permintaan tidak valid.");
+  }
+  refreshWeb();
+  return ok("Data yang dipilih dihapus.");
 }
 
 function dayRange(from: string, to: string): string[] | null {

@@ -2,8 +2,9 @@ import { requireAdmin } from "@/lib/auth";
 import { getWebStats } from "@/lib/visits";
 import { countryName } from "@/lib/format";
 import { Flag } from "@/lib/flag";
-import { resetWebStats } from "../../actions";
+import { removeWebStatsAction, resetWebStats } from "../../actions";
 import { ActionForm } from "../forms";
+import { WebX } from "../webx";
 import { Info } from "../info";
 
 export const dynamic = "force-dynamic";
@@ -23,9 +24,42 @@ export default async function DashboardPage() {
       <div className="top">
         <h1>
           Dashboard
-          <Info text="Pengunjung dihitung satu kali per alamat IP per hari, dan hari tanpa data tampil 0. Angkanya sama dengan laporan statistik di Telegram. Data tidak dihapus otomatis; hapus manual lewat tombol di bawah." />
+          <Info text="Pengunjung dihitung satu kali per alamat IP per hari, dan hari tanpa data tampil 0. Angkanya sama dengan laporan statistik di Telegram. Data tidak dihapus otomatis; hapus manual lewat tombol Hapus data." />
           <small>Website emahairshop.com</small>
         </h1>
+        {w.daysWithData > 0 && (
+          <details className="hapusmenu">
+            <summary>Hapus data</summary>
+            <div className="pop">
+              <ActionForm
+                action={removeWebStatsAction}
+                btnClass="danger"
+                confirm="Hapus data kunjungan pada rentang tanggal ini?"
+                label="Hapus rentang"
+              >
+                <input type="hidden" name="mode" value="range" />
+                <strong>Hapus per tanggal (WIB)</strong>
+                <div className="dates">
+                  <div>
+                    <label htmlFor="from">Dari</label>
+                    <input id="from" name="from" type="date" required />
+                  </div>
+                  <div>
+                    <label htmlFor="to">Sampai</label>
+                    <input id="to" name="to" type="date" required />
+                  </div>
+                </div>
+              </ActionForm>
+              <ActionForm
+                action={resetWebStats}
+                btnClass="danger"
+                confirm="Hapus SEMUA data kunjungan website (pengunjung, halaman dilihat, negara)? Data CTR di Analisa juga ikut hilang."
+                label="Hapus semua data"
+              />
+              <p className="hint">Ikon tong sampah di setiap baris menghapus per negara atau per hari.</p>
+            </div>
+          </details>
+        )}
       </div>
 
       <div className="stats">
@@ -64,6 +98,11 @@ export default async function DashboardPage() {
                     />
                   </div>
                   <span className="dl">{d.day.slice(8)}/{d.day.slice(5, 7)}</span>
+                  {d.visitors > 0 || d.pageviews > 0 ? (
+                    <WebX mode="day" value={d.day} label={`tanggal ${d.day}`} />
+                  ) : (
+                    <span className="xs" />
+                  )}
                 </div>
               ))}
             </div>
@@ -79,7 +118,7 @@ export default async function DashboardPage() {
               ) : (
                 <div className="rbars">
                   {w.countries.slice(0, 14).map(([code, c]) => (
-                    <div className="rbar mini" key={code}>
+                    <div className="rbar" key={code}>
                       <span className="cn">
                         <Flag code={code} />
                         {countryName(code)}
@@ -89,6 +128,7 @@ export default async function DashboardPage() {
                       </div>
                       <span className="v">{n(c)}</span>
                       <span className="pct">{totalCountry > 0 ? Math.round((c / totalCountry) * 100) : 0}%</span>
+                      <WebX mode="country" value={code} label={countryName(code)} />
                     </div>
                   ))}
                 </div>
@@ -120,16 +160,6 @@ export default async function DashboardPage() {
             </section>
           </div>
         </>
-      )}
-
-      {w.daysWithData > 0 && (
-        <ActionForm
-          action={resetWebStats}
-          formClass="resetall"
-          btnClass="danger"
-          confirm="Hapus SEMUA data kunjungan website (pengunjung, halaman dilihat, negara)? Data CTR di Analisa juga ikut hilang."
-          label="Hapus semua data dashboard"
-        />
       )}
     </main>
   );
