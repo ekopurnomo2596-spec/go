@@ -311,3 +311,13 @@ html { scrollbar-gutter: stable; }
 @media (min-width: 641px) {
   .linktable tbody tr:last-child .actions > details form { top: auto; bottom: calc(100% + 8px); }
 }
+
+/* ---------- Form Ubah: tengah layar (tidak terpotong di baris bawah) ---------- */
+@media (min-width: 641px) {
+  .linktable .actions > details[open] form,
+  .linktable tbody tr:last-child .actions > details[open] form {
+    position: fixed; top: 50%; left: 50%; right: auto; bottom: auto;
+    transform: translate(-50%, -50%); width: min(360px, calc(100vw - 32px));
+    box-shadow: 0 0 0 100vmax rgba(0,0,0,.35), 0 20px 60px rgba(0,0,0,.3); z-index: 30;
+  }
+}

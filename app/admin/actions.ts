@@ -50,7 +50,7 @@ export async function createLink(formData: FormData) {
   const slug = str(formData, "slug").toLowerCase();
   const url = str(formData, "url");
   const title = str(formData, "title").slice(0, 80) || slug;
-  const listed = formData.get("listed") === "on";
+  const listed = true;
 
   if (isReserved(slug)) redirect("/admin?err=reserved");
   if (!validSlugFormat(slug)) redirect("/admin?err=slug");
@@ -70,14 +70,13 @@ export async function updateLink(formData: FormData) {
   const slug = str(formData, "slug").toLowerCase();
   const url = str(formData, "url");
   const title = str(formData, "title").slice(0, 80);
-  const listed = formData.get("listed") === "on";
 
   if (!validSlugFormat(slug)) redirect("/admin?err=slug");
   if (!validUrl(url)) redirect("/admin?err=url");
 
   const existing = await getLink(slug);
   if (!existing) redirect("/admin");
-  await db().set(`link:${slug}`, { ...existing, url, title: title || slug, listed });
+  await db().set(`link:${slug}`, { ...existing, url, title: title || slug });
 
   refresh();
   redirect("/admin?ok=updated");

@@ -53,14 +53,10 @@ export default async function AdminPage({
               <input id="url" name="url" type="url" placeholder="https://..." required />
             </div>
             <div>
-              <label htmlFor="title">Judul (untuk halaman depan)</label>
+              <label htmlFor="title">Judul</label>
               <input id="title" name="title" type="text" placeholder="Promo November" maxLength={80} />
             </div>
             <button type="submit">Buat</button>
-          </div>
-          <div className="check">
-            <input id="listed" name="listed" type="checkbox" defaultChecked />
-            <label htmlFor="listed">Tampilkan di halaman depan</label>
           </div>
         </form>
       </section>
@@ -94,7 +90,7 @@ export default async function AdminPage({
                     <a className="short" href={`/${l.slug}`} target="_blank" rel="noreferrer">
                       {host}/{l.slug}
                     </a>
-                    <div className="sum">{l.title}{l.listed ? "" : " (disembunyikan)"}</div>
+                    <div className="sum">{l.title}</div>
                   </td>
                   <td className="dest">{l.url}</td>
                   <td className="num">{(counts[l.slug] ?? 0).toLocaleString("id-ID")}</td>
@@ -106,10 +102,6 @@ export default async function AdminPage({
                           <input type="hidden" name="slug" value={l.slug} />
                           <input name="title" type="text" defaultValue={l.title} aria-label="Judul" maxLength={80} />
                           <input name="url" type="url" defaultValue={l.url} aria-label="URL tujuan" required />
-                          <div className="check" style={{ marginTop: 0 }}>
-                            <input id={`listed-${l.slug}`} name="listed" type="checkbox" defaultChecked={l.listed} />
-                            <label htmlFor={`listed-${l.slug}`}>Tampilkan di halaman depan</label>
-                          </div>
                           <button type="submit">Simpan</button>
                         </form>
                       </details>
