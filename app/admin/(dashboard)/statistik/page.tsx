@@ -20,9 +20,10 @@ export default async function StatistikIndex() {
   return (
     <main className="wrap">
       <div className="top">
-        <h1>Statistik</h1>
+        <h1>
+          Statistik <small>{host}</small>
+        </h1>
       </div>
-
 
       <div className="stats">
         <div className="stat">
@@ -33,27 +34,45 @@ export default async function StatistikIndex() {
           <b>{links.length}</b>
           <span>Tautan</span>
         </div>
+        <div className="stat">
+          <b className="stat-top">{rows[0] && rows[0].n > 0 ? `/${rows[0].slug}` : "-"}</b>
+          <span>Terpopuler</span>
+        </div>
       </div>
 
       {rows.length === 0 ? (
         <p className="empty">Belum ada link.</p>
       ) : (
         <div className="statlist">
-          {rows.map((r) => (
-            <Link key={r.slug} className="statrow" href={`/admin/statistik/${r.slug}`}>
-              <span className="nm">
-                {host}/{r.slug}
-                <small>{r.title}</small>
-              </span>
-              <span className="cnt">
-                {r.n.toLocaleString("id-ID")}
-                <small>klik</small>
-              </span>
-              <span className="track">
-                <span className="fill" style={{ display: "block", width: `${(r.n / max) * 100}%` }} />
-              </span>
-            </Link>
-          ))}
+          {rows.map((r, i) => {
+            const pct = sum > 0 ? Math.round((r.n / sum) * 100) : 0;
+            return (
+              <Link
+                key={r.slug}
+                className={`statrow${r.n === 0 ? " zero" : ""}`}
+                href={`/admin/statistik/${r.slug}`}
+              >
+                <span className="rk">{i + 1}</span>
+                <span className="nm">
+                  <b>/{r.slug}</b>
+                  <small>{r.title}</small>
+                </span>
+                <span className="meter" aria-hidden="true">
+                  <span className="track">
+                    <span className="fill" style={{ width: `${(r.n / max) * 100}%` }} />
+                  </span>
+                  <span className="pct">{pct}%</span>
+                </span>
+                <span className="cnt">
+                  {r.n.toLocaleString("id-ID")}
+                  <small>klik</small>
+                </span>
+                <svg className="chev" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              </Link>
+            );
+          })}
         </div>
       )}
 

@@ -264,19 +264,32 @@ details form { display: grid; gap: 8px; margin-top: 6px; min-width: 260px; }
 @media (max-width: 640px) { .actions { flex-wrap: wrap; } }
 
 /* ---------- Admin: halaman Statistik ---------- */
-.statlist { display: grid; gap: 10px; }
+.stat b.stat-top { font-size: 1.15rem; line-height: 2.7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.statlist { background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
 .statrow {
-  display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center;
-  padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card);
-  color: inherit; text-decoration: none; transition: border-color .15s, transform .15s;
+  display: grid; grid-template-columns: 26px minmax(0, 1fr) minmax(120px, 240px) 64px 16px;
+  gap: 16px; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line);
+  color: inherit; text-decoration: none; transition: background .15s;
 }
-.statrow:hover { border-color: var(--lineh); transform: translateY(-1px); }
-.statrow .nm { font-weight: 700; color: var(--gold); overflow-wrap: anywhere; }
-.statrow .nm small { display: block; font-weight: 400; color: var(--muted); font-size: .8rem; margin-top: 2px; }
-.statrow .cnt { font-weight: 800; font-size: 1.15rem; text-align: right; font-variant-numeric: tabular-nums; }
-.statrow .cnt small { display: block; font-weight: 500; font-size: .72rem; color: var(--muted); }
-.statrow .track { grid-column: 1 / -1; background: var(--line); border-radius: 4px; height: 7px; overflow: hidden; }
-.statrow .fill { background: var(--bar); height: 100%; }
+.statrow:last-child { border-bottom: 0; }
+.statrow:hover { background: var(--hover); }
+.statrow .rk { font-size: .78rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.statrow .nm { min-width: 0; display: block; }
+.statrow .nm b { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.statrow .nm small { display: block; font-size: .78rem; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.statrow .meter { display: flex; align-items: center; gap: 10px; }
+.statrow .track { flex: 1; height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.statrow .fill { display: block; height: 100%; border-radius: 99px; background: var(--bar); }
+.statrow .pct { width: 34px; text-align: right; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.statrow .cnt { text-align: right; font-weight: 800; font-size: 1.05rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.statrow .cnt small { display: block; font-weight: 500; font-size: .7rem; color: var(--muted); }
+.statrow .chev { width: 16px; height: 16px; stroke: var(--muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.statrow.zero .nm b, .statrow.zero .cnt { color: var(--muted); }
+@media (max-width: 640px) {
+  .statrow { grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px 12px; padding: 14px; }
+  .statrow .meter { grid-column: 2 / -1; grid-row: 2; }
+  .statrow .chev { display: none; }
+}
 .actions > form { display: flex; margin: 0; }
 .tablewrap:has(.linktable) { overflow: visible; }
 
