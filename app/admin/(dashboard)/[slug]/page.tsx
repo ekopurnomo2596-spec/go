@@ -22,7 +22,7 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
 
   return (
     <main className="wrap">
-      <Link className="back" href="/admin">&larr; Semua tautan</Link>
+      <Link className="back" href="/admin/tautan">&larr; Semua tautan</Link>
       <div className="top">
         <h1>
           /{link.slug} <small>{link.title}</small>

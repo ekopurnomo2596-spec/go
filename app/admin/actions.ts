@@ -24,7 +24,7 @@ function str(fd: FormData, key: string): string {
 }
 
 function refresh() {
-  revalidatePath("/admin");
+  revalidatePath("/admin/tautan");
   revalidatePath("/");
 }
 
