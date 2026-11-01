@@ -117,6 +117,22 @@ export async function resetAllStats(): Promise<Flash> {
   return ok("Data statistik dihapus.");
 }
 
+export async function resetWebStats(): Promise<Flash> {
+  await requireAdmin();
+  for (const match of ["statsday:*", "webhist:*"]) {
+    let cursor: string | number = 0;
+    do {
+      const [next, keys]: [string | number, string[]] = await db().scan(cursor, { match, count: 200 });
+      if (keys.length) await db().del(...keys);
+      cursor = next;
+    } while (String(cursor) !== "0");
+  }
+  revalidatePath("/admin");
+  revalidatePath("/admin/dashboard");
+  revalidatePath("/admin/analisa");
+  return ok("Data dashboard dihapus.");
+}
+
 function dayRange(from: string, to: string): string[] | null {
   const re = /^\d{4}-\d{2}-\d{2}$/;
   if (!re.test(from) || !re.test(to) || from > to) return null;

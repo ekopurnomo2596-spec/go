@@ -2,6 +2,8 @@ import { requireAdmin } from "@/lib/auth";
 import { getWebStats } from "@/lib/visits";
 import { countryName } from "@/lib/format";
 import { Flag } from "@/lib/flag";
+import { resetWebStats } from "../actions";
+import { ActionForm } from "./forms";
 import { Info } from "./info";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +23,7 @@ export default async function DashboardPage() {
       <div className="top">
         <h1>
           Dashboard
-          <Info text="Pengunjung dihitung satu kali per alamat IP per hari, dan hari tanpa data tampil 0. Angkanya sama dengan laporan statistik di Telegram. Data dari website hanya bertahan 3 hari lalu dihapus otomatis, jadi buka dashboard ini minimal sekali dalam 3 hari supaya riwayatnya tersimpan lengkap." />
+          <Info text="Pengunjung dihitung satu kali per alamat IP per hari, dan hari tanpa data tampil 0. Angkanya sama dengan laporan statistik di Telegram. Data tidak dihapus otomatis; hapus manual lewat tombol di bawah." />
           <small>Website emahairshop.com</small>
         </h1>
       </div>
@@ -118,6 +120,16 @@ export default async function DashboardPage() {
             </section>
           </div>
         </>
+      )}
+
+      {w.daysWithData > 0 && (
+        <ActionForm
+          action={resetWebStats}
+          formClass="resetall"
+          btnClass="danger"
+          confirm="Hapus SEMUA data kunjungan website (pengunjung, halaman dilihat, negara)? Data CTR di Analisa juga ikut hilang."
+          label="Hapus semua data dashboard"
+        />
       )}
     </main>
   );
