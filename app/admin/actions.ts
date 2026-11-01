@@ -133,7 +133,18 @@ export async function undoTindakan(formData: FormData): Promise<Flash> {
 export async function resetAllStats(): Promise<Flash> {
   await requireAdmin();
   for (const l of await listLinks()) await resetStatsData(l.slug);
+  // Pengunjung unik (uv:<tanggal>) dan penanda "sudah dihitung" (seen:*) disimpan terpisah dari data per tautan
+  for (const match of ["uv:*", "seen:*"]) {
+    let cursor: string | number = 0;
+    do {
+      const [next, keys]: [string | number, string[]] = await db().scan(cursor, { match, count: 200 });
+      if (keys.length) await db().del(...keys);
+      cursor = next;
+    } while (String(cursor) !== "0");
+  }
   revalidatePath("/admin/statistik");
+  revalidatePath("/admin/analisa");
+  revalidatePath("/admin/tindakan");
   return ok("Data statistik dihapus.");
 }
 
