@@ -92,27 +92,6 @@ export async function deleteLink(formData: FormData) {
   redirect("/admin?ok=deleted");
 }
 
-export async function seedLinks() {
-  await requireAdmin();
-  const seed: [string, string, string][] = [
-    ["wa", "Chat WhatsApp", "https://wa.me/6285602636720"],
-    ["tg", "Chat Telegram", "https://t.me/emahairshop_bot"],
-    ["shop", "Toko grosir", "https://shop.emahairshop.com"],
-    ["blog", "Blog", "https://blog.emahairshop.com/en"],
-    ["help", "Pusat bantuan", "https://help.emahairshop.com"],
-    ["chat", "Asisten AI", "https://chat.emahairshop.com"],
-    ["web", "Situs utama", "https://emahairshop.com"],
-  ];
-  let now = Date.now();
-  for (const [slug, title, url] of seed) {
-    const link: Link = { slug, url, title, listed: true, createdAt: now++ };
-    const created = await db().set(`link:${slug}`, link, { nx: true });
-    if (created) await db().sadd("links", slug);
-  }
-  refresh();
-  redirect("/admin?ok=seeded");
-}
-
 export async function resetStats(formData: FormData) {
   await requireAdmin();
   const slug = str(formData, "slug").toLowerCase();
