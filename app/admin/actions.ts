@@ -110,6 +110,24 @@ export async function resetStats(formData: FormData): Promise<Flash> {
   return ok("Data statistik dihapus.");
 }
 
+export async function doneTindakan(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  if (!/^[a-z0-9:_-]{1,100}$/.test(id)) return err("Tindakan tidak valid.");
+  await db().hset("tindakan:done", { [id]: Date.now() });
+  revalidatePath("/admin/tindakan");
+  return ok("Ditandai selesai.");
+}
+
+export async function undoTindakan(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  if (!/^[a-z0-9:_-]{1,100}$/.test(id)) return err("Tindakan tidak valid.");
+  await db().hdel("tindakan:done", id);
+  revalidatePath("/admin/tindakan");
+  return ok("Dikembalikan ke daftar.");
+}
+
 export async function resetAllStats(): Promise<Flash> {
   await requireAdmin();
   for (const l of await listLinks()) await resetStatsData(l.slug);
