@@ -482,7 +482,7 @@ tr.zero td { color: var(--muted); }
 .an-tabs a[aria-current] { background: var(--an-acc); color: #fff; }
 .an-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; }
 .an-kpi { border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: var(--card); }
-.an-kpi-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.an-kpi-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 2.25rem; }
 .an-kpi-top b { font-size: 1.8rem; font-weight: 800; line-height: 1.25; }
 .an-kpi-l { color: var(--muted); font-size: .8rem; }
 .an-pill { font-size: .74rem; font-weight: 700; border-radius: 99px; padding: 3px 8px; color: var(--muted); background: var(--an-soft); white-space: nowrap; }
