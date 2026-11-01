@@ -123,7 +123,37 @@ export type Analytics = {
   referrers: [string, number][];
 };
 
-/** Ringkasan klik seluruh tautan untuk halaman Analisa. Negara/perangkat/sumber bersifat akumulatif (sepanjang waktu), sedang tren harian & tautan teratas mengikuti jendela windowDays. */
+/**
+ * Rincian per hari untuk halaman Analisa: negara (c), perangkat (d), sumber (r).
+ * Satu hash per jenis per hari: `bd:{jenis}:{YYYY-MM-DD}`, field `{slug}|{nilai}`.
+ * Slug tidak boleh memuat "|", jadi pemisah pertama selalu aman.
+ */
+type BdKind = "c" | "d" | "r";
+const BD_KINDS: BdKind[] = ["c", "d", "r"];
+const BD_KEEP_DAYS = 100;
+const bdKey = (k: BdKind, day: string) => `bd:${k}:${day}`;
+const bdAllDays = () => Array.from({ length: BD_KEEP_DAYS }, (_, i) => jakartaDay(i));
+
+/** Hapus semua field milik slug pada hari-hari tertentu (semua jenis). */
+async function purgeBreakdown(slug: string, days: string[]) {
+  if (!days.length) return;
+  const keys = days.flatMap((d) => BD_KINDS.map((k) => bdKey(k, d)));
+  const p = db().pipeline();
+  for (const key of keys) p.hgetall(key);
+  const res = await p.exec<(Record<string, number | string> | null)[]>();
+  const q = db().pipeline();
+  let any = false;
+  res.forEach((h, i) => {
+    const fields = Object.keys(h ?? {}).filter((f) => f.startsWith(`${slug}|`));
+    if (fields.length) {
+      q.hdel(keys[i], ...fields);
+      any = true;
+    }
+  });
+  if (any) await q.exec();
+}
+
+/** Ringkasan klik seluruh tautan untuk halaman Analisa. Semua angka (tren, tautan teratas, negara, perangkat, sumber) mengikuti jendela windowDays. */
 export async function getAnalytics(windowDays: number): Promise<Analytics> {
   const links = await listLinks();
   const empty: Analytics = {
@@ -154,23 +184,22 @@ export async function getAnalytics(windowDays: number): Promise<Analytics> {
   const daySet = new Set(days);
   const prevSet = new Set(prevDays);
 
+  const slugSet = new Set(slugs);
+  const n = slugs.length;
   const p = db().pipeline();
   for (const s of slugs) p.hgetall(`daily:${s}`);
-  for (const s of slugs) p.hgetall(`country:${s}`);
-  for (const s of slugs) p.hgetall(`device:${s}`);
-  for (const s of slugs) p.hgetall(`ref:${s}`);
+  for (const k of BD_KINDS) for (const d of days) p.hgetall(bdKey(k, d));
   p.pfcount(...(days.map((d) => `uv:${d}`) as [string, ...string[]]));
   p.pfcount(...(prevDays.map((d) => `uv:${d}`) as [string, ...string[]]));
   const res = await p.exec<(Record<string, number | string> | number)[]>();
-  const [uv, prevUv] = [Number(res[4 * slugs.length] ?? 0), Number(res[4 * slugs.length + 1] ?? 0)];
+  const D = days.length;
+  const [uv, prevUv] = [Number(res[n + 3 * D] ?? 0), Number(res[n + 3 * D + 1] ?? 0)];
   const pvByDay = await getPageviewsByDay([...prevDays, ...days]).catch(() => ({}) as Record<string, number>);
 
-  const n = slugs.length;
-  const hashes = res.slice(0, 4 * n) as Record<string, number | string>[];
-  const dailyHashes = hashes.slice(0, n);
-  const countryHashes = hashes.slice(n, 2 * n);
-  const deviceHashes = hashes.slice(2 * n, 3 * n);
-  const refHashes = hashes.slice(3 * n, 4 * n);
+  const dailyHashes = res.slice(0, n) as Record<string, number | string>[];
+  const countryHashes = res.slice(n, n + D) as (Record<string, number | string> | null)[];
+  const deviceHashes = res.slice(n + D, n + 2 * D) as (Record<string, number | string> | null)[];
+  const refHashes = res.slice(n + 2 * D, n + 3 * D) as (Record<string, number | string> | null)[];
 
   const dayTotals: Record<string, number> = Object.fromEntries(days.map((d) => [d, 0]));
   const perLink: Record<string, number> = {};
@@ -193,10 +222,19 @@ export async function getAnalytics(windowDays: number): Promise<Analytics> {
     perLink[slugs[i]] = t;
   });
 
+  // jumlahkan field `{slug}|{nilai}` dari semua hari; abaikan tautan yang sudah dihapus
   const sumHashes = (hashes: (Record<string, number | string> | null)[]) => {
     const out: Record<string, number> = {};
-    for (const h of hashes) for (const [k, v] of Object.entries(h ?? {})) out[k] = (out[k] ?? 0) + Number(v);
-    return Object.entries(out).sort((a, b) => b[1] - a[1]);
+    for (const h of hashes)
+      for (const [f, v] of Object.entries(h ?? {})) {
+        const i = f.indexOf("|");
+        if (i < 0 || !slugSet.has(f.slice(0, i))) continue;
+        const k = f.slice(i + 1);
+        out[k] = (out[k] ?? 0) + Number(v);
+      }
+    return Object.entries(out)
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1]);
   };
 
   // CTR: hanya hari yang punya data kunjungan website, supaya pembilang & penyebut sebanding
@@ -260,6 +298,12 @@ export async function recordClick(
   p.hincrby(`device:${slug}`, info.device, 1);
   p.hincrby(`ref:${slug}`, info.referrer, 1);
   p.hincrby(`daily:${slug}`, jakartaDay(0), 1);
+  // rincian per hari untuk Analisa (negara/perangkat/sumber), disimpan ~100 hari
+  const today = jakartaDay(0);
+  for (const [k, v] of [["c", info.country], ["d", info.device], ["r", info.referrer]] as [BdKind, string][]) {
+    p.hincrby(bdKey(k, today), `${slug}|${v}`, 1);
+    p.expire(bdKey(k, today), BD_KEEP_DAYS * 86400);
+  }
   if (info.visitor) {
     // pengunjung unik per hari (HyperLogLog, hanya hash — tanpa IP mentah); simpan ~100 hari
     const uvKey = `uv:${jakartaDay(0)}`;
@@ -278,12 +322,14 @@ export async function deleteLinkData(slug: string) {
   p.srem("links", slug);
   p.del(`clicks:${slug}`, `country:${slug}`, `device:${slug}`, `ref:${slug}`, `daily:${slug}`, `recent:${slug}`);
   await p.exec();
+  await purgeBreakdown(slug, bdAllDays());
 }
 
 export async function resetStatsData(slug: string) {
   const p = db().pipeline();
   p.del(`clicks:${slug}`, `country:${slug}`, `device:${slug}`, `ref:${slug}`, `daily:${slug}`, `recent:${slug}`);
   await p.exec();
+  await purgeBreakdown(slug, bdAllDays());
 }
 
 const dayOf = (t: number) => new Date(t + 7 * 3600e3).toISOString().slice(0, 10);
@@ -365,4 +411,19 @@ export async function removeStats(slug: string, sel: { days?: string[]; country?
   if (Object.keys(ref2).length) p.hset(`ref:${slug}`, ref2);
   if (kept.length) p.rpush(`recent:${slug}`, ...kept);
   await p.exec();
+
+  // sinkronkan rincian per hari (Analisa)
+  if (sel.days) {
+    await purgeBreakdown(slug, [...daySet]);
+  } else {
+    const q = db().pipeline();
+    if (sel.country) for (const d of bdAllDays()) q.hdel(bdKey("c", d), `${slug}|${sel.country}`);
+    for (const c of removed) {
+      const day = dayOf(c.t);
+      if (!sel.country) q.hincrby(bdKey("c", day), `${slug}|${c.c}`, -1);
+      if (c.d) q.hincrby(bdKey("d", day), `${slug}|${c.d}`, -1);
+      if (c.r) q.hincrby(bdKey("r", day), `${slug}|${c.r}`, -1);
+    }
+    await q.exec();
+  }
 }

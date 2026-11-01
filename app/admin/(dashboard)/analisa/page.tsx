@@ -206,7 +206,7 @@ export default async function AnalisaPage({
   const devices = withRest(devGroups, 4, same);
   const refs = withRest(refGroups, 4, same);
   const countries = withRest(countryRows, 4, countryName);
-  const ctryNote = src === "go" ? "sepanjang waktu" : src === "ema" ? `${days} hari` : `${goName}: sepanjang waktu · ${emaName}: ${days} hari`;
+  const ctryNote = `${days} hari`;
   const subtitle = src === "go" ? goName : src === "ema" ? emaName : `${goName} + ${emaName}`;
   const srcOptions = [
     { value: "semua", label: "Semua" },
