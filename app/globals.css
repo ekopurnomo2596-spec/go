@@ -542,3 +542,6 @@ tr.zero td { color: var(--muted); }
 .an-src { font: inherit; font-size: .82rem; font-weight: 600; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
 .an-ln.b { stroke: var(--ink); }
 .an-area.b { fill: var(--ink); opacity: .06; }
+.an-sub { color: var(--muted); font-size: .82rem; margin-top: 4px; }
+.an-kpi-l .info { margin-left: 6px; }
+@media (max-width: 860px) { .an-card, .an-kpi { position: relative; } }

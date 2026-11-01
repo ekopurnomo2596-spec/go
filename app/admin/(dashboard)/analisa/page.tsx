@@ -5,6 +5,7 @@ import { getAnalytics } from "@/lib/links";
 import { countryName, jakartaDay } from "@/lib/format";
 import { getWebSnaps } from "@/lib/visits";
 import { SourceSelect } from "./source-select";
+import { Info } from "../info";
 import { Flag } from "@/lib/flag";
 
 export const dynamic = "force-dynamic";
@@ -79,18 +80,35 @@ const pctDelta = (cur: number, prev: number | null) =>
   prev !== null && prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null;
 
 function Delta({ v }: { v: number | null }) {
-  if (v === null) return null;
+  if (v === null) return <Pill>baru</Pill>;
   return v === 0 ? <Pill>stabil</Pill> : <Pill tone={v > 0 ? "up" : "down"}>{`${v > 0 ? "+" : ""}${v}%`}</Pill>;
 }
 
-function Kpi({ value, label, delta, pill }: { value: string; label: string; delta?: number | null; pill?: React.ReactNode }) {
+const CMP = "Persen = perubahan dibanding periode sebelumnya dengan jumlah hari yang sama. “baru” berarti periode sebelumnya belum punya data.";
+
+function Kpi({
+  value,
+  label,
+  info,
+  delta,
+  pill,
+}: {
+  value: string;
+  label: string;
+  info?: string;
+  delta?: number | null;
+  pill?: React.ReactNode;
+}) {
   return (
     <div className="an-kpi">
       <div className="an-kpi-top">
         <b>{value}</b>
         {pill ?? (delta !== undefined && <Delta v={delta} />)}
       </div>
-      <span className="an-kpi-l">{label}</span>
+      <span className="an-kpi-l">
+        {label}
+        {info && <Info text={info} />}
+      </span>
     </div>
   );
 }
@@ -103,7 +121,7 @@ export default async function AnalisaPage({
   await requireAdmin();
   const sp = await searchParams;
   const days = (RANGES as readonly number[]).includes(Number(sp.days)) ? Number(sp.days) : 14;
-  const src: Src = (SRC as readonly string[]).includes(sp.src ?? "") ? (sp.src as Src) : "go";
+  const src: Src = (SRC as readonly string[]).includes(sp.src ?? "") ? (sp.src as Src) : "semua";
   const showGo = src !== "ema";
   const showEma = src !== "go";
   const host = (await headers()).get("host") ?? "";
@@ -177,18 +195,21 @@ export default async function AnalisaPage({
   const ctryNote = src === "go" ? "sepanjang waktu" : src === "ema" ? `${days} hari` : `go: sepanjang waktu · ema: ${days} hari`;
   const subtitle = src === "go" ? host : src === "ema" ? "emahairshop.com" : `${host} + emahairshop.com`;
   const srcOptions = [
+    { value: "semua", label: "Semua" },
     { value: "go", label: host || "go" },
     { value: "ema", label: "emahairshop.com" },
-    { value: "semua", label: "Semua" },
   ];
   const empty = src === "go" && a.linkCount === 0;
 
   return (
     <main className="wrap an">
       <div className="top">
-        <h1>
-          Analisa <small>{subtitle}</small>
-        </h1>
+        <div>
+          <h1>Analisa</h1>
+          <div className="an-sub">
+            {subtitle} · menampilkan data {days} Hari terakhir
+          </div>
+        </div>
         <div className="an-ctl">
           <SourceSelect value={src} days={days} options={srcOptions} />
           <nav className="an-tabs" aria-label="Rentang waktu">
@@ -213,13 +234,14 @@ export default async function AnalisaPage({
           <div className="an-kpis">
             {src === "go" && (
               <>
-                <Kpi value={nf(a.total)} label="Total klik" delta={deltaPct} />
-                <Kpi value={a.unique !== null ? nf(a.unique) : "-"} label="Pengunjung unik" delta={uniqDelta} />
+                <Kpi value={nf(a.total)} label="Total klik" info={`Jumlah klik tautan go dalam ${days} hari terakhir. Bot, pratinjau, dan prefetch tidak dihitung. ${CMP}`} delta={deltaPct} />
+                <Kpi value={a.unique !== null ? nf(a.unique) : "-"} label="Pengunjung unik" info={`Perkiraan jumlah pengunjung berbeda yang mengeklik tautan go, dihitung satu kali per perangkat per hari. Baru terhitung sejak fitur ini aktif. ${CMP}`} delta={uniqDelta} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
+                  info="Klik tautan go dibagi halaman dilihat website utama (emahairshop.com), hanya pada hari yang punya data kunjungan. Persen = selisih poin dibanding periode sebelumnya."
                   pill={
-                    ctrDelta === null ? null : ctrDelta === 0 ? (
+                    ctrDelta === null ? <Pill>baru</Pill> : ctrDelta === 0 ? (
                       <Pill>stabil</Pill>
                     ) : (
                       <Pill tone={ctrDelta > 0 ? "up" : "down"}>{`${ctrDelta > 0 ? "+" : ""}${f1(ctrDelta)}%`}</Pill>
@@ -229,27 +251,29 @@ export default async function AnalisaPage({
                 <Kpi
                   value={nf(a.linkCount)}
                   label="Tautan aktif"
+                  info="Jumlah tautan yang ada sekarang. “+N baru” = tautan yang dibuat dalam rentang waktu ini."
                   pill={a.newLinks > 0 ? <Pill tone="up">{`+${a.newLinks} baru`}</Pill> : <Pill>stabil</Pill>}
                 />
               </>
             )}
             {src === "ema" && (
               <>
-                <Kpi value={nf(eVis)} label="Pengunjung" delta={avgDelta("visitors")} />
-                <Kpi value={nf(ePv)} label="Halaman dilihat" delta={avgDelta("pageviews")} />
-                <Kpi value={curN > 0 ? nf(Math.round(eVis / curN)) : "-"} label="Rata-rata pengunjung/hari" />
+                <Kpi value={nf(eVis)} label="Pengunjung" info={`Pengunjung website utama, dihitung satu kali per alamat IP per hari lalu dijumlahkan. Persen membandingkan rata-rata per hari yang punya data. ${CMP}`} delta={avgDelta("visitors")} />
+                <Kpi value={nf(ePv)} label="Halaman dilihat" info="Total halaman website utama yang dibuka dalam rentang waktu ini. Persen membandingkan rata-rata per hari yang punya data." delta={avgDelta("pageviews")} />
+                <Kpi value={curN > 0 ? nf(Math.round(eVis / curN)) : "-"} label="Rata-rata pengunjung/hari" info="Pengunjung dibagi jumlah hari yang punya data kunjungan." delta={avgDelta("visitors")} />
               </>
             )}
             {src === "semua" && (
               <>
-                <Kpi value={nf(a.total)} label="Total klik (go)" delta={deltaPct} />
-                <Kpi value={nf(eVis)} label="Pengunjung (ema)" delta={avgDelta("visitors")} />
-                <Kpi value={nf(ePv)} label="Halaman dilihat (ema)" delta={avgDelta("pageviews")} />
+                <Kpi value={nf(a.total)} label="Total klik (go)" info={`Jumlah klik tautan go dalam ${days} hari terakhir. ${CMP}`} delta={deltaPct} />
+                <Kpi value={nf(eVis)} label="Pengunjung (ema)" info={`Pengunjung website utama (emahairshop.com), satu kali per alamat IP per hari. ${CMP}`} delta={avgDelta("visitors")} />
+                <Kpi value={nf(ePv)} label="Halaman dilihat (ema)" info="Total halaman website utama yang dibuka dalam rentang waktu ini." delta={avgDelta("pageviews")} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
+                  info="Klik tautan go dibagi halaman dilihat website utama (emahairshop.com), hanya pada hari yang punya data kunjungan. Persen = selisih poin dibanding periode sebelumnya."
                   pill={
-                    ctrDelta === null ? null : ctrDelta === 0 ? (
+                    ctrDelta === null ? <Pill>baru</Pill> : ctrDelta === 0 ? (
                       <Pill>stabil</Pill>
                     ) : (
                       <Pill tone={ctrDelta > 0 ? "up" : "down"}>{`${ctrDelta > 0 ? "+" : ""}${f1(ctrDelta)}%`}</Pill>
