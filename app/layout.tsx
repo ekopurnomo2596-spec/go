@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Tautan EMAHAIRSHOP",
   description: "Tautan resmi EMAHAIRSHOP.",
   robots: { index: false, follow: false },
+  icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }] },
 };
 
 export const viewport: Viewport = {
