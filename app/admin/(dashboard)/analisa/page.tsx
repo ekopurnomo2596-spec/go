@@ -65,7 +65,8 @@ function Delta({ v }: { v: number | null }) {
   return v === 0 ? <Pill>stabil</Pill> : <Pill tone={v > 0 ? "up" : "down"}>{`${v > 0 ? "+" : ""}${v}%`}</Pill>;
 }
 
-const CMP = "Persen = perubahan dibanding periode sebelumnya dengan jumlah hari yang sama. “baru” berarti periode sebelumnya belum punya data.";
+const CMP = "Persen = naik/turun dibanding periode sebelumnya. “baru” = periode sebelumnya belum ada data.";
+const CMP_AVG = "Persen = perubahan rata-rata harian dibanding periode sebelumnya. “baru” = periode sebelumnya belum ada data.";
 
 function Kpi({
   value,
@@ -230,12 +231,12 @@ export default async function AnalisaPage({
           <div className="an-kpis">
             {src === "go" && (
               <>
-                <Kpi value={nf(a.total)} label="Total klik" info={`Jumlah klik tautan go dalam ${days} hari terakhir. Satu pengunjung dihitung sekali per tautan per hari. Bot, pratinjau, dan prefetch tidak dihitung. ${CMP}`} delta={deltaPct} />
-                <Kpi value={a.unique !== null ? nf(a.unique) : "-"} label="Pengunjung unik" info={`Perkiraan jumlah pengunjung berbeda yang mengeklik tautan go, dihitung satu kali per perangkat per hari. Baru terhitung sejak fitur ini aktif. ${CMP}`} delta={uniqDelta} />
+                <Kpi value={nf(a.total)} label="Total klik" info={`Jumlah klik pada tautan go dalam ${days} hari. Satu orang dihitung sekali per tautan per hari, bot tidak dihitung. ${CMP}`} delta={deltaPct} />
+                <Kpi value={a.unique !== null ? nf(a.unique) : "-"} label="Pengunjung unik" info={`Perkiraan jumlah orang berbeda yang mengeklik tautan go. Satu perangkat dihitung sekali per hari. ${CMP}`} delta={uniqDelta} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
-                  info="Klik tautan go dibagi halaman dilihat website utama (emahairshop.com), hanya pada hari yang punya data kunjungan. Persen = selisih poin dibanding periode sebelumnya."
+                  info="Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat). Persen = selisih poin dibanding periode sebelumnya."
                   pill={
                     ctrDelta === null ? <Pill>baru</Pill> : ctrDelta === 0 ? (
                       <Pill>stabil</Pill>
@@ -247,27 +248,27 @@ export default async function AnalisaPage({
                 <Kpi
                   value={nf(a.linkCount)}
                   label="Tautan aktif"
-                  info="Jumlah tautan yang ada sekarang. “+N baru” = tautan yang dibuat dalam rentang waktu ini."
+                  info="Jumlah tautan yang ada sekarang. “+N baru” = dibuat dalam periode ini."
                   pill={a.newLinks > 0 ? <Pill tone="up">{`+${a.newLinks} baru`}</Pill> : <Pill>stabil</Pill>}
                 />
               </>
             )}
             {src === "ema" && (
               <>
-                <Kpi value={nf(eVis)} label="Pengunjung" info={`Pengunjung website utama, dihitung satu kali per alamat IP per hari lalu dijumlahkan. Persen membandingkan rata-rata per hari yang punya data. ${CMP}`} delta={avgDelta("visitors")} />
-                <Kpi value={nf(ePv)} label="Halaman dilihat" info="Total halaman website utama yang dibuka dalam rentang waktu ini. Persen membandingkan rata-rata per hari yang punya data." delta={avgDelta("pageviews")} />
-                <Kpi value={curN > 0 ? nf(Math.round(eVis / curN)) : "-"} label="Rata-rata pengunjung/hari" info="Pengunjung dibagi jumlah hari yang punya data kunjungan." delta={avgDelta("visitors")} />
+                <Kpi value={nf(eVis)} label="Pengunjung" info={`Jumlah pengunjung emahairshop.com. Satu orang dihitung sekali per hari. ${CMP_AVG}`} delta={avgDelta("visitors")} />
+                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Jumlah halaman emahairshop.com yang dibuka. ${CMP_AVG}`} delta={avgDelta("pageviews")} />
+                <Kpi value={curN > 0 ? nf(Math.round(eVis / curN)) : "-"} label="Rata-rata pengunjung/hari" info="Total pengunjung dibagi jumlah hari yang ada datanya." delta={avgDelta("visitors")} />
               </>
             )}
             {src === "semua" && (
               <>
-                <Kpi value={nf(a.total)} label="Total klik" info={`Sumber: ${goName}. Jumlah klik tautan dalam ${days} hari terakhir. ${CMP}`} delta={deltaPct} />
-                <Kpi value={nf(eVis)} label="Pengunjung" info={`Sumber: ${emaName}. Satu pengunjung per alamat IP per hari, lalu dijumlahkan. Persen membandingkan rata-rata per hari yang punya data. ${CMP}`} delta={avgDelta("visitors")} />
-                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Sumber: ${emaName}. Total halaman yang dibuka dalam rentang waktu ini. Persen membandingkan rata-rata per hari yang punya data.`} delta={avgDelta("pageviews")} />
+                <Kpi value={nf(a.total)} label="Total klik" info={`Klik pada tautan go (${goName}) dalam ${days} hari. ${CMP}`} delta={deltaPct} />
+                <Kpi value={nf(eVis)} label="Pengunjung" info={`Pengunjung ${emaName}. Satu orang dihitung sekali per hari. ${CMP_AVG}`} delta={avgDelta("visitors")} />
+                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Halaman ${emaName} yang dibuka. ${CMP_AVG}`} delta={avgDelta("pageviews")} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
-                  info="Klik tautan go dibagi halaman dilihat website utama (emahairshop.com), hanya pada hari yang punya data kunjungan. Persen = selisih poin dibanding periode sebelumnya."
+                  info="Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat). Persen = selisih poin dibanding periode sebelumnya."
                   pill={
                     ctrDelta === null ? <Pill>baru</Pill> : ctrDelta === 0 ? (
                       <Pill>stabil</Pill>
