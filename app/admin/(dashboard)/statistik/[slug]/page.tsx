@@ -17,7 +17,9 @@ function X({ slug, mode, value, label }: { slug: string; mode: string; value: st
       <input type="hidden" name="mode" value={mode} />
       <input type="hidden" name="value" value={value} />
       <ConfirmButton className="xbtn" title="Hapus" message={`Hapus data ${label}? Angka total ikut berkurang.`}>
-        &times;
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M6 6l1 14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-14M10 11v6M14 11v6" />
+        </svg>
       </ConfirmButton>
     </form>
   );
@@ -80,7 +82,7 @@ export default async function StatsPage({
                 Hapus semua data
               </ConfirmButton>
             </form>
-            <p className="hint">Tombol × di setiap baris menghapus per negara, per hari, atau per klik.</p>
+            <p className="hint">Ikon tong sampah di setiap baris menghapus per negara, per hari, atau per klik.</p>
           </div>
         </details>
       </div>

@@ -303,3 +303,5 @@ svg.flag-na { box-shadow: none; stroke: var(--muted); fill: none; stroke-width: 
 .hapusmenu .pop button { width: 100%; }
 .hapusmenu .dates > div { min-width: 0; }
 .hapusmenu .dates input[type="date"] { min-width: 0; max-width: 100%; padding: 9px 8px; font-size: .82rem; }
+
+.xbtn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
