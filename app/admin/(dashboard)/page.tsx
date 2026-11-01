@@ -50,12 +50,13 @@ export default async function AdminPage() {
                       {host}/{l.slug}
                     </a>
                     <div className="sum">{l.title}</div>
+                    {l.interstitial && <div className="sum">Halaman perantara aktif</div>}
                   </td>
                   <td className="dest">{l.url}</td>
                   <td className="num">{(counts[l.slug] ?? 0).toLocaleString("id-ID")}</td>
                   <td>
                     <div className="actions">
-                      <EditLink slug={l.slug} title={l.title} url={l.url} />
+                      <EditLink slug={l.slug} title={l.title} url={l.url} interstitial={!!l.interstitial} />
                       <DeleteLink slug={l.slug} />
                     </div>
                   </td>

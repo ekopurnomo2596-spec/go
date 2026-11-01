@@ -1,6 +1,7 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { notFoundResponse } from "@/lib/notfound";
 import { getLink, recordClick, validSlugFormat } from "@/lib/links";
+import { interstitialResponse } from "@/lib/interstitial";
 
 const BOT = /bot|crawl|spider|preview|facebookexternalhit|whatsapp|telegram|slack|discord|curl|wget|headless|python-requests|monitor|uptime/i;
 
@@ -33,6 +34,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
         console.error("recordClick gagal", e);
       }
     });
+  }
+
+  if (link.interstitial && ua !== "" && !BOT.test(ua)) {
+    return interstitialResponse(link.url);
   }
 
   return NextResponse.redirect(link.url, { status: 302, headers: { "Cache-Control": "no-store" } });

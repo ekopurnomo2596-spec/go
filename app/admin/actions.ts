@@ -76,13 +76,14 @@ export async function updateLink(formData: FormData): Promise<Flash> {
   const slug = str(formData, "slug").toLowerCase();
   const url = str(formData, "url");
   const title = str(formData, "title").slice(0, 80);
+  const interstitial = formData.get("interstitial") === "on";
 
   if (!validSlugFormat(slug)) return err("Slug tidak valid.");
   if (!validUrl(url)) return err("URL tujuan harus diawali http:// atau https://.");
 
   const existing = await getLink(slug);
   if (!existing) return err("Link tidak ditemukan.");
-  await db().set(`link:${slug}`, { ...existing, url, title: title || slug });
+  await db().set(`link:${slug}`, { ...existing, url, title: title || slug, interstitial });
 
   refresh();
   return ok("Link diperbarui.");

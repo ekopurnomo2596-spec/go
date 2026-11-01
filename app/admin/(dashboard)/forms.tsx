@@ -102,7 +102,7 @@ export function DeleteLink({ slug }: { slug: string }) {
   );
 }
 
-export function EditLink({ slug, title, url }: { slug: string; title: string; url: string }) {
+export function EditLink({ slug, title, url, interstitial }: { slug: string; title: string; url: string; interstitial: boolean }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
 
@@ -149,6 +149,10 @@ export function EditLink({ slug, title, url }: { slug: string; title: string; ur
               <div>
                 <label htmlFor={`u-${slug}`}>URL tujuan</label>
                 <input id={`u-${slug}`} name="url" type="url" defaultValue={url} required />
+              </div>
+              <div className="check">
+                <input id={`i-${slug}`} name="interstitial" type="checkbox" defaultChecked={interstitial} />
+                <label htmlFor={`i-${slug}`}>Halaman perantara (hitung mundur 2 detik)</label>
               </div>
               <div className="modal-actions">
                 <button type="button" className="ghost" onClick={() => setOpen(false)} disabled={pending}>Batal</button>

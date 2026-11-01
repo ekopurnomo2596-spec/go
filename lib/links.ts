@@ -6,6 +6,8 @@ export type Link = {
   url: string;
   title: string;
   listed: boolean;
+  /** Tampilkan halaman perantara (hitung mundur) sebelum pindah */
+  interstitial?: boolean;
   createdAt: number;
 };
 
