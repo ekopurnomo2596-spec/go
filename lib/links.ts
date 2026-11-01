@@ -110,3 +110,9 @@ export async function deleteLinkData(slug: string) {
   p.del(`clicks:${slug}`, `country:${slug}`, `daily:${slug}`, `recent:${slug}`);
   await p.exec();
 }
+
+export async function resetStatsData(slug: string) {
+  const p = db().pipeline();
+  p.del(`clicks:${slug}`, `country:${slug}`, `daily:${slug}`, `recent:${slug}`);
+  await p.exec();
+}

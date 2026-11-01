@@ -3,13 +3,22 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { getLink, getStats, validSlugFormat } from "@/lib/links";
+import { resetStats } from "../../../actions";
+import { ConfirmButton } from "../../../confirm-button";
 import { countryName, formatTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default async function StatsPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function StatsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ ok?: string }>;
+}) {
   await requireAdmin();
   const { slug } = await params;
+  const sp = await searchParams;
   if (!validSlugFormat(slug)) notFound();
   const link = await getLink(slug);
   if (!link) notFound();
@@ -28,6 +37,7 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
           /{link.slug} <small>{link.title}</small>
         </h1>
       </div>
+      {sp.ok === "reset" && <div className="msg ok">Data statistik dihapus.</div>}
       <p className="sum">
         {host}/{link.slug} mengarah ke <span className="dest">{link.url}</span>
       </p>
@@ -112,6 +122,16 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
           </div>
         )}
       </section>
+
+      <form action={resetStats} style={{ marginTop: 32 }}>
+        <input type="hidden" name="slug" value={link.slug} />
+        <ConfirmButton
+          className="danger"
+          message={`Hapus semua data statistik /${link.slug}? Total klik, negara, harian, dan klik terbaru akan dikosongkan. Link tetap ada.`}
+        >
+          Hapus data statistik
+        </ConfirmButton>
+      </form>
     </main>
   );
 }

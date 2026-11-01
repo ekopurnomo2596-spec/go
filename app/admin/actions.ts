@@ -8,6 +8,8 @@ import { db } from "@/lib/redis";
 import {
   deleteLinkData,
   getLink,
+  listLinks,
+  resetStatsData,
   isReserved,
   validSlugFormat,
   validUrl,
@@ -109,4 +111,20 @@ export async function seedLinks() {
   }
   refresh();
   redirect("/admin?ok=seeded");
+}
+
+export async function resetStats(formData: FormData) {
+  await requireAdmin();
+  const slug = str(formData, "slug").toLowerCase();
+  if (!validSlugFormat(slug)) redirect("/admin/statistik");
+  await resetStatsData(slug);
+  revalidatePath("/admin/statistik");
+  redirect(`/admin/statistik/${slug}?ok=reset`);
+}
+
+export async function resetAllStats() {
+  await requireAdmin();
+  for (const l of await listLinks()) await resetStatsData(l.slug);
+  revalidatePath("/admin/statistik");
+  redirect("/admin/statistik?ok=reset");
 }
