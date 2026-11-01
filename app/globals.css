@@ -373,3 +373,5 @@ button.ghost .spin, .btn.ghost .spin { --sc: var(--ink); }
 .switch input:checked + i { background: #22c55e; }
 .switch input:checked + i::after { transform: translateX(18px); }
 .switch input:focus-visible + i { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.resetall { margin-top: 28px; }

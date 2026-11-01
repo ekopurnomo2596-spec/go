@@ -166,3 +166,54 @@ export function EditLink({ slug, title, url, interstitial }: { slug: string; tit
     </>
   );
 }
+
+/** Form generik: konfirmasi opsional, tombol berputar, tanpa pindah halaman. */
+export function ActionForm({
+  action,
+  confirm,
+  formClass,
+  btnClass,
+  title,
+  label,
+  children,
+}: {
+  action: (fd: FormData) => Promise<Flash>;
+  confirm?: string;
+  formClass?: string;
+  btnClass?: string;
+  title?: string;
+  label: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  const [pending, start] = useTransition();
+  return (
+    <form
+      className={formClass}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (pending) return;
+        if (confirm && !window.confirm(confirm)) return;
+        const form = e.currentTarget;
+        const fd = new FormData(form);
+        start(async () => {
+          const r = await run(() => action(fd));
+          flash(r);
+          if (r.kind === "ok") form.closest("details")?.removeAttribute("open");
+        });
+      }}
+    >
+      {children}
+      <button
+        type="submit"
+        className={(btnClass ?? "") + (pending ? " is-loading" : "")}
+        title={title}
+        aria-label={title}
+        disabled={pending}
+        aria-busy={pending}
+      >
+        {label}
+        {pending && <span className="spin" aria-hidden="true" />}
+      </button>
+    </form>
+  );
+}

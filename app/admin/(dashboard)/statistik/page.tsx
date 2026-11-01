@@ -3,17 +3,12 @@ import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { listLinksWithCounts } from "@/lib/links";
 import { resetAllStats } from "../../actions";
-import { ConfirmButton } from "../../confirm-button";
+import { ActionForm } from "../forms";
 
 export const dynamic = "force-dynamic";
 
-export default async function StatistikIndex({
-  searchParams,
-}: {
-  searchParams: Promise<{ ok?: string }>;
-}) {
+export default async function StatistikIndex() {
   await requireAdmin();
-  const sp = await searchParams;
   const host = (await headers()).get("host") ?? "";
   const { links, counts } = await listLinksWithCounts();
   const rows = links
@@ -28,7 +23,6 @@ export default async function StatistikIndex({
         <h1>Statistik</h1>
       </div>
 
-      {sp.ok === "reset" && <div className="msg ok">Data statistik dihapus.</div>}
 
       <div className="stats">
         <div className="stat">
@@ -64,14 +58,13 @@ export default async function StatistikIndex({
       )}
 
       {sum > 0 && (
-        <form action={resetAllStats} style={{ marginTop: 28 }}>
-          <ConfirmButton
-            className="danger"
-            message="Hapus data statistik SEMUA link? Total klik, negara, harian, dan klik terbaru akan dikosongkan. Link tetap ada."
-          >
-            Hapus semua data statistik
-          </ConfirmButton>
-        </form>
+        <ActionForm
+          action={resetAllStats}
+          formClass="resetall"
+          btnClass="danger"
+          confirm="Hapus data statistik SEMUA link? Total klik, negara, harian, dan klik terbaru akan dikosongkan. Link tetap ada."
+          label="Hapus semua data statistik"
+        />
       )}
     </main>
   );

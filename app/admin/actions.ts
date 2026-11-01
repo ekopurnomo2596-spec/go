@@ -99,20 +99,21 @@ export async function deleteLink(formData: FormData): Promise<Flash> {
   return ok("Link dihapus beserta datanya.");
 }
 
-export async function resetStats(formData: FormData) {
+export async function resetStats(formData: FormData): Promise<Flash> {
   await requireAdmin();
   const slug = str(formData, "slug").toLowerCase();
-  if (!validSlugFormat(slug)) redirect("/admin/statistik");
+  if (!validSlugFormat(slug)) return err("Slug tidak valid.");
   await resetStatsData(slug);
   revalidatePath("/admin/statistik");
-  redirect(`/admin/statistik/${slug}?ok=reset`);
+  revalidatePath(`/admin/statistik/${slug}`);
+  return ok("Data statistik dihapus.");
 }
 
-export async function resetAllStats() {
+export async function resetAllStats(): Promise<Flash> {
   await requireAdmin();
   for (const l of await listLinks()) await resetStatsData(l.slug);
   revalidatePath("/admin/statistik");
-  redirect("/admin/statistik?ok=reset");
+  return ok("Data statistik dihapus.");
 }
 
 function dayRange(from: string, to: string): string[] | null {
@@ -126,12 +127,11 @@ function dayRange(from: string, to: string): string[] | null {
   return out;
 }
 
-export async function removeStatsAction(formData: FormData) {
+export async function removeStatsAction(formData: FormData): Promise<Flash> {
   await requireAdmin();
   const slug = str(formData, "slug").toLowerCase();
-  if (!validSlugFormat(slug)) redirect("/admin/statistik");
+  if (!validSlugFormat(slug)) return err("Slug tidak valid.");
   const mode = str(formData, "mode");
-  const back = `/admin/statistik/${slug}`;
 
   if (mode === "day" && /^\d{4}-\d{2}-\d{2}$/.test(str(formData, "value"))) {
     await removeStats(slug, { days: [str(formData, "value")] });
@@ -141,11 +141,12 @@ export async function removeStatsAction(formData: FormData) {
     await removeStats(slug, { t: Number(str(formData, "value")) });
   } else if (mode === "range") {
     const days = dayRange(str(formData, "from"), str(formData, "to"));
-    if (!days) return redirect(`${back}?ok=badrange`);
+    if (!days) return err("Rentang tanggal tidak valid.");
     await removeStats(slug, { days });
   } else {
-    redirect(back);
+    return err("Permintaan tidak valid.");
   }
   revalidatePath("/admin/statistik");
-  redirect(`${back}?ok=removed`);
+  revalidatePath(`/admin/statistik/${slug}`);
+  return ok("Data yang dipilih dihapus.");
 }

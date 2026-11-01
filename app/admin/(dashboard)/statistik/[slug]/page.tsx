@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { getLink, getStats, validSlugFormat } from "@/lib/links";
 import { removeStatsAction, resetStats } from "../../../actions";
-import { ConfirmButton } from "../../../confirm-button";
+import { ActionForm } from "../../forms";
 import { countryName, formatTime } from "@/lib/format";
 import { Flag } from "@/lib/flag";
 
@@ -12,29 +12,28 @@ export const dynamic = "force-dynamic";
 
 function X({ slug, mode, value, label }: { slug: string; mode: string; value: string; label: string }) {
   return (
-    <form action={removeStatsAction} className="xf">
-      <input type="hidden" name="slug" value={slug} />
-      <input type="hidden" name="mode" value={mode} />
-      <input type="hidden" name="value" value={value} />
-      <ConfirmButton className="xbtn" title="Hapus" message={`Hapus data ${label}? Angka total ikut berkurang.`}>
+    <ActionForm
+      action={removeStatsAction}
+      formClass="xf"
+      btnClass="xbtn"
+      title="Hapus"
+      confirm={`Hapus data ${label}? Angka total ikut berkurang.`}
+      label={
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M6 6l1 14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-14M10 11v6M14 11v6" />
         </svg>
-      </ConfirmButton>
-    </form>
+      }
+    >
+      <input type="hidden" name="slug" value={slug} />
+      <input type="hidden" name="mode" value={mode} />
+      <input type="hidden" name="value" value={value} />
+    </ActionForm>
   );
 }
 
-export default async function StatsPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ slug: string }>;
-  searchParams: Promise<{ ok?: string }>;
-}) {
+export default async function StatsPage({ params }: { params: Promise<{ slug: string }> }) {
   await requireAdmin();
   const { slug } = await params;
-  const sp = await searchParams;
   if (!validSlugFormat(slug)) notFound();
   const link = await getLink(slug);
   if (!link) notFound();
@@ -55,7 +54,12 @@ export default async function StatsPage({
         <details className="hapusmenu">
           <summary>Hapus data</summary>
           <div className="pop">
-            <form action={removeStatsAction}>
+            <ActionForm
+              action={removeStatsAction}
+              btnClass="danger"
+              confirm="Hapus data klik pada rentang tanggal ini?"
+              label="Hapus rentang"
+            >
               <input type="hidden" name="slug" value={link.slug} />
               <input type="hidden" name="mode" value="range" />
               <strong>Hapus per tanggal (WIB)</strong>
@@ -69,27 +73,20 @@ export default async function StatsPage({
                   <input id="to" name="to" type="date" required />
                 </div>
               </div>
-              <ConfirmButton className="danger" message="Hapus data klik pada rentang tanggal ini?">
-                Hapus rentang
-              </ConfirmButton>
-            </form>
-            <form action={resetStats}>
+            </ActionForm>
+            <ActionForm
+              action={resetStats}
+              btnClass="danger"
+              confirm={`Hapus SEMUA data statistik /${link.slug}? Link tetap ada.`}
+              label="Hapus semua data"
+            >
               <input type="hidden" name="slug" value={link.slug} />
-              <ConfirmButton
-                className="danger"
-                message={`Hapus SEMUA data statistik /${link.slug}? Link tetap ada.`}
-              >
-                Hapus semua data
-              </ConfirmButton>
-            </form>
+            </ActionForm>
             <p className="hint">Ikon tong sampah di setiap baris menghapus per negara, per hari, atau per klik.</p>
           </div>
         </details>
       </div>
 
-      {sp.ok === "reset" && <div className="msg ok">Data statistik dihapus.</div>}
-      {sp.ok === "removed" && <div className="msg ok">Data yang dipilih dihapus.</div>}
-      {sp.ok === "badrange" && <div className="msg err">Rentang tanggal tidak valid.</div>}
       <p className="sum">
         {host}/{link.slug} mengarah ke <span className="dest">{link.url}</span>
       </p>
