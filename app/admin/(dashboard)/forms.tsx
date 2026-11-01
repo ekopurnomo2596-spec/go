@@ -150,10 +150,11 @@ export function EditLink({ slug, title, url, interstitial }: { slug: string; tit
                 <label htmlFor={`u-${slug}`}>URL tujuan</label>
                 <input id={`u-${slug}`} name="url" type="url" defaultValue={url} required />
               </div>
-              <div className="check">
+              <label className="switch" htmlFor={`i-${slug}`}>
+                <span>Halaman perantara (hitung mundur 2 detik)</span>
                 <input id={`i-${slug}`} name="interstitial" type="checkbox" defaultChecked={interstitial} />
-                <label htmlFor={`i-${slug}`}>Halaman perantara (hitung mundur 2 detik)</label>
-              </div>
+                <i aria-hidden="true" />
+              </label>
               <div className="modal-actions">
                 <button type="button" className="ghost" onClick={() => setOpen(false)} disabled={pending}>Batal</button>
                 <Btn pending={pending}>Simpan</Btn>
