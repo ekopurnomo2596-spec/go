@@ -6,6 +6,7 @@ import { resetAllStats } from "../../actions";
 import { ActionForm } from "../forms";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Statistik" };
 
 export default async function StatistikIndex() {
   await requireAdmin();

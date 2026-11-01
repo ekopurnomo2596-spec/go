@@ -10,6 +10,7 @@ import { CountryList } from "./country-list";
 import { Flag } from "@/lib/flag";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Analisa" };
 
 const nf = (v: number) => v.toLocaleString("id-ID");
 const RANGES = [7, 14, 30] as const;

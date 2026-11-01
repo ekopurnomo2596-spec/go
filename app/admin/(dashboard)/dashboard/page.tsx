@@ -8,6 +8,7 @@ import { WebX } from "../webx";
 import { Info } from "../info";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Dashboard" };
 
 const n = (v: number) => v.toLocaleString("id-ID");
 

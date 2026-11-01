@@ -5,7 +5,7 @@ import "./globals.css";
 const font = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
 
 export const metadata: Metadata = {
-  title: "Tautan EMAHAIRSHOP",
+  title: { default: "Tautan EMAHAIRSHOP", template: "%s | EMAHAIRSHOP" },
   description: "Tautan resmi EMAHAIRSHOP.",
   robots: { index: false, follow: false },
   icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }] },

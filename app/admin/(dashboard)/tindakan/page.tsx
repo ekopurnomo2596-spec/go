@@ -6,6 +6,7 @@ import { ActionForm } from "../forms";
 import { Collapsible } from "./collapsible";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Tindakan" };
 
 const TAG: Record<Tone, { cls: string; label: string }> = {
   penting: { cls: "red", label: "Penting" },

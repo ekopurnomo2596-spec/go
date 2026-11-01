@@ -9,6 +9,7 @@ import { Flag } from "@/lib/flag";
 import { Info } from "../../info";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Statistik" };
 
 function X({ slug, mode, value, label }: { slug: string; mode: string; value: string; label: string }) {
   return (

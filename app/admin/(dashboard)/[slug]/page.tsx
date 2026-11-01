@@ -6,6 +6,7 @@ import { getLink, getStats, validSlugFormat } from "@/lib/links";
 import { countryName, formatTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Statistik" };
 
 export default async function StatsPage({ params }: { params: Promise<{ slug: string }> }) {
   await requireAdmin();

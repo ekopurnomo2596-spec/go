@@ -4,6 +4,7 @@ import { listLinksWithCounts } from "@/lib/links";
 import { CreateForm, DeleteLink, EditLink } from "../forms";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Tautan" };
 
 const n = (v: number) => v.toLocaleString("id-ID");
 
