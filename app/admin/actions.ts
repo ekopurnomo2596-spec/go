@@ -301,7 +301,8 @@ export async function askAiAction(formData: FormData): Promise<Flash> {
   if (n > 30) return err("Terlalu banyak permintaan AI. Coba lagi dalam satu jam.");
 
   try {
-    await askAi({ id: card.id, title: card.title, why: card.why, pair: card.pair });
+    const links = (await listLinks()).map((l) => ({ slug: l.slug, title: l.title, url: l.url }));
+    await askAi({ id: card.id, title: card.title, why: card.why, pair: card.pair, links });
   } catch (e) {
     return aiErr(e);
   }

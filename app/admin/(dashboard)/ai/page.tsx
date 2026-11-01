@@ -5,6 +5,7 @@ import { countryName, formatTime } from "@/lib/format";
 import { Flag } from "@/lib/flag";
 import { clearAiHistory, deleteAiEntry } from "../../actions";
 import { ActionForm } from "../forms";
+import { AiResult } from "../tindakan/ai-result";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "AI" };
@@ -53,26 +54,28 @@ export default async function AiPage() {
                     e.title
                   )}
                 </h3>
-                {e.hashtags.length > 0 && (
-                  <div className="ai-tags">
-                    {e.hashtags.map((h) => (
-                      <span key={h} className="ai-tag">
-                        {h}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {e.saran && <p className="ai-saran">{e.saran}</p>}
-                {e.langkah?.length > 0 && (
-                  <ol className="ai-steps">
-                    {e.langkah.map((l, i) => (
-                      <li key={i}>{l}</li>
-                    ))}
-                  </ol>
-                )}
                 <p className="ai-meta">
                   {formatTime(e.t)} · {e.model}
                 </p>
+                <AiResult defaultOpen={false}>
+                  {e.hashtags.length > 0 && (
+                    <div className="ai-tags">
+                      {e.hashtags.map((h) => (
+                        <span key={h} className="ai-tag">
+                          {h}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {e.saran && <p className="ai-saran">{e.saran}</p>}
+                  {e.langkah?.length > 0 && (
+                    <ol className="ai-steps">
+                      {e.langkah.map((l, i) => (
+                        <li key={i}>{l}</li>
+                      ))}
+                    </ol>
+                  )}
+                </AiResult>
               </div>
               <div className="tx-btns">
                 <ActionForm action={deleteAiEntry} btnClass="danger" label="Hapus" confirm="Hapus entri ini?">

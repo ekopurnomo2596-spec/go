@@ -27,6 +27,8 @@ export type AiInput = {
   title: string;
   why: string;
   pair?: { ref: string; country: string };
+  /** tautan toko (slug, judul, tujuan) supaya saran menyebut tautan yang tepat */
+  links?: { slug: string; title: string; url: string }[];
 };
 
 /** Pesan galat yang aman ditampilkan ke admin (tidak pernah memuat token). */
@@ -64,14 +66,30 @@ export function maskKey(k: string): string {
 // ---------- panggilan Gemini ----------
 
 const SYSTEM =
-  "Kamu asisten pemasaran media sosial untuk toko hair extension (EMAHAIRSHOP). " +
+  "Kamu asisten pemasaran untuk toko hair extension EMAHAIRSHOP. " +
   "Balas hanya dengan JSON valid, tanpa teks lain dan tanpa blok kode.";
+
+// Profil toko, diambil dari website emahairshop.com. Ubah di sini kalau bisnis atau websitenya berubah.
+const TOKO = [
+  "Profil toko: EMAHAIRSHOP, pemasok dan produsen hair extension 100% human Remy hair dari Indonesia, pengalaman 8+ tahun, kirim ke seluruh dunia.",
+  "Produk: weft, tape-in, nano ring, genius weft, keratin, bulk, dan wig.",
+  "Pembeli utama: salon, distributor, dan reseller (grosir/B2B), bukan hanya konsumen umum. Harga, stok, dan pesanan dikonfirmasi lewat WhatsApp.",
+  "Website emahairshop.com (bahasa Inggris) adalah satu halaman bergaya link-in-bio dengan tombol: Shop Wholesale, AI Assistant (chat), Telegram, WhatsApp, Customer Reviews, Blog, Help Center, Contact Us, About Us.",
+  "Tombol-tombol itu memakai tautan pendek go.emahairshop.com/<slug>, dan klik tautan itulah yang dihitung dashboard. Instagram toko: @emahairshop.",
+].join("\n");
+
+function linkLines(links: AiInput["links"]): string {
+  if (!links?.length) return "";
+  const rows = links.slice(0, 12).map((l) => `- /${l.slug}: ${l.title} (${l.url})`);
+  return `Tautan toko saat ini:\n${rows.join("\n")}`;
+}
 
 function buildPrompt(refLabel: string, country: string): string {
   const negara = `${countryName(country)} (${country})`;
   return [
+    TOKO,
     `Pengunjung tautan toko berasal dari ${refLabel} di negara ${negara}.`,
-    "Beri hashtag yang relevan untuk hair extension (misalnya clip-in, tape-in, human hair, wig, rambut) dan cocok untuk audiens itu.",
+    "Beri hashtag yang relevan untuk produk toko ini dan cocok untuk audiens itu. Campur hashtag produk (hair extension, tape-in, weft, human hair, remy hair, wig) dengan hashtag salon dan grosir (salon owner, hair salon, wholesale hair, hair supplier, hair business), karena pembeli utamanya salon dan reseller.",
     "Pakai bahasa yang benar-benar dipakai orang di negara tersebut (boleh campur bahasa Inggris), bukan terjemahan kaku.",
     "Jangan mengaku tahu tren hari ini; pilih hashtag yang umum dan populer.",
     'Format: {"hashtags": ["#contoh", ...], "saran": "..."}',
@@ -80,17 +98,20 @@ function buildPrompt(refLabel: string, country: string): string {
   ].join("\n");
 }
 
-function buildGeneral(title: string, why: string): string {
+function buildGeneral(title: string, why: string, links: AiInput["links"]): string {
   return [
-    "Toko: EMAHAIRSHOP (hair extension). Tautan pendek go.emahairshop.com dibagikan di media sosial dan website toko.",
+    TOKO,
+    linkLines(links),
     "Dashboard mencatat klik, negara, sumber, dan perangkat. Ini salah satu temuan dari data 14 hari terakhir:",
     `Judul: ${title}`,
     `Detail: ${why}`,
-    "Beri saran yang konkret dan realistis untuk pemilik toko berdasarkan temuan itu. Jangan mengarang angka atau data yang tidak ada di atas.",
+    "Beri saran yang konkret dan realistis untuk pemilik toko berdasarkan temuan itu, sesuai bisnis grosir ini dan struktur websitenya. Sebut tautan atau tombol yang relevan kalau perlu. Jangan mengarang angka atau data yang tidak ada di atas.",
     'Format: {"saran": "...", "langkah": ["...", ...]}',
     "saran: 1 sampai 2 kalimat Bahasa Indonesia tentang apa artinya temuan ini.",
     "langkah: 2 sampai 4 langkah pendek, tiap langkah satu kalimat Bahasa Indonesia.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function friendly(status: number, apiMsg: string): string {
@@ -214,7 +235,7 @@ export async function askAi(input: AiInput): Promise<AiEntry> {
   if (!key) throw new AiError("Token AI belum diisi.");
 
   const pair = input.pair;
-  const text = await callGemini(key, pair ? buildPrompt(pair.ref, pair.country) : buildGeneral(input.title, input.why));
+  const text = await callGemini(key, pair ? buildPrompt(pair.ref, pair.country) : buildGeneral(input.title, input.why, input.links));
   const j = parseJson(text);
   const saran = String(j?.saran ?? "").replace(/\s+/g, " ").trim().slice(0, 400);
   const hashtags = pair ? cleanTags(j?.hashtags) : [];
