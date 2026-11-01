@@ -29,6 +29,7 @@ const DEV_MIN = 10; // minimal 10 klik untuk menilai perangkat
 const MAX_PER_RULE = 3;
 
 const f1 = (v: number) => v.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const ago = (d: number) => (d <= 0 ? "hari ini" : d === 1 ? "kemarin" : `${d} hari lalu`);
 const slugHref = (s: string) => `/admin/statistik/${s}`;
 
 export type TindakanResult = {
@@ -109,7 +110,7 @@ export async function getTindakan(): Promise<TindakanResult> {
           id: `nol:${l.slug}`,
           tone: "penting",
           title: `/${l.slug} tidak ada klik dalam ${WIN} hari`,
-          why: `Dibuat ${Math.floor((now - l.createdAt) / 86400e3)} hari lalu. Ganti judulnya, taruh lebih menonjol di website, atau hapus kalau tidak dipakai.`,
+          why: `Dibuat ${ago(Math.floor((now - l.createdAt) / 86400e3))}. Ganti judulnya, taruh lebih menonjol di website, atau hapus kalau tidak dipakai.`,
           href: "/admin/tautan",
           cta: "Kelola tautan",
         }),
@@ -174,13 +175,12 @@ export async function getTindakan(): Promise<TindakanResult> {
   // 6. tautan baru belum diklik
   per
     .filter(({ l, c }) => c === 0 && now - l.createdAt < 7 * 86400e3)
-    .slice(0, MAX_PER_RULE)
     .forEach(({ l }) =>
       out.push({
         id: `baru:${l.slug}`,
         tone: "info",
         title: `/${l.slug} baru dibuat dan belum diklik`,
-        why: `Dibuat ${Math.floor((now - l.createdAt) / 86400e3)} hari lalu. Bagikan dulu ke grup atau taruh di website, lalu tunggu beberapa hari.`,
+        why: `Dibuat ${ago(Math.floor((now - l.createdAt) / 86400e3))}. Bagikan dulu ke grup atau taruh di website, lalu tunggu beberapa hari.`,
         href: slugHref(l.slug),
         cta: "Lihat statistik",
       }),

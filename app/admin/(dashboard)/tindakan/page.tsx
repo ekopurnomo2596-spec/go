@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getTindakan, type Item, type Tone } from "@/lib/tindakan";
 import { doneTindakan, undoTindakan } from "../../actions";
 import { ActionForm } from "../forms";
+import { Collapsible } from "./collapsible";
 
 export const dynamic = "force-dynamic";
 
@@ -39,16 +40,13 @@ function Card({ it }: { it: Item }) {
   );
 }
 
-function Section({ title, items }: { title: string; items: Item[] }) {
+function Section({ title, items, limit }: { title: string; items: Item[]; limit?: number }) {
   if (!items.length) return null;
+  const cards = items.map((it) => <Card key={it.id} it={it} />);
   return (
     <section>
       <div className="tx-sec">{title}</div>
-      <div className="tx-list">
-        {items.map((it) => (
-          <Card key={it.id} it={it} />
-        ))}
-      </div>
+      {limit ? <Collapsible limit={limit}>{cards}</Collapsible> : <div className="tx-list">{cards}</div>}
     </section>
   );
 }
@@ -80,7 +78,9 @@ export default async function TindakanPage() {
       {linkCount > 0 && dataDays < 14 && (
         <p className="tx-note">
           {dataDays === 0
-            ? "Belum ada data klik, jadi belum ada saran."
+            ? items.length > 0
+              ? "Belum ada klik yang tercatat, jadi baru ada info awal. Saran lengkap muncul setelah ada data klik."
+              : "Belum ada data klik, jadi belum ada saran."
             : `Data baru terkumpul ${dataDays} hari. Saran makin akurat setelah 14 hari, dan sebagian aturan baru aktif setelah itu.`}
         </p>
       )}
@@ -92,10 +92,10 @@ export default async function TindakanPage() {
       ) : (
         <>
           {items.length === 0 && <div className="an-empty">Semua tindakan sudah ditandai selesai.</div>}
-          <Section title="Perlu perhatian" items={penting} />
-          <Section title="Peluang" items={peluang} />
-          <Section title="Info" items={info} />
-          <Section title="Selesai" items={done} />
+          <Section title="Perlu perhatian" items={penting} limit={5} />
+          <Section title="Peluang" items={peluang} limit={3} />
+          <Section title="Info" items={info} limit={3} />
+          <Section title="Selesai" items={done} limit={3} />
         </>
       )}
     </main>

@@ -583,6 +583,8 @@ tr.zero td { color: var(--muted); }
 .tx-btns .btn, .tx-btns button { height: 38px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; text-decoration: none; font-size: .8125rem; font-weight: 600; }
 .tx-btns .btn { background: #16a34a; border-color: #16a34a; color: #fff; }
 .tx-btns button.ghost { background: var(--card); }
+.tx-more { display: flex; justify-content: center; margin-top: 12px; }
+.tx-more button { height: 38px; padding: 0 16px; font-size: .8125rem; font-weight: 600; background: var(--card); }
 .tx-tag { display: inline-flex; align-items: center; height: 22px; box-sizing: border-box; margin-bottom: 8px; padding: 0 10px; border-radius: 99px; font-size: .75rem; font-weight: 700; }
 .tx-sum .tx-tag { margin-bottom: 0; }
 .tx-tag.red { color: #b42318; background: #fdecea; }
