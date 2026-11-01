@@ -451,3 +451,11 @@ button.ghost .spin, .btn.ghost .spin { --sc: var(--ink); }
   transition: opacity .15s, transform .15s, visibility .15s; pointer-events: none;
 }
 .info:hover .tip, .info:focus .tip { opacity: 1; visibility: visible; transform: none; }
+
+/* ---------- Tooltip info di layar kecil: lebar mengikuti kartu, tidak terpotong ---------- */
+.info:focus-within .tip { opacity: 1; visibility: visible; transform: none; }
+@media (max-width: 860px) {
+  .panel { position: relative; }
+  .info { position: static; }
+  .info .tip { left: 16px; right: 16px; top: 46px; width: auto; }
+}
