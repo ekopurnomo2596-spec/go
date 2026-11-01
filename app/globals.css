@@ -321,3 +321,17 @@ html { scrollbar-gutter: stable; }
     box-shadow: 0 0 0 100vmax rgba(0,0,0,.35), 0 20px 60px rgba(0,0,0,.3); z-index: 30;
   }
 }
+
+/* ---------- Spinner loading pada tombol submit ---------- */
+button.is-loading { position: relative; color: transparent !important; pointer-events: none; }
+button.is-loading svg { opacity: 0; }
+.spin {
+  --sc: var(--btnt);
+  position: absolute; inset: 0; margin: auto; width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--sc); border-right-color: transparent; animation: spin .7s linear infinite;
+}
+button.danger .spin, .xbtn .spin { --sc: var(--danger); }
+button.ghost .spin, .btn.ghost .spin { --sc: var(--ink); }
+.xbtn .spin { width: 12px; height: 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation-duration: 1.6s; } }

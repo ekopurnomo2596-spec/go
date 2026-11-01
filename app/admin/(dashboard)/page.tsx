@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { listLinks, totals } from "@/lib/links";
 import { createLink, deleteLink, seedLinks, updateLink } from "../actions";
-import { ConfirmButton } from "../confirm-button";
+import { ConfirmButton, SubmitButton } from "../confirm-button";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +56,7 @@ export default async function AdminPage({
               <label htmlFor="title">Judul</label>
               <input id="title" name="title" type="text" placeholder="Promo November" maxLength={80} />
             </div>
-            <button type="submit">Buat</button>
+            <SubmitButton>Buat</SubmitButton>
           </div>
         </form>
       </section>
@@ -69,7 +69,7 @@ export default async function AdminPage({
         <div className="empty">
           <p>Belum ada link.</p>
           <form action={seedLinks}>
-            <button type="submit" className="ghost">Tambahkan 7 link awal (wa, tg, shop, blog, help, chat, web)</button>
+            <SubmitButton className="ghost">Tambahkan 7 link awal (wa, tg, shop, blog, help, chat, web)</SubmitButton>
           </form>
         </div>
       ) : (
@@ -102,7 +102,7 @@ export default async function AdminPage({
                           <input type="hidden" name="slug" value={l.slug} />
                           <input name="title" type="text" defaultValue={l.title} aria-label="Judul" maxLength={80} />
                           <input name="url" type="url" defaultValue={l.url} aria-label="URL tujuan" required />
-                          <button type="submit">Simpan</button>
+                          <SubmitButton>Simpan</SubmitButton>
                         </form>
                       </details>
                       <form action={deleteLink}>
