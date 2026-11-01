@@ -292,3 +292,14 @@ details form { display: grid; gap: 8px; margin-top: 6px; min-width: 260px; }
 .hapusmenu .hint { margin: 0; font-size: .78rem; color: var(--muted); }
 input[type="date"] { width: 100%; padding: 9px 10px; font: inherit; font-size: .88rem; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
 @media (max-width: 640px) { .hapusmenu .pop { position: fixed; left: 16px; right: 16px; width: auto; top: auto; } }
+
+/* ---------- Bendera negara ---------- */
+.cn { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.flag { width: 20px; height: 15px; flex: none; border-radius: 2px; object-fit: cover; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+svg.flag-na { box-shadow: none; stroke: var(--muted); fill: none; stroke-width: 1.6; }
+
+/* ---------- Perbaikan popover Hapus data ---------- */
+.hapusmenu .pop, .hapusmenu .pop * { box-sizing: border-box; }
+.hapusmenu .pop button { width: 100%; }
+.hapusmenu .dates > div { min-width: 0; }
+.hapusmenu .dates input[type="date"] { min-width: 0; max-width: 100%; padding: 9px 8px; font-size: .82rem; }

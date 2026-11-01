@@ -6,6 +6,7 @@ import { getLink, getStats, validSlugFormat } from "@/lib/links";
 import { removeStatsAction, resetStats } from "../../../actions";
 import { ConfirmButton } from "../../../confirm-button";
 import { countryName, formatTime } from "@/lib/format";
+import { Flag } from "@/lib/flag";
 
 export const dynamic = "force-dynamic";
 
@@ -115,7 +116,10 @@ export default async function StatsPage({
             <div className="bars">
               {stats.countries.map(([code, n]) => (
                 <div className="bar" key={code}>
-                  <span>{countryName(code)}</span>
+                  <span className="cn">
+                    <Flag code={code} />
+                    {countryName(code)}
+                  </span>
                   <div className="track">
                     <div className="fill" style={{ width: `${(n / maxCountry) * 100}%` }} />
                   </div>
@@ -164,7 +168,12 @@ export default async function StatsPage({
                 {stats.recent.map((c, i) => (
                   <tr key={i}>
                     <td>{formatTime(c.t)}</td>
-                    <td>{countryName(c.c)}</td>
+                    <td>
+                      <span className="cn">
+                        <Flag code={c.c} />
+                        {countryName(c.c)}
+                      </span>
+                    </td>
                     <td>{c.r}</td>
                     <td>{c.d}</td>
                     <td className="num"><X slug={link.slug} mode="click" value={String(c.t)} label="klik ini" /></td>
