@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/auth";
 import { login } from "../actions";
+import { Logo } from "@/lib/logo";
 
 export const dynamic = "force-dynamic";
 
@@ -15,14 +16,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
   return (
     <main className="login">
-      <div className="brand center">
-        <span className="badge">E</span>
-        <span className="rule" />
-        <span className="brandText">
-          GO
-          <small>emahairshop.com</small>
-        </span>
-      </div>
+      <Logo center />
       <div className="card">
         <h1>Masuk ke dashboard</h1>
         {err && ERR[err] && <div className="msg err">{ERR[err]}</div>}

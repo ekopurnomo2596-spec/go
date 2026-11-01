@@ -1,5 +1,6 @@
 import { listLinks } from "@/lib/links";
 import { LinkIcon } from "@/lib/icons";
+import { Logo } from "@/lib/logo";
 
 export const dynamic = "force-dynamic";
 
@@ -13,14 +14,7 @@ export default async function Home() {
 
   return (
     <main className="public">
-      <div className="brand center">
-        <span className="badge">E</span>
-        <span className="rule" />
-        <span className="brandText">
-          GO
-          <small>emahairshop.com</small>
-        </span>
-      </div>
+      <Logo center />
       <p className="lead">
         Satu tautan untuk semua kanal resmi EMAHAIRSHOP &mdash; pilih salah satu di bawah ini.
       </p>

@@ -10,11 +10,14 @@ function notFoundResponse() {
 *{box-sizing:border-box;margin:0}
 body{background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;padding:56px 20px 40px}
 .public{max-width:420px;margin:0 auto;text-align:center}
-.brand{display:flex;align-items:center;gap:14px;margin:0 auto 28px;width:max-content}
-.badge{width:40px;height:40px;border-radius:50%;border:2px solid #c9a46a;background:linear-gradient(145deg,#2a2118,#0f0d0a);display:grid;place-items:center;font:700 18px Georgia,serif;color:#c9a46a}
-.rule{width:1px;height:32px;background:var(--line)}
-.brandText{font:700 18px Georgia,"Times New Roman",serif;color:var(--gold);letter-spacing:.5px;line-height:1.25;text-align:left}
-.brandText small{display:block;font-family:inherit;font-weight:500;font-size:11px;color:var(--muted)}
+.lg{text-decoration:none;display:inline-block;margin:0 auto 28px}
+.logo-nav-container{display:flex;flex-direction:column;align-items:center;justify-content:center;width:max-content;margin:0 auto}
+.logo-nav-container .logo-top{display:flex;align-items:center;width:100%;margin-bottom:-1px}
+.logo-nav-container .line-top{height:2px;background:var(--ink);flex-grow:1;margin-right:4px}
+.logo-nav-container .text-ext{color:var(--ink);font-family:Lato,Inter,sans-serif;font-weight:900;font-size:.35rem;letter-spacing:2px;text-transform:uppercase;margin-right:-2px}
+.logo-nav-container .logo-main{color:var(--ink);font-family:"Arial Black",Lato,sans-serif;font-weight:900;font-size:1.1rem;letter-spacing:.5px;line-height:1.1;text-transform:uppercase;text-align:center;margin-right:-.5px}
+.logo-nav-container .line-bottom{width:100%;height:2px;background:var(--ink);margin:0 0 2px}
+.logo-nav-container .logo-year{color:#906A00;font-family:Lato,Inter,sans-serif;font-weight:900;font-size:.45rem;letter-spacing:1.5px;text-align:center;margin-right:-1.5px}
 .code{font-size:clamp(60px,18vw,88px);font-weight:600;line-height:1.1;letter-spacing:-2px}
 .divider{width:56px;height:2px;background:var(--lineh);margin:22px auto}
 h1{font-size:19px;font-weight:600}
@@ -23,7 +26,7 @@ p.sub{color:var(--muted);font-size:.81rem;margin:8px 0 32px}
 .ico{width:44px;height:44px;border-radius:12px;background:var(--ico);display:grid;place-items:center;flex:none}
 .ico svg{width:20px;height:20px;stroke:var(--icos);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .foot{margin-top:28px;color:var(--muted);font-size:.8rem}
-</style></head><body><main class="public"><div class="brand"><span class="badge">E</span><span class="rule"></span><span class="brandText">GO<small>emahairshop.com</small></span></div><div class="code">404</div><div class="divider"></div><h1>Halaman tidak ditemukan</h1><p class="sub">Tautan tidak valid atau sudah tidak tersedia.</p><div class="linklist"><a href="/"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></span><span>Kembali ke Beranda</span></a></div><p class="foot">&copy; 2026 EMAHAIRSHOP. Seluruh hak cipta dilindungi.</p></main></body></html>`;
+</style></head><body><main class="public"><a class="lg" href="/"><div class="logo-nav-container"><div class="logo-top"><span class="line-top"></span><span class="text-ext">Extension</span></div><div class="logo-main">EMAHAIRSHOP</div><div class="line-bottom"></div><div class="logo-year">2019</div></div></a><div class="code">404</div><div class="divider"></div><h1>Halaman tidak ditemukan</h1><p class="sub">Tautan tidak valid atau sudah tidak tersedia.</p><div class="linklist"><a href="/"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></span><span>Kembali ke Beranda</span></a></div><p class="foot">&copy; 2026 EMAHAIRSHOP. Seluruh hak cipta dilindungi.</p></main></body></html>`;
   return new NextResponse(html, {
     status: 404,
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },

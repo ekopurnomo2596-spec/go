@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { logout } from "../actions";
+import { Logo } from "@/lib/logo";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
@@ -11,14 +12,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <label htmlFor="nav" className="navBackdrop" aria-hidden="true" />
 
       <aside className="sidebar">
-        <div className="brand">
-          <span className="badge">E</span>
-          <span className="rule" />
-          <span className="brandText">
-            GO
-            <small>emahairshop.com</small>
-          </span>
-        </div>
+        <Logo href="/admin" />
 
         <nav className="snav">
           <Link href="/admin" className="snavLink active">

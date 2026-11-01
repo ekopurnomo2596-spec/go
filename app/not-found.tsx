@@ -1,16 +1,10 @@
 import Link from "next/link";
+import { Logo } from "@/lib/logo";
 
 export default function NotFound() {
   return (
     <main className="public" style={{ paddingTop: "56px" }}>
-      <div className="brand center">
-        <span className="badge">E</span>
-        <span className="rule" />
-        <span className="brandText">
-          GO
-          <small>emahairshop.com</small>
-        </span>
-      </div>
+      <Logo center />
 
       <div className="code" aria-hidden="true">404</div>
       <div className="divider" />
