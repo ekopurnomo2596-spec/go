@@ -13,6 +13,7 @@
   --hover: #f5f3ee;
   --danger: #b3261e;
   --ok: #1c6b3a;
+  --bar: #22c55e;
   --btn: #1a1a1a;
   --btnt: #ffffff;
   color-scheme: light dark;
@@ -159,7 +160,7 @@ button.danger { background: transparent; color: var(--danger); border-color: var
 }
 
 /* ---------- Admin: konten ---------- */
-.wrap { max-width: 1000px; margin-inline: auto; }
+.wrap { max-width: 1000px; margin-inline: auto; padding-bottom: 72px; }
 .top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
 .top h1 { font-size: 1.4rem; font-weight: 800; margin: 0; }
 .top h1 small { display: block; color: var(--gold); font-weight: 600; font-size: .78rem; margin-top: 4px; }
@@ -190,7 +191,7 @@ details form { display: grid; gap: 8px; margin-top: 6px; min-width: 260px; }
 .bars { display: grid; gap: 9px; }
 .bar { display: grid; grid-template-columns: 140px 1fr 46px 28px; gap: 10px; align-items: center; font-size: .85rem; }
 .bar .track { background: var(--line); border-radius: 4px; height: 9px; overflow: hidden; }
-.bar .fill { background: var(--gold); height: 100%; }
+.bar .fill { background: var(--bar); height: 100%; }
 .bar .v { text-align: right; font-variant-numeric: tabular-nums; }
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
 @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } .bar { grid-template-columns: 110px 1fr 40px 28px; } }
@@ -275,7 +276,7 @@ details form { display: grid; gap: 8px; margin-top: 6px; min-width: 260px; }
 .statrow .cnt { font-weight: 800; font-size: 1.15rem; text-align: right; font-variant-numeric: tabular-nums; }
 .statrow .cnt small { display: block; font-weight: 500; font-size: .72rem; color: var(--muted); }
 .statrow .track { grid-column: 1 / -1; background: var(--line); border-radius: 4px; height: 7px; overflow: hidden; }
-.statrow .fill { background: var(--gold); height: 100%; }
+.statrow .fill { background: var(--bar); height: 100%; }
 .actions > form { display: flex; margin: 0; }
 .tablewrap:has(.linktable) { overflow: visible; }
 

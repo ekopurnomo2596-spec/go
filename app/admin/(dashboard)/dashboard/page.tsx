@@ -24,6 +24,10 @@ export default async function DashboardPage() {
         </h1>
       </div>
 
+      <p className="sum" style={{ margin: "0 0 4px" }}>
+        Pengunjung dihitung satu kali per alamat IP per hari. Hari tanpa data tampil 0. Angka ini sama dengan laporan statistik di Telegram.
+      </p>
+
       <div className="stats" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
         <div className="stat">
           <b>{n(w.today.visitors)}</b>
@@ -124,9 +128,6 @@ export default async function DashboardPage() {
             </div>
           </section>
 
-          <p className="hint" style={{ marginTop: 24 }}>
-            Pengunjung dihitung satu kali per alamat IP per hari. Hari tanpa data tampil 0. Angka ini sama dengan laporan statistik di Telegram.
-          </p>
         </>
       )}
     </main>
