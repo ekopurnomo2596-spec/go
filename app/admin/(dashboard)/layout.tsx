@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import { logout } from "../actions";
 import { Logo } from "@/lib/logo";
 import { SideNav } from "./side-nav";
+import { Toast } from "./forms";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
@@ -40,6 +41,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </label>
         {children}
       </div>
+      <Toast />
     </div>
   );
 }
