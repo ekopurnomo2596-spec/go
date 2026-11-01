@@ -361,7 +361,7 @@ button.ghost .spin, .btn.ghost .spin { --sc: var(--ink); }
 
 /* ---------- Toast pesan sukses/gagal (tanpa pindah halaman) ---------- */
 .msg.toast {
-  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 70;
+  position: fixed; top: 16px; right: 16px; z-index: 70;
   max-width: calc(100% - 32px); margin: 0; background: var(--card); box-shadow: 0 10px 30px rgba(0,0,0,.2);
 }
 
