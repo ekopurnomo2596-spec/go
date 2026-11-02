@@ -26,6 +26,9 @@ export type WebStats = {
   today: DayRow;
   sum: { visitors: number; pageviews: number; chats: number; leads: number };
   countries: [string, number][];
+  /** sumber trafik (hostname referrer / "langsung") dan perangkat, dijumlah 14 hari */
+  referrers: [string, number][];
+  devices: [string, number][];
   daysWithData: number;
 };
 
@@ -49,6 +52,8 @@ export async function getWebStats(): Promise<WebStats> {
   const keep: Record<string, Snap> = {};
 
   const country: Record<string, number> = {};
+  const refs: Record<string, number> = {};
+  const devs: Record<string, number> = {};
   let daysWithData = 0;
   const rows: DayRow[] = days.map((day, i) => {
     const live = parse(raw[i]);
@@ -69,6 +74,8 @@ export async function getWebStats(): Promise<WebStats> {
       const c = /^[A-Za-z]{2}$/.test(code) ? code.toUpperCase() : "XX";
       country[c] = (country[c] ?? 0) + Number(n || 0);
     }
+    for (const [k, n] of Object.entries(s?.vr ?? {})) refs[k] = (refs[k] ?? 0) + Number(n || 0);
+    for (const [k, n] of Object.entries(s?.vd ?? {})) devs[k] = (devs[k] ?? 0) + Number(n || 0);
     return {
       day,
       visitors: Number(s?.visitors ?? 0),
@@ -96,6 +103,8 @@ export async function getWebStats(): Promise<WebStats> {
     today: rows[rows.length - 1],
     sum: { visitors: add("visitors"), pageviews: add("pageviews"), chats: add("chats"), leads: add("leads") },
     countries: Object.entries(country).sort((a, b) => b[1] - a[1]),
+    referrers: Object.entries(refs),
+    devices: Object.entries(devs),
     daysWithData,
   };
 }

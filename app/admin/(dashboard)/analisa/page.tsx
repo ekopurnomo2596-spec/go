@@ -9,6 +9,8 @@ import { Info } from "../info";
 import { CountryList } from "./country-list";
 import { Flag } from "@/lib/flag";
 import { labelRef } from "@/lib/sumber";
+import { DeviceIcon, RefIcon } from "@/lib/sumber-icon";
+import { RefList } from "./ref-list";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Analisa" };
@@ -190,6 +192,23 @@ export default async function AnalisaPage({
 
   const devices = withRest(devGroups, 4, same);
   const refs = withRest(refGroups, 4, same);
+  const refCells = (label: string, v: number, isRest = false) => (
+    <>
+      <span className="an-src-l" title={label}>
+        <RefIcon name={label} rest={isRest} />
+        <span>{label}</span>
+      </span>
+      <div className="an-track">
+        <div className="an-fill" style={{ width: `${pct(v, refSum)}%`, background: "var(--an-acc)" }} />
+      </div>
+      <span className="an-pct">{pct(v, refSum)}%</span>
+    </>
+  );
+  const refRow = (key: string, label: string, v: number) => (
+    <div className="an-bar" key={key}>
+      {refCells(label, v)}
+    </div>
+  );
   const countries = withRest(countryRows, 4, countryName);
   const ctryNote = `${days} hari`;
   const subtitle = src === "go" ? goName : src === "ema" ? emaName : `${goName} + ${emaName}`;
@@ -400,7 +419,10 @@ export default async function AnalisaPage({
                     <div className="an-bars">
                       {devices.map((r) => (
                         <div className="an-bar" key={r.key}>
-                          <span title={r.label}>{r.label}</span>
+                          <span className="an-src-l" title={r.label}>
+                            <DeviceIcon name={r.label} rest={r.rest} />
+                            <span>{r.label}</span>
+                          </span>
                           <div className="an-track">
                             <div className="an-fill" style={{ width: `${pct(r.v, devSum)}%`, background: "var(--an-acc)" }} />
                           </div>
@@ -418,17 +440,20 @@ export default async function AnalisaPage({
                   {refs.length === 0 ? (
                     <p className="an-empty-s">Belum ada data.</p>
                   ) : (
-                    <div className="an-bars">
-                      {refs.map((r) => (
-                        <div className="an-bar" key={r.key}>
-                          <span title={r.label}>{r.label}</span>
-                          <div className="an-track">
-                            <div className="an-fill" style={{ width: `${pct(r.v, refSum)}%`, background: "var(--an-acc)" }} />
-                          </div>
-                          <span className="an-pct">{pct(r.v, refSum)}%</span>
-                        </div>
-                      ))}
-                    </div>
+                    <RefList
+                      top={refs
+                        .filter((r) => !r.rest)
+                        .map((r) => refRow(r.key, r.label, r.v))}
+                      more={
+                        refs.some((r) => r.rest)
+                          ? refGroups.slice(4).map(([k, v]) => refRow(k, k, v))
+                          : undefined
+                      }
+                      rest={(() => {
+                        const r = refs.find((x) => x.rest);
+                        return r ? refCells(r.label, r.v, true) : undefined;
+                      })()}
+                    />
                   )}
                 </section>
               </div>

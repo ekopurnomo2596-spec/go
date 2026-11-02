@@ -6,6 +6,8 @@ import { removeWebStatsAction, resetWebStats } from "../actions";
 import { ActionForm } from "./forms";
 import { WebX } from "./webx";
 import { Info } from "./info";
+import { WebBars } from "./web-bars";
+import { groupByLabel, labelDevice, labelRef } from "@/lib/sumber";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard" };
@@ -159,6 +161,11 @@ export default async function DashboardPage() {
                 </table>
               </div>
             </section>
+          </div>
+
+          <div className="cols">
+            <WebBars title="Sumber trafik" rows={groupByLabel(w.referrers, labelRef)} kind="ref" />
+            <WebBars title="Perangkat" rows={groupByLabel(w.devices, labelDevice)} kind="dev" />
           </div>
         </>
       )}
