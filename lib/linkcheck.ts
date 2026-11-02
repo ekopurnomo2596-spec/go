@@ -82,7 +82,7 @@ export async function getChecks(): Promise<Record<string, CheckResult>> {
 
 /** Tandai OK manual untuk tautan yang tidak dicek otomatis. */
 export async function markManualOk(slug: string): Promise<void> {
-  const r: CheckResult = { ok: true, label: "OK (manual)", t: Date.now(), manual: true };
+  const r: CheckResult = { ok: true, label: "Hidup (manual)", t: Date.now(), manual: true };
   await db().hset(KEY, { [slug]: JSON.stringify(r) });
 }
 

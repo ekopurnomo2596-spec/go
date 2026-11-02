@@ -115,7 +115,7 @@ export async function markOkAction(slug: string): Promise<Flash> {
   if (!link) return err("Link tidak ditemukan.");
   await markManualOk(s);
   revalidatePath("/admin/tautan");
-  return ok(`/${s} ditandai OK.`);
+  return ok(`/${s} ditandai hidup.`);
 }
 
 export async function checkLinksAction(): Promise<Flash> {

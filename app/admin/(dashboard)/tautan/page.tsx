@@ -86,12 +86,12 @@ export default async function AdminPage() {
                         {checks[l.slug]?.manual ? (
                           <span className="chk ok">
                             <i aria-hidden="true" />
-                            OK (manual) · {stamp(checks[l.slug].t)}
+                            Hidup (manual) · {stamp(checks[l.slug].t)}
                           </span>
                         ) : (
                           <span className="chk none">Cek manual</span>
                         )}
-                        <ManualCheck slug={l.slug} url={l.url} />
+                        {!checks[l.slug]?.manual && <ManualCheck slug={l.slug} url={l.url} />}
                       </div>
                     ) : checks[l.slug] ? (
                       <span className={"chk " + (checks[l.slug].ok ? "ok" : "bad")}>
