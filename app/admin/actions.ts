@@ -7,6 +7,7 @@ import { LOGIN_BASE } from "@/lib/login-path";
 import { createSession, destroySession, passwordOk, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/redis";
 import { getTindakan } from "@/lib/tindakan";
+import { checkAll } from "@/lib/linkcheck";
 import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, validKey } from "@/lib/ai";
 import type { Flash } from "@/lib/flash";
 import { RemoteError, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
@@ -101,6 +102,15 @@ export async function deleteLink(formData: FormData): Promise<Flash> {
 
   refresh();
   return ok("Link dihapus beserta datanya.");
+}
+
+export async function checkLinksAction(): Promise<Flash> {
+  await requireAdmin();
+  const r = Object.values(await checkAll());
+  const bad = r.filter((x) => !x.ok).length;
+  revalidatePath("/admin/tautan");
+  if (!r.length) return ok("Belum ada tautan untuk dicek.");
+  return bad ? err(`${r.length} tautan dicek, ${bad} bermasalah.`) : ok(`${r.length} tautan dicek, semua hidup.`);
 }
 
 export async function resetStats(formData: FormData): Promise<Flash> {

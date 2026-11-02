@@ -1,17 +1,21 @@
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { listLinksWithCounts } from "@/lib/links";
-import { CopyLink, CreateForm, DeleteLink, EditLink } from "../forms";
+import { getChecks } from "@/lib/linkcheck";
+import { CheckNow, CopyLink, CreateForm, DeleteLink, EditLink } from "../forms";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Tautan" };
 
 const n = (v: number) => v.toLocaleString("id-ID");
+const stamp = (ts: number) => new Date(ts).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "short", timeStyle: "short" });
 
 export default async function AdminPage() {
   await requireAdmin();
   const host = (await headers()).get("host") ?? "";
   const { links, counts } = await listLinksWithCounts();
+  const checks = await getChecks().catch(() => ({}) as Awaited<ReturnType<typeof getChecks>>);
+  const bad = links.filter((l) => checks[l.slug] && !checks[l.slug].ok);
   const sum = Object.values(counts).reduce((a, b) => a + b, 0);
   const top = [...links].sort((a, b) => (counts[b.slug] ?? 0) - (counts[a.slug] ?? 0))[0];
   const topN = top ? counts[top.slug] ?? 0 : 0;
@@ -22,8 +26,17 @@ export default async function AdminPage() {
         <h1>
           Semua tautan <small>{host}</small>
         </h1>
-        <CreateForm />
+        <div className="top-actions">
+          <CheckNow />
+          <CreateForm />
+        </div>
       </div>
+
+      {bad.length > 0 && (
+        <div className="chk-alert" role="alert">
+          <b>{bad.length} tautan bermasalah:</b> {bad.map((l) => `/${l.slug} (${checks[l.slug].label})`).join(", ")}. Pengunjung melihat halaman error.
+        </div>
+      )}
 
       <div className="stats">
         <div className="stat">
@@ -51,6 +64,7 @@ export default async function AdminPage() {
               <tr>
                 <th>Link</th>
                 <th>Tujuan</th>
+                <th>Status tujuan</th>
                 <th className="num">Klik</th>
                 <th>Aksi</th>
               </tr>
@@ -66,6 +80,16 @@ export default async function AdminPage() {
                     {l.interstitial && <div className="sum">Halaman perantara aktif</div>}
                   </td>
                   <td className="dest">{l.url}</td>
+                  <td>
+                    {checks[l.slug] ? (
+                      <span className={"chk " + (checks[l.slug].ok ? "ok" : "bad")}>
+                        <i aria-hidden="true" />
+                        {checks[l.slug].label} · {stamp(checks[l.slug].t)}
+                      </span>
+                    ) : (
+                      <span className="chk none">Belum dicek</span>
+                    )}
+                  </td>
                   <td className="num">{n(counts[l.slug] ?? 0)}</td>
                   <td>
                     <div className="actions">

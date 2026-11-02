@@ -41,3 +41,9 @@ Saat lokal, negara selalu tercatat "Tidak diketahui" karena header negara hanya 
 - Semua aksi di dashboard memeriksa sesi di sisi server.
 - Aktifkan 2FA di akun GitHub dan Vercel.
 - Slug `admin`, `api`, `_next` dicadangkan sistem.
+
+## Cek tautan mati
+- Tiap hari jam 02.00 WIB (Vercel Cron, lihat `vercel.json`) go memeriksa apakah URL tujuan tiap tautan masih bisa dibuka. Hasilnya tampil di kolom **Status tujuan** halaman Tautan, dan tautan bermasalah dimunculkan di kotak peringatan.
+- Tombol **Cek sekarang** menjalankannya manual.
+- Perlu variabel `CRON_SECRET` di Vercel (isi acak), lalu deploy ulang.
+- Yang diperiksa hanya halaman bisa dibuka (status di bawah 400), bukan isi halamannya.

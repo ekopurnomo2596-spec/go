@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { flash, type Flash } from "@/lib/flash";
-import { createLink, deleteLink, updateLink } from "../actions";
+import { checkLinksAction, createLink, deleteLink, updateLink } from "../actions";
 
 async function run(fn: () => Promise<Flash>): Promise<Flash> {
   try {
@@ -119,6 +119,22 @@ export function CreateForm() {
         </div>
       )}
     </>
+  );
+}
+
+export function CheckNow() {
+  const [pending, start] = useTransition();
+  return (
+    <button
+      type="button"
+      className={"ghost" + (pending ? " is-loading" : "")}
+      disabled={pending}
+      aria-busy={pending}
+      onClick={() => start(async () => flash(await run(() => checkLinksAction())))}
+    >
+      Cek sekarang
+      {pending && <span className="spin" aria-hidden="true" />}
+    </button>
   );
 }
 

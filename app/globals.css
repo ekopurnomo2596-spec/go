@@ -740,3 +740,12 @@ tr.zero td { color: var(--muted); }
   border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
 }
 .actions > button.copybtn:hover { background: var(--hover); opacity: 1; }
+
+/* ---------- Cek tautan mati ---------- */
+.top-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 600; white-space: nowrap; color: var(--muted); }
+.chk i { width: 8px; height: 8px; border-radius: 50%; background: var(--bar); display: block; flex: none; }
+.chk.bad { color: var(--danger); }
+.chk.bad i { background: var(--danger); }
+.chk.none { font-weight: 500; }
+.chk-alert { border: 1px solid var(--danger); color: var(--danger); border-radius: 12px; padding: 10px 14px; margin: 0 0 16px; font-size: .88rem; }
