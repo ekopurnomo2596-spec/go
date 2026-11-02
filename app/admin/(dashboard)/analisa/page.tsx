@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Analisa" };
 
 const nf = (v: number) => v.toLocaleString("id-ID");
-const RANGES = [7, 14, 30] as const;
+const RANGES = [1, 7, 14, 30] as const;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
 /** "2026-11-01" -> "1 Nov" */
@@ -106,6 +106,8 @@ export default async function AnalisaPage({
   const sp = await searchParams;
   const days = (RANGES as readonly number[]).includes(Number(sp.days)) ? Number(sp.days) : 14;
   const src: Src = (SRC as readonly string[]).includes(sp.src ?? "") ? (sp.src as Src) : "semua";
+  const one = days === 1;
+  const span = one ? "hari ini" : `${days} hari`;
   const showGo = src !== "ema";
   const showEma = src !== "go";
   const goName = (await headers()).get("host") ?? "go.emahairshop.com";
@@ -144,12 +146,22 @@ export default async function AnalisaPage({
   const deltaPct = a.prevTotal !== null ? pctDelta(a.total, a.prevTotal) : null;
   const uniqDelta = a.unique !== null && a.prevUnique !== null ? pctDelta(a.unique, a.prevUnique) : null;
   const f1 = (v: number) => v.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const cmp = one ? "Hari ini belum selesai, jadi tidak dibandingkan dengan kemarin. Lihat perbandingannya di grafik." : CMP;
+  const cmpAvg = one ? cmp : CMP_AVG;
+  const dv = (v: number | null) => (one ? undefined : v);
   const ctrDelta = a.ctr !== null && a.prevCtr !== null ? Math.round((a.ctr - a.prevCtr) * 10) / 10 : null;
+  const ctrPill = one ? undefined : ctrDelta === null ? (
+    <Pill tone="up">Baru</Pill>
+  ) : ctrDelta === 0 ? (
+    <Pill>Stabil</Pill>
+  ) : (
+    <Pill tone={ctrDelta > 0 ? "up" : "down"}>{`${ctrDelta > 0 ? "+" : ""}${f1(ctrDelta)}%`}</Pill>
+  );
 
   // ---- grafik tren: satu kolom per hari, titik berada di tengah kolom ----
-  const series: { cls: string; unit: string; name: string; data: [string, number][] }[] = [];
-  if (showGo) series.push({ cls: "", unit: "klik", name: goName, data: a.daily });
-  if (showEma) series.push({ cls: showGo ? "b" : "", unit: "pengunjung", name: emaName, data: emaDaily });
+  const series: { cls: string; unit: string; name: string; data: [string, number][]; prev: number }[] = [];
+  if (showGo) series.push({ cls: "", unit: "klik", name: goName, data: a.daily, prev: a.prevTotal ?? 0 });
+  if (showEma) series.push({ cls: showGo ? "b" : "", unit: "pengunjung", name: emaName, data: emaDaily, prev: sumOf(prevList, "visitors") });
   const N = dayList.length;
   const maxDay = Math.max(1, ...series.flatMap((x) => x.data.map(([, v]) => v)));
   const px = (i: number) => (N > 1 ? Number(((i / (N - 1)) * 100).toFixed(2)) : 50);
@@ -165,6 +177,8 @@ export default async function AnalisaPage({
     };
   });
   const trendTotal = series.reduce((t, x) => t + x.data.reduce((u, [, v]) => u + v, 0), 0);
+  const prevTrend = series.reduce((t, x) => t + x.prev, 0);
+  const prevVis = prevList[0] && snaps[prevList[0]] ? snaps[prevList[0]].visitors : null;
   // label sumbu X: interval tetap, dihitung mundur dari hari terakhir supaya jaraknya rata
   const tickStep = Math.max(1, Math.ceil((N - 1) / 5));
   const tickIdx: number[] = [];
@@ -210,7 +224,7 @@ export default async function AnalisaPage({
     </div>
   );
   const countries = withRest(countryRows, 4, countryName);
-  const ctryNote = `${days} hari`;
+  const ctryNote = span;
   const subtitle = src === "go" ? goName : src === "ema" ? emaName : `${goName} + ${emaName}`;
   const srcOptions = [
     { value: "semua", label: "Semua" },
@@ -235,7 +249,7 @@ export default async function AnalisaPage({
                 href={`/admin/analisa?days=${r}&src=${src}`}
                 aria-current={r === days ? "page" : undefined}
               >
-                {r} Hari
+                {r === 1 ? "Hari ini" : `${r} Hari`}
               </Link>
             ))}
           </nav>
@@ -250,19 +264,13 @@ export default async function AnalisaPage({
           <div className="an-kpis">
             {src === "go" && (
               <>
-                <Kpi value={nf(a.total)} label="Total klik" info={`Jumlah klik pada tautan go dalam ${days} hari. Satu alamat IP dihitung sekali per tautan per hari, bot tidak dihitung.\n${CMP}`} delta={deltaPct} />
-                <Kpi value={a.unique !== null ? nf(a.unique) : "-"} label="Pengunjung unik" info={`Perkiraan jumlah orang berbeda yang mengeklik tautan go. Satu alamat IP dihitung sekali per hari.\n${CMP}`} delta={uniqDelta} />
+                <Kpi value={nf(a.total)} label="Total klik" info={`Jumlah klik pada tautan go dalam ${span}. Satu alamat IP dihitung sekali per tautan per hari, bot tidak dihitung.\n${cmp}`} delta={dv(deltaPct)} />
+                <Kpi value={a.unique !== null ? nf(a.unique) : "-"} label="Pengunjung unik" info={`Perkiraan jumlah orang berbeda yang mengeklik tautan go. Satu alamat IP dihitung sekali per hari.\n${cmp}`} delta={dv(uniqDelta)} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
                   info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat).\nPersen (%) = selisih poin dibanding periode sebelumnya."}
-                  pill={
-                    ctrDelta === null ? <Pill tone="up">Baru</Pill> : ctrDelta === 0 ? (
-                      <Pill>Stabil</Pill>
-                    ) : (
-                      <Pill tone={ctrDelta > 0 ? "up" : "down"}>{`${ctrDelta > 0 ? "+" : ""}${f1(ctrDelta)}%`}</Pill>
-                    )
-                  }
+                  pill={ctrPill}
                 />
                 <Kpi
                   value={nf(a.linkCount)}
@@ -274,27 +282,25 @@ export default async function AnalisaPage({
             )}
             {src === "ema" && (
               <>
-                <Kpi value={nf(eVis)} label="Pengunjung" info={`Jumlah pengunjung emahairshop.com. Satu orang dihitung sekali per hari.\n${CMP_AVG}`} delta={avgDelta("visitors")} />
-                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Jumlah halaman emahairshop.com yang dibuka.\n${CMP_AVG}`} delta={avgDelta("pageviews")} />
-                <Kpi value={curN > 0 ? nf(Math.round(eVis / curN)) : "-"} label="Rata-rata pengunjung/hari" info="Total pengunjung dibagi jumlah hari yang ada datanya." delta={avgDelta("visitors")} />
+                <Kpi value={nf(eVis)} label="Pengunjung" info={`Jumlah pengunjung emahairshop.com. Satu orang dihitung sekali per hari.\n${cmpAvg}`} delta={dv(avgDelta("visitors"))} />
+                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Jumlah halaman emahairshop.com yang dibuka.\n${cmpAvg}`} delta={dv(avgDelta("pageviews"))} />
+                {one ? (
+                  <Kpi value={prevVis !== null ? nf(prevVis) : "-"} label="Pengunjung kemarin" info="Pengunjung emahairshop.com kemarin, sebagai pembanding hari ini." />
+                ) : (
+                  <Kpi value={curN > 0 ? nf(Math.round(eVis / curN)) : "-"} label="Rata-rata pengunjung/hari" info="Total pengunjung dibagi jumlah hari yang ada datanya." delta={dv(avgDelta("visitors"))} />
+                )}
               </>
             )}
             {src === "semua" && (
               <>
-                <Kpi value={nf(a.total)} label="Total klik" info={`Klik pada tautan go (${goName}) dalam ${days} hari.\n${CMP}`} delta={deltaPct} />
-                <Kpi value={nf(eVis)} label="Pengunjung" info={`Pengunjung ${emaName}. Satu orang dihitung sekali per hari.\n${CMP_AVG}`} delta={avgDelta("visitors")} />
-                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Halaman ${emaName} yang dibuka.\n${CMP_AVG}`} delta={avgDelta("pageviews")} />
+                <Kpi value={nf(a.total)} label="Total klik" info={`Klik pada tautan go (${goName}) dalam ${span}.\n${cmp}`} delta={dv(deltaPct)} />
+                <Kpi value={nf(eVis)} label="Pengunjung" info={`Pengunjung ${emaName}. Satu orang dihitung sekali per hari.\n${cmpAvg}`} delta={dv(avgDelta("visitors"))} />
+                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Halaman ${emaName} yang dibuka.\n${cmpAvg}`} delta={dv(avgDelta("pageviews"))} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
                   info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat).\nPersen (%) = selisih poin dibanding periode sebelumnya."}
-                  pill={
-                    ctrDelta === null ? <Pill tone="up">Baru</Pill> : ctrDelta === 0 ? (
-                      <Pill>Stabil</Pill>
-                    ) : (
-                      <Pill tone={ctrDelta > 0 ? "up" : "down"}>{`${ctrDelta > 0 ? "+" : ""}${f1(ctrDelta)}%`}</Pill>
-                    )
-                  }
+                  pill={ctrPill}
                 />
               </>
             )}
@@ -303,8 +309,8 @@ export default async function AnalisaPage({
           {/* Tren */}
           <section className="an-card an-mb an-trend">
             <h2>
-              {src === "go" ? "Tren klik harian" : src === "ema" ? "Tren pengunjung harian" : "Tren harian"}
-              {src === "semua" && (
+              {one ? "Hari ini dibanding kemarin" : src === "go" ? "Tren klik harian" : src === "ema" ? "Tren pengunjung harian" : "Tren harian"}
+              {src === "semua" && !one && (
                 <span className="an-lg">
                   <span>
                     <i className="g" />
@@ -317,8 +323,36 @@ export default async function AnalisaPage({
                 </span>
               )}
             </h2>
-            {trendTotal === 0 ? (
-              <p className="an-empty-s">Belum ada data dalam {days} hari terakhir.</p>
+            {trendTotal + prevTrend === 0 ? (
+              <p className="an-empty-s">{one ? "Belum ada data hari ini." : `Belum ada data dalam ${days} hari terakhir.`}</p>
+            ) : one ? (
+              <div className="an-vs">
+                {series.map((x) => {
+                  const now = x.data[0]?.[1] ?? 0;
+                  const mx = Math.max(1, now, x.prev);
+                  return (
+                    <div className="an-vs-g" key={x.unit}>
+                      {src === "semua" && <div className="an-vs-n">{x.name}</div>}
+                      <div className="an-vs-r">
+                        <span>Kemarin</span>
+                        <div className="an-track">
+                          <div className="an-fill mute" style={{ width: `${(x.prev / mx) * 100}%` }} />
+                        </div>
+                        <b>{nf(x.prev)}</b>
+                      </div>
+                      <div className="an-vs-r">
+                        <span>Hari ini</span>
+                        <div className="an-track">
+                          <div className="an-fill" style={{ width: `${(now / mx) * 100}%`, background: x.cls === "b" ? "var(--ink)" : "var(--an-acc)" }} />
+                        </div>
+                        <b>{nf(now)}</b>
+                      </div>
+                      <div className="an-vs-u">Satuan: {x.unit}</div>
+                    </div>
+                  );
+                })}
+                <p className="an-vs-note">Hari ini belum selesai (zona waktu WIB), jadi angkanya masih bertambah.</p>
+              </div>
             ) : (
               <>
                 <div className="an-plot" role="img" aria-label={`Grafik tren ${days} hari terakhir`}>

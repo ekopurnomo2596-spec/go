@@ -760,3 +760,29 @@ tr.zero td { color: var(--muted); }
   background: transparent; color: var(--ink); text-decoration: none; cursor: pointer;
 }
 .chk-manual a:hover, .chk-manual button:hover { background: var(--hover); opacity: 1; }
+
+/* ---------- Analisa: filter "Hari ini" + perapian layar HP ---------- */
+.an-fill.mute { background: var(--muted); opacity: .4; }
+.an-vs { display: grid; gap: 18px; }
+.an-vs-g { display: grid; gap: 10px; }
+.an-vs-n { font-size: .8rem; font-weight: 700; }
+.an-vs-r { display: grid; grid-template-columns: 64px 1fr minmax(36px, auto); gap: 12px; align-items: center; font-size: .86rem; }
+.an-vs-r > span { color: var(--muted); }
+.an-vs-r > b { text-align: right; font-weight: 800; }
+.an-vs-r .an-track { height: 10px; }
+.an-vs-u { color: var(--muted); font-size: .72rem; }
+.an-vs-note { margin: 0; color: var(--muted); font-size: .76rem; }
+
+@media (max-width: 640px) {
+  /* kontrol: pilih sumber penuh satu baris, rentang waktu di bawahnya */
+  .an-ctl { flex-wrap: wrap; gap: 8px; }
+  .an-src { flex: 1 1 100%; width: 100%; max-width: none; font-size: .86rem; }
+  .an-ctl .an-tabs { flex: 1 1 100%; width: 100%; }
+  .an-ctl .an-tabs a { flex: 1; justify-content: center; padding: 8px 4px; font-size: .8rem; white-space: nowrap; }
+  /* kartu angka: kartu terakhir yang ganjil melebar penuh, label boleh dua baris */
+  .an-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .an-kpi-l { height: auto; min-height: 20px; line-height: 1.25; align-items: flex-start; }
+  .an-kpi-l .info { margin-top: 1px; }
+  .an-card { padding: 16px; }
+  .an-vs-r { grid-template-columns: 56px 1fr minmax(30px, auto); gap: 10px; }
+}
