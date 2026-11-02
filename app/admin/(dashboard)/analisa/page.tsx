@@ -155,6 +155,30 @@ export default async function AnalisaPage({
   const yVh = snaps[jakartaDay(1)]?.vh;
   const ghostEma: [string, number][] | undefined =
     one && showEma && yVh && Object.keys(yVh).length > 0 ? hourOf24(yVh, 23) : undefined;
+  // pembanding persen untuk "Hari ini": kemarin sampai jam:menit yang sama
+  const nowMin = new Date(Date.now() + 7 * 3600e3).getUTCMinutes();
+  const hhmm = `${String(nowHour).padStart(2, "0")}.${String(nowMin).padStart(2, "0")}`;
+  const ySnap = snaps[jakartaDay(1)];
+  let yUpTo: number | null = null;
+  if (one && showEma && ySnap) {
+    const vis = ySnap.visits;
+    if (vis.length > 0 && vis.length >= ySnap.visitors) {
+      // daftar kunjungan kemarin lengkap (maks 10): hitung yang jamnya <= sekarang, akurat sampai menit
+      const nowKey = nowHour * 60 + nowMin;
+      yUpTo = vis.filter((v) => {
+        const [h, m] = String(v.t ?? "").split(":").map(Number);
+        return Number.isFinite(h) && Number.isFinite(m) && h * 60 + m <= nowKey;
+      }).length;
+    } else if (yVh && Object.keys(yVh).length > 0) {
+      // pakai data per jam; jam yang sedang berjalan dihitung sebanding menitnya
+      let n = 0;
+      for (let h = 0; h < nowHour; h++) n += Number(yVh[String(h)] ?? 0);
+      n += (Number(yVh[String(nowHour)] ?? 0) * (nowMin + 1)) / 60;
+      yUpTo = Math.round(n);
+    }
+  }
+  const sameDelta = yUpTo === null ? undefined : pctDelta(todayVisitors, yUpTo);
+  const visDelta = one ? sameDelta : avgDelta("visitors");
   // jam yang sedang berjalan belum tentu ada kunjungan; jangan digambar sebagai 0 (terlihat seperti turun)
   const trim = (d: [string, number][]) => (one && d.length > 1 && d[d.length - 1][1] === 0 ? d.slice(0, -1) : d);
   const emaCountry: Record<string, number> = {};
@@ -168,7 +192,13 @@ export default async function AnalisaPage({
   const uniqDelta = a.unique !== null && a.prevUnique !== null ? pctDelta(a.unique, a.prevUnique) : null;
   const f1 = (v: number) => v.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const cmp = one ? "Hari ini belum selesai, jadi tidak dibandingkan dengan kemarin." : "";
-  const cmpAvg = one && ghostEma ? `${cmp} Lihat perbandingannya di grafik.` : cmp;
+  const grafikNote = ghostEma ? " Lihat perbandingannya di grafik." : "";
+  const cmpAvg =
+    one && yUpTo !== null
+      ? `Persen dibandingkan kemarin sampai jam ${hhmm} (${nf(yUpTo)} pengunjung).${grafikNote}`
+      : one
+        ? `${cmp}${grafikNote}`
+        : cmp;
   const dv = (v: number | null) => (one ? undefined : v);
   const ctrDelta = a.ctr !== null && a.prevCtr !== null ? Math.round((a.ctr - a.prevCtr) * 10) / 10 : null;
   const ctrPill = one ? undefined : ctrDelta === null ? (
@@ -307,8 +337,8 @@ export default async function AnalisaPage({
             )}
             {src === "ema" && (
               <>
-                <Kpi value={nf(eVis)} label="Pengunjung" info={`Jumlah pengunjung emahairshop.com. Satu orang dihitung sekali per hari.${cmpAvg && `\n${cmpAvg}`}`} delta={dv(avgDelta("visitors"))} />
-                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Jumlah halaman emahairshop.com yang dibuka.${cmpAvg && `\n${cmpAvg}`}`} delta={dv(avgDelta("pageviews"))} />
+                <Kpi value={nf(eVis)} label="Pengunjung" info={`Jumlah pengunjung emahairshop.com. Satu orang dihitung sekali per hari.${cmpAvg && `\n${cmpAvg}`}`} delta={visDelta} />
+                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Jumlah halaman emahairshop.com yang dibuka.${cmp && `\n${cmp}`}`} delta={dv(avgDelta("pageviews"))} />
                 {one ? (
                   <Kpi value={prevVis !== null ? nf(prevVis) : "-"} label="Pengunjung kemarin" info="Pengunjung emahairshop.com kemarin, sebagai pembanding hari ini." />
                 ) : (
@@ -319,8 +349,8 @@ export default async function AnalisaPage({
             {src === "semua" && (
               <>
                 <Kpi value={nf(a.total)} label="Total klik" info={`Klik pada tautan go (${goName}) dalam ${span}.${cmp && `\n${cmp}`}`} delta={dv(deltaPct)} />
-                <Kpi value={nf(eVis)} label="Pengunjung" info={`Pengunjung ${emaName}. Satu orang dihitung sekali per hari.${cmpAvg && `\n${cmpAvg}`}`} delta={dv(avgDelta("visitors"))} />
-                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Halaman ${emaName} yang dibuka.${cmpAvg && `\n${cmpAvg}`}`} delta={dv(avgDelta("pageviews"))} />
+                <Kpi value={nf(eVis)} label="Pengunjung" info={`Pengunjung ${emaName}. Satu orang dihitung sekali per hari.${cmpAvg && `\n${cmpAvg}`}`} delta={visDelta} />
+                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Halaman ${emaName} yang dibuka.${cmp && `\n${cmp}`}`} delta={dv(avgDelta("pageviews"))} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
