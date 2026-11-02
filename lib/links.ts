@@ -133,11 +133,24 @@ export type Analytics = {
  */
 type BdKind = "c" | "d" | "r";
 const BD_KINDS: BdKind[] = ["c", "d", "r"];
-/** "x" = gabungan negara x sumber, field `{slug}|{negara}|{sumber}`. Tidak ikut BD_KINDS karena Analisa membacanya terpisah. */
-type BdAny = BdKind | "x";
-const BD_PURGE: BdAny[] = [...BD_KINDS, "x"];
+/** "x" = gabungan negara x sumber, field `{slug}|{negara}|{sumber}`. "h" = klik per jam WIB, field `{slug}|{jam 0-23}`. Keduanya tidak ikut BD_KINDS karena Analisa membacanya terpisah. */
+type BdAny = BdKind | "x" | "h";
+const BD_PURGE: BdAny[] = [...BD_KINDS, "x", "h"];
 const BD_KEEP_DAYS = 100;
 const bdKey = (k: BdAny, day: string) => `bd:${k}:${day}`;
+const hourOf = (t: number) => new Date(t + 7 * 3600e3).getUTCHours();
+
+/** Klik hari ini per jam (WIB), indeks 0-23, semua tautan. Hanya klik yang dicatat sejak pencatatan per jam aktif. */
+export async function getHourlyToday(): Promise<number[]> {
+  const out = new Array<number>(24).fill(0);
+  const h = await db().hgetall<Record<string, number | string>>(bdKey("h", jakartaDay(0)));
+  for (const [f, v] of Object.entries(h ?? {})) {
+    const hr = Number(f.slice(f.lastIndexOf("|") + 1));
+    if (Number.isInteger(hr) && hr >= 0 && hr < 24) out[hr] += Number(v) || 0;
+  }
+  return out.map((v) => Math.max(0, v));
+}
+
 const bdAllDays = () => Array.from({ length: BD_KEEP_DAYS }, (_, i) => jakartaDay(i));
 
 /** Hapus semua field milik slug pada hari-hari tertentu (semua jenis). */
@@ -376,6 +389,8 @@ export async function recordClick(
   }
   p.hincrby(bdKey("x", today), `${slug}|${info.country}|${info.referrer}`, 1);
   p.expire(bdKey("x", today), BD_KEEP_DAYS * 86400);
+  p.hincrby(bdKey("h", today), `${slug}|${hourOf(Date.now())}`, 1);
+  p.expire(bdKey("h", today), BD_KEEP_DAYS * 86400);
   if (info.visitor) {
     // pengunjung unik per hari (HyperLogLog, hanya hash — tanpa IP mentah); simpan ~100 hari
     const uvKey = `uv:${jakartaDay(0)}`;
@@ -495,6 +510,7 @@ export async function removeStats(slug: string, sel: { days?: string[]; country?
     if (sel.country) for (const d of bdAllDays()) q.hdel(bdKey("c", d), `${slug}|${sel.country}`);
     for (const c of removed) {
       const day = dayOf(c.t);
+      q.hincrby(bdKey("h", day), `${slug}|${hourOf(c.t)}`, -1);
       if (!sel.country) q.hincrby(bdKey("c", day), `${slug}|${c.c}`, -1);
       if (c.d) q.hincrby(bdKey("d", day), `${slug}|${c.d}`, -1);
       if (c.r) q.hincrby(bdKey("r", day), `${slug}|${c.r}`, -1);
