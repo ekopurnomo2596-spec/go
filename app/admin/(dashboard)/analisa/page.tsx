@@ -67,8 +67,6 @@ function Delta({ v }: { v: number | null }) {
   return v === 0 ? <Pill>Stabil</Pill> : <Pill tone={v > 0 ? "up" : "down"}>{`${v > 0 ? "+" : ""}${v}%`}</Pill>;
 }
 
-const CMP = "Persen (%) = naik/turun dibanding periode sebelumnya.\nBaru = periode sebelumnya belum ada data.";
-const CMP_AVG = "Persen (%) = perubahan rata-rata harian dibanding periode sebelumnya.\nBaru = periode sebelumnya belum ada data.";
 
 function Kpi({
   value,
@@ -155,8 +153,8 @@ export default async function AnalisaPage({
   const deltaPct = a.prevTotal !== null ? pctDelta(a.total, a.prevTotal) : null;
   const uniqDelta = a.unique !== null && a.prevUnique !== null ? pctDelta(a.unique, a.prevUnique) : null;
   const f1 = (v: number) => v.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const cmp = one ? "Hari ini belum selesai, jadi tidak dibandingkan dengan kemarin. Lihat perbandingannya di grafik." : CMP;
-  const cmpAvg = one ? cmp : CMP_AVG;
+  const cmp = one ? "Hari ini belum selesai, jadi tidak dibandingkan dengan kemarin. Lihat perbandingannya di grafik." : "";
+  const cmpAvg = cmp;
   const dv = (v: number | null) => (one ? undefined : v);
   const ctrDelta = a.ctr !== null && a.prevCtr !== null ? Math.round((a.ctr - a.prevCtr) * 10) / 10 : null;
   const ctrPill = one ? undefined : ctrDelta === null ? (
@@ -273,12 +271,12 @@ export default async function AnalisaPage({
           <div className="an-kpis">
             {src === "go" && (
               <>
-                <Kpi value={nf(a.total)} label="Total klik" info={`Jumlah klik pada tautan go dalam ${span}. Satu alamat IP dihitung sekali per tautan per hari, bot tidak dihitung.\n${cmp}`} delta={dv(deltaPct)} />
-                <Kpi value={a.unique !== null ? nf(a.unique) : "-"} label="Pengunjung unik" info={`Perkiraan jumlah orang berbeda yang mengeklik tautan go. Satu alamat IP dihitung sekali per hari.\n${cmp}`} delta={dv(uniqDelta)} />
+                <Kpi value={nf(a.total)} label="Total klik" info={`Jumlah klik pada tautan go dalam ${span}. Satu alamat IP dihitung sekali per tautan per hari, bot tidak dihitung.${cmp && `\n${cmp}`}`} delta={dv(deltaPct)} />
+                <Kpi value={a.unique !== null ? nf(a.unique) : "-"} label="Pengunjung unik" info={`Perkiraan jumlah orang berbeda yang mengeklik tautan go. Satu alamat IP dihitung sekali per hari.${cmp && `\n${cmp}`}`} delta={dv(uniqDelta)} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
-                  info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat).\nPersen (%) = selisih poin dibanding periode sebelumnya."}
+                  info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat)."}
                   pill={ctrPill}
                 />
                 <Kpi
@@ -291,8 +289,8 @@ export default async function AnalisaPage({
             )}
             {src === "ema" && (
               <>
-                <Kpi value={nf(eVis)} label="Pengunjung" info={`Jumlah pengunjung emahairshop.com. Satu orang dihitung sekali per hari.\n${cmpAvg}`} delta={dv(avgDelta("visitors"))} />
-                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Jumlah halaman emahairshop.com yang dibuka.\n${cmpAvg}`} delta={dv(avgDelta("pageviews"))} />
+                <Kpi value={nf(eVis)} label="Pengunjung" info={`Jumlah pengunjung emahairshop.com. Satu orang dihitung sekali per hari.${cmpAvg && `\n${cmpAvg}`}`} delta={dv(avgDelta("visitors"))} />
+                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Jumlah halaman emahairshop.com yang dibuka.${cmpAvg && `\n${cmpAvg}`}`} delta={dv(avgDelta("pageviews"))} />
                 {one ? (
                   <Kpi value={prevVis !== null ? nf(prevVis) : "-"} label="Pengunjung kemarin" info="Pengunjung emahairshop.com kemarin, sebagai pembanding hari ini." />
                 ) : (
@@ -302,13 +300,13 @@ export default async function AnalisaPage({
             )}
             {src === "semua" && (
               <>
-                <Kpi value={nf(a.total)} label="Total klik" info={`Klik pada tautan go (${goName}) dalam ${span}.\n${cmp}`} delta={dv(deltaPct)} />
-                <Kpi value={nf(eVis)} label="Pengunjung" info={`Pengunjung ${emaName}. Satu orang dihitung sekali per hari.\n${cmpAvg}`} delta={dv(avgDelta("visitors"))} />
-                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Halaman ${emaName} yang dibuka.\n${cmpAvg}`} delta={dv(avgDelta("pageviews"))} />
+                <Kpi value={nf(a.total)} label="Total klik" info={`Klik pada tautan go (${goName}) dalam ${span}.${cmp && `\n${cmp}`}`} delta={dv(deltaPct)} />
+                <Kpi value={nf(eVis)} label="Pengunjung" info={`Pengunjung ${emaName}. Satu orang dihitung sekali per hari.${cmpAvg && `\n${cmpAvg}`}`} delta={dv(avgDelta("visitors"))} />
+                <Kpi value={nf(ePv)} label="Halaman dilihat" info={`Halaman ${emaName} yang dibuka.${cmpAvg && `\n${cmpAvg}`}`} delta={dv(avgDelta("pageviews"))} />
                 <Kpi
                   value={a.ctr !== null ? `${f1(a.ctr)}%` : "-"}
                   label="Rata-rata CTR"
-                  info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat).\nPersen (%) = selisih poin dibanding periode sebelumnya."}
+                  info={"Persentase halaman dilihat di emahairshop.com yang berujung klik tautan go (klik ÷ halaman dilihat)."}
                   pill={ctrPill}
                 />
               </>
