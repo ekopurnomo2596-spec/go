@@ -126,33 +126,39 @@ export function TelegramForm({ masked, chat }: { masked: string | null; chat: st
         });
       }}
     >
-      <label htmlFor="tg-token">{connected ? "Ganti token bot (kosongkan kalau tidak berubah)" : "Token bot"}</label>
-      <div className="tk-row">
+      <div className="tk-field">
+        <label htmlFor="tg-token">{connected ? "Ganti token bot" : "Token bot"}</label>
+        <div className="tk-row">
+          <input
+            id="tg-token"
+            name="token"
+            type={show ? "text" : "password"}
+            placeholder={connected ? "Tempel token baru" : "123456789:AA… dari BotFather"}
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            maxLength={200}
+          />
+          <button type="button" className="ghost" onClick={() => setShow((v) => !v)} aria-pressed={show}>
+            {show ? "Sembunyikan" : "Tampilkan"}
+          </button>
+        </div>
+        {connected && <p className="tk-hint">Kosongkan kalau token tidak berubah.</p>}
+      </div>
+      <div className="tk-field">
+        <label htmlFor="tg-chat">Chat ID</label>
         <input
-          id="tg-token"
-          name="token"
-          type={show ? "text" : "password"}
-          placeholder={connected ? "Tempel token baru" : "123456789:AA… dari BotFather"}
+          id="tg-chat"
+          name="chat"
+          defaultValue={chat ?? ""}
+          placeholder="123456789 atau -100… atau @namakanal"
           autoComplete="off"
           autoCapitalize="off"
           spellCheck={false}
-          maxLength={200}
+          maxLength={40}
         />
-        <button type="button" className="ghost" onClick={() => setShow((v) => !v)} aria-pressed={show}>
-          {show ? "Sembunyikan" : "Tampilkan"}
-        </button>
+        <p className="tk-hint">Opsional. Kosongkan lalu pakai Sambungkan.</p>
       </div>
-      <label htmlFor="tg-chat">Chat ID (opsional, kosongkan lalu pakai Sambungkan)</label>
-      <input
-        id="tg-chat"
-        name="chat"
-        defaultValue={chat ?? ""}
-        placeholder="123456789 atau -100… atau @namakanal"
-        autoComplete="off"
-        autoCapitalize="off"
-        spellCheck={false}
-        maxLength={40}
-      />
       <div className="tk-btns">
         <button type="submit" className={saving ? "is-loading" : ""} disabled={busy} aria-busy={saving}>
           Simpan
