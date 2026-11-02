@@ -565,8 +565,17 @@ tr.zero td { color: var(--muted); }
 .an-rec-main { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .an-rec-sub { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .an-rec-time { color: var(--muted); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.an-rec-head { padding: 0 0 8px !important; font-size: .72rem; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); border-top: 0 !important; border-bottom: 1px solid var(--line); }
+.an-rec-head + .an-rec-row { border-top: 0; padding-top: 9px; }
+.an-rec-src { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.an-rec-src > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.an-rec-more { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 8px; padding: 9px 0 0; border: 0; border-top: 1px solid var(--line); background: none; color: var(--muted); font: inherit; font-size: .82rem; cursor: pointer; }
+.an-rec-more:hover { color: inherit; }
+.an-rec-more svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
+.an-rec-more svg.up { transform: rotate(180deg); }
 @media (max-width: 560px) {
   .an-rec-row { grid-template-columns: 20px minmax(0, 1fr) auto; row-gap: 1px; }
+  .an-rec-head { display: none; }
   .an-rec-sub { grid-column: 2; grid-row: 2; font-size: .78rem; }
   .an-rec-time { grid-column: 3; grid-row: 1 / span 2; }
 }

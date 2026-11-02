@@ -11,6 +11,7 @@ import { Flag } from "@/lib/flag";
 import { labelRef } from "@/lib/sumber";
 import { DeviceIcon, RefIcon } from "@/lib/sumber-icon";
 import { RefList } from "./ref-list";
+import { RecentList } from "./recent-list";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Analisa" };
@@ -402,12 +403,35 @@ export default async function AnalisaPage({
               <h2>
                 Klik terakhir <small>hari ini</small>
               </h2>
-              <div className="an-rec">
+              <RecentList
+                head={
+                  <div className="an-rec-row an-rec-head" aria-hidden="true">
+                    <span />
+                    <span>Tautan</span>
+                    <span>Sumber</span>
+                    <span className="an-rec-time">Jam</span>
+                  </div>
+                }
+                rows={recentGo.map((c, i) => (
+                  <div className="an-rec-row" key={i}>
+                    <Flag code={c.c} />
+                    <span className="an-rec-main">{c.s ? `/${c.s}` : "-"}</span>
+                    <span className="an-rec-sub an-rec-src" title={labelRef(c.r)}>
+                      <RefIcon name={labelRef(c.r)} />
+                      <span>{labelRef(c.r)}</span>
+                    </span>
+                    <span className="an-rec-time">{goTime(c.t)} WIB</span>
+                  </div>
+                ))}
+              />
                 {recentGo.map((c, i) => (
                   <div className="an-rec-row" key={i}>
                     <Flag code={c.c} />
                     <span className="an-rec-main">{c.s ? `/${c.s}` : "-"}</span>
-                    <span className="an-rec-sub">{labelRef(c.r)}</span>
+                    <span className="an-rec-sub an-rec-src" title={labelRef(c.r)}>
+                      <RefIcon name={labelRef(c.r)} />
+                      <span>{labelRef(c.r)}</span>
+                    </span>
                     <span className="an-rec-time">{goTime(c.t)} WIB</span>
                   </div>
                 ))}
@@ -421,7 +445,24 @@ export default async function AnalisaPage({
               <h2>
                 Kunjungan terakhir <small>hari ini</small>
               </h2>
-              <div className="an-rec">
+              <RecentList
+                head={
+                  <div className="an-rec-row an-rec-head" aria-hidden="true">
+                    <span />
+                    <span>Negara</span>
+                    <span>IP</span>
+                    <span className="an-rec-time">Jam</span>
+                  </div>
+                }
+                rows={recent.map((v, i) => (
+                  <div className="an-rec-row" key={i}>
+                    <Flag code={String(v.c ?? "").toUpperCase()} />
+                    <span className="an-rec-main">{countryName(String(v.c ?? "").toUpperCase())}</span>
+                    <span className="an-rec-sub">{v.ip ?? ""}</span>
+                    <span className="an-rec-time">{String(v.t ?? "-").replace(":", ".")} WIB</span>
+                  </div>
+                ))}
+              />
                 {recent.map((v, i) => (
                   <div className="an-rec-row" key={i}>
                     <Flag code={String(v.c ?? "").toUpperCase()} />
