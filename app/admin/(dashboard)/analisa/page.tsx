@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
-import { getAnalytics, getHourlyToday } from "@/lib/links";
+import { getAnalytics, getHourlyToday, getRecentClicksToday } from "@/lib/links";
 import { countryName, jakartaDay } from "@/lib/format";
 import { getWebSnaps } from "@/lib/visits";
 import { SourceSelect } from "./source-select";
@@ -114,6 +114,11 @@ export default async function AnalisaPage({
   const chartDays = one ? 7 : days;
   const ac = a;
   const hourly = one && showGo ? await getHourlyToday() : [];
+  const recentGo = one && showGo ? await getRecentClicksToday(10) : [];
+  const goTime = (t: number) => {
+    const d = new Date(t + 7 * 3600e3);
+    return `${String(d.getUTCHours()).padStart(2, "0")}.${String(d.getUTCMinutes()).padStart(2, "0")}`;
+  };
   const hourOf24 = (vh: Record<string, number> | undefined, upTo: number): [string, number][] =>
     Array.from({ length: upTo + 1 }, (_, h) => [hourLabel(h), Number(vh?.[String(h)] ?? 0)] as [string, number]);
   const nowHour = new Date(Date.now() + 7 * 3600e3).getUTCHours();
@@ -390,6 +395,26 @@ export default async function AnalisaPage({
               </>
             )}
           </section>
+
+          {/* Klik terakhir lintas-tautan (hari ini, data go) */}
+          {one && showGo && recentGo.length > 0 && (
+            <section className="an-card an-mb">
+              <h2>
+                Klik terakhir <small>hari ini</small>
+              </h2>
+              <div className="an-ctry">
+                {recentGo.map((c, i) => (
+                  <div className="an-ci" key={i}>
+                    <Flag code={c.c} />
+                    <span className="an-cn">
+                      {[c.s && `/${c.s}`, labelRef(c.r)].filter(Boolean).join(" · ")}
+                    </span>
+                    <span className="an-pct">{goTime(c.t)} WIB</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Kunjungan terakhir + jamnya (hari ini, data website utama) */}
           {one && showEma && recent.length > 0 && (

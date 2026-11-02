@@ -16,7 +16,7 @@ export type Link = {
   createdAt: number;
 };
 
-export type Click = { t: number; c: string; r: string; d: string };
+export type Click = { t: number; c: string; r: string; d: string; s?: string };
 
 export type Stats = {
   total: number;
@@ -358,6 +358,8 @@ function safeParse(s: string): Click | null {
   }
 }
 
+const dayOf = (t: number) => new Date(t + 7 * 3600e3).toISOString().slice(0, 10);
+
 export async function recordClick(
   slug: string,
   info: { country: string; referrer: string; device: string; visitor?: string },
@@ -400,7 +402,19 @@ export async function recordClick(
   const click: Click = { t: Date.now(), c: info.country, r: info.referrer, d: info.device };
   p.lpush(`recent:${slug}`, click);
   p.ltrim(`recent:${slug}`, 0, 99);
+  // klik terbaru lintas-tautan, untuk Analisa (src go/semua, hari ini saja)
+  p.lpush("recent:all", { ...click, s: slug });
+  p.ltrim("recent:all", 0, 9);
   await p.exec();
+}
+
+/** Klik terbaru lintas-tautan hari ini (maks `limit`), untuk Analisa. */
+export async function getRecentClicksToday(limit = 10): Promise<Click[]> {
+  const raw = (await db().lrange<unknown[]>("recent:all", 0, limit - 1)) ?? [];
+  const today = jakartaDay(0);
+  return raw
+    .map((x) => (typeof x === "string" ? safeParse(x) : (x as Click)))
+    .filter((x): x is Click => !!x && dayOf(x.t) === today);
 }
 
 export async function deleteLinkData(slug: string) {
@@ -421,8 +435,6 @@ export async function resetStatsData(slug: string) {
   await p.exec();
   await purgeBreakdown(slug, bdAllDays());
 }
-
-const dayOf = (t: number) => new Date(t + 7 * 3600e3).toISOString().slice(0, 10);
 
 /** Hapus sebagian data statistik: per hari, per negara, atau satu klik. Angka total ikut disesuaikan. */
 export async function removeStats(slug: string, sel: { days?: string[]; country?: string; t?: number }) {
