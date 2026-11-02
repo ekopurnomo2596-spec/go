@@ -562,6 +562,12 @@ tr.zero td { color: var(--muted); }
   .an-cols { grid-template-columns: 1fr; }
 }
 .an-ctl { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .an-ctl { flex-wrap: nowrap; width: 100%; }
+  .an-src { flex: 0 1 auto; width: auto; max-width: 130px; padding: 0 28px 0 12px; font-size: .78rem; }
+  .an-ctl .an-tabs { flex: 1 1 auto; min-width: 0; }
+  .an-ctl .an-tabs a { flex: 1; padding: 8px 6px; font-size: .78rem; text-align: center; }
+}
 .an-ctl .an-tabs { box-sizing: border-box; height: 46px; align-items: stretch; }
 .an-ctl .an-tabs a { display: flex; align-items: center; }
 .an-src { box-sizing: border-box; height: 46px; font: inherit; font-size: .82rem; font-weight: 600; padding: 0 36px 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 14px; color: var(--ink); cursor: pointer; -webkit-appearance: none; appearance: none; outline: none; }
@@ -625,8 +631,8 @@ tr.zero td { color: var(--muted); }
 }
 @media (max-width: 640px) {
   .tx-card { flex-direction: column; align-items: stretch; }
-  .tx-btns { flex-direction: column; align-items: stretch; }
-  .tx-btns .btn, .tx-btns button { width: 100%; }
+  .tx-btns { flex-wrap: wrap; }
+  .tx-btns .btn, .tx-btns button { flex: 1 1 calc(50% - 4px); min-width: 120px; }
 }
 
 /* ---- Saran AI (Tindakan, AI, Token) ---- */
@@ -667,14 +673,17 @@ tr.zero td { color: var(--muted); }
   .panel .tablewrap table.clicktable, .panel .tablewrap table.clicktable tbody { display: block; }
   .panel .tablewrap table.clicktable thead { display: none; }
   .panel .tablewrap table.clicktable tr {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
-    position: relative; padding: 12px 40px 12px 0; border-bottom: 1px solid var(--line);
+    display: flex; flex-wrap: nowrap; align-items: center; gap: 12px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    padding: 12px 0; border-bottom: 1px solid var(--line);
   }
   .panel .tablewrap table.clicktable tbody tr:last-child { border-bottom: 0; }
-  .panel .tablewrap table.clicktable td { display: block; padding: 0; border: 0; min-width: 0; }
-  /* waktu di baris pertama; negara, sumber, perangkat berderet di bawahnya (turun baris kalau sempit) */
-  .panel .tablewrap table.clicktable td:nth-child(1) { flex-basis: 100%; color: var(--muted); font-size: .78rem; }
+  .panel .tablewrap table.clicktable td { display: block; padding: 0; border: 0; min-width: 0; flex: none; }
+  /* waktu, negara, sumber, perangkat tetap satu baris (geser ke samping kalau sempit) */
+  .panel .tablewrap table.clicktable td:nth-child(1) { color: var(--muted); font-size: .78rem; white-space: nowrap; }
   .panel .tablewrap table.clicktable td .cn { white-space: nowrap; }
-  /* tombol hapus di kanan atas kartu */
-  .panel .tablewrap table.clicktable td:nth-child(5) { position: absolute; top: 8px; right: 0; }
+  /* tombol hapus menempel di kanan, selalu terlihat tanpa ikut digeser */
+  .panel .tablewrap table.clicktable td:nth-child(5) {
+    position: sticky; right: 0; margin-left: auto; padding-left: 8px; background: var(--card);
+  }
 }
