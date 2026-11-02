@@ -103,7 +103,7 @@ export default async function AnalisaPage({
 }) {
   await requireAdmin();
   const sp = await searchParams;
-  const days = (RANGES as readonly number[]).includes(Number(sp.days)) ? Number(sp.days) : 14;
+  const days = (RANGES as readonly number[]).includes(Number(sp.days)) ? Number(sp.days) : 1;
   const src: Src = (SRC as readonly string[]).includes(sp.src ?? "") ? (sp.src as Src) : "semua";
   const one = days === 1;
   const span = one ? "hari ini" : `${days} hari`;
