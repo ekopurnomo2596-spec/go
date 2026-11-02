@@ -113,13 +113,17 @@ export default async function AnalisaPage({
   const goName = (await headers()).get("host") ?? "go.emahairshop.com";
   const emaName = "emahairshop.com";
   const a = await getAnalytics(days);
+  const chartDays = one ? 7 : days;
+  const ac = one ? await getAnalytics(chartDays) : a;
 
   // ---- data website utama (ema) ----
   const dayList: string[] = [];
   for (let i = days - 1; i >= 0; i--) dayList.push(jakartaDay(i));
   const prevList: string[] = [];
   for (let i = days * 2 - 1; i >= days; i--) prevList.push(jakartaDay(i));
-  const snaps = showEma ? await getWebSnaps([...prevList, ...dayList]) : {};
+  const chartList: string[] = [];
+  for (let i = chartDays - 1; i >= 0; i--) chartList.push(jakartaDay(i));
+  const snaps = showEma ? await getWebSnaps([...new Set([...prevList, ...dayList, ...chartList])]) : {};
   const sumOf = (list: string[], k: "visitors" | "pageviews") => list.reduce((t, d) => t + (snaps[d]?.[k] ?? 0), 0);
   const withData = (list: string[]) => list.filter((d) => snaps[d]).length;
   const eVis = sumOf(dayList, "visitors");
@@ -135,7 +139,7 @@ export default async function AnalisaPage({
     for (const [k, n] of Object.entries(snaps[d]?.vd ?? {})) emaDev[k] = (emaDev[k] ?? 0) + Number(n || 0);
     for (const [k, n] of Object.entries(snaps[d]?.vr ?? {})) emaRef[k] = (emaRef[k] ?? 0) + Number(n || 0);
   }
-  const emaDaily: [string, number][] = dayList.map((d) => [d, snaps[d]?.visitors ?? 0]);
+  const emaDaily: [string, number][] = chartList.map((d) => [d, snaps[d]?.visitors ?? 0]);
   const emaCountry: Record<string, number> = {};
   for (const d of dayList)
     for (const [code, n] of Object.entries(snaps[d]?.vc ?? {})) {
@@ -160,9 +164,9 @@ export default async function AnalisaPage({
 
   // ---- grafik tren: satu kolom per hari, titik berada di tengah kolom ----
   const series: { cls: string; unit: string; name: string; data: [string, number][]; prev: number }[] = [];
-  if (showGo) series.push({ cls: "", unit: "klik", name: goName, data: a.daily, prev: a.prevTotal ?? 0 });
+  if (showGo) series.push({ cls: "", unit: "klik", name: goName, data: ac.daily, prev: 0 });
   if (showEma) series.push({ cls: showGo ? "b" : "", unit: "pengunjung", name: emaName, data: emaDaily, prev: sumOf(prevList, "visitors") });
-  const N = dayList.length;
+  const N = chartList.length;
   const maxDay = Math.max(1, ...series.flatMap((x) => x.data.map(([, v]) => v)));
   const px = (i: number) => (N > 1 ? Number(((i / (N - 1)) * 100).toFixed(2)) : 50);
   const colW = N > 1 ? 100 / (N - 1) : 100;
@@ -177,7 +181,6 @@ export default async function AnalisaPage({
     };
   });
   const trendTotal = series.reduce((t, x) => t + x.data.reduce((u, [, v]) => u + v, 0), 0);
-  const prevTrend = series.reduce((t, x) => t + x.prev, 0);
   const prevVis = prevList[0] && snaps[prevList[0]] ? snaps[prevList[0]].visitors : null;
   // label sumbu X: interval tetap, dihitung mundur dari hari terakhir supaya jaraknya rata
   const tickStep = Math.max(1, Math.ceil((N - 1) / 5));
@@ -309,8 +312,9 @@ export default async function AnalisaPage({
           {/* Tren */}
           <section className="an-card an-mb an-trend">
             <h2>
-              {one ? "Hari ini dibanding kemarin" : src === "go" ? "Tren klik harian" : src === "ema" ? "Tren pengunjung harian" : "Tren harian"}
-              {src === "semua" && !one && (
+              {src === "go" ? "Tren klik harian" : src === "ema" ? "Tren pengunjung harian" : "Tren harian"}
+              {one && <small>7 hari terakhir</small>}
+              {src === "semua" && (
                 <span className="an-lg">
                   <span>
                     <i className="g" />
@@ -323,39 +327,11 @@ export default async function AnalisaPage({
                 </span>
               )}
             </h2>
-            {trendTotal + prevTrend === 0 ? (
-              <p className="an-empty-s">{one ? "Belum ada data hari ini." : `Belum ada data dalam ${days} hari terakhir.`}</p>
-            ) : one ? (
-              <div className="an-vs">
-                {series.map((x) => {
-                  const now = x.data[0]?.[1] ?? 0;
-                  const mx = Math.max(1, now, x.prev);
-                  return (
-                    <div className="an-vs-g" key={x.unit}>
-                      {src === "semua" && <div className="an-vs-n">{x.name}</div>}
-                      <div className="an-vs-r">
-                        <span>Kemarin</span>
-                        <div className="an-track">
-                          <div className="an-fill mute" style={{ width: `${(x.prev / mx) * 100}%` }} />
-                        </div>
-                        <b>{nf(x.prev)}</b>
-                      </div>
-                      <div className="an-vs-r">
-                        <span>Hari ini</span>
-                        <div className="an-track">
-                          <div className="an-fill" style={{ width: `${(now / mx) * 100}%`, background: x.cls === "b" ? "var(--ink)" : "var(--an-acc)" }} />
-                        </div>
-                        <b>{nf(now)}</b>
-                      </div>
-                      <div className="an-vs-u">Satuan: {x.unit}</div>
-                    </div>
-                  );
-                })}
-                <p className="an-vs-note">Hari ini belum selesai (zona waktu WIB), jadi angkanya masih bertambah.</p>
-              </div>
+            {trendTotal === 0 ? (
+              <p className="an-empty-s">Belum ada data dalam {chartDays} hari terakhir.</p>
             ) : (
               <>
-                <div className="an-plot" role="img" aria-label={`Grafik tren ${days} hari terakhir`}>
+                <div className="an-plot" role="img" aria-label={`Grafik tren ${chartDays} hari terakhir`}>
                   <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                     <line className="an-g" x1="0" y1="6" x2="100" y2="6" />
                     <line className="an-g" x1="0" y1="50" x2="100" y2="50" />
@@ -368,7 +344,7 @@ export default async function AnalisaPage({
                     ))}
                   </svg>
                   <div className="an-hov">
-                    {dayList.map((day, i) => {
+                    {chartList.map((day, i) => {
                       const ys = drawn.map((d) => d.pts[i][1]);
                       return (
                         <div
@@ -395,13 +371,13 @@ export default async function AnalisaPage({
                 <div className="an-xl">
                   {tickIdx.map((i) => (
                     <span
-                      key={dayList[i]}
+                      key={chartList[i]}
                       style={{
                         left: `${px(i)}%`,
                         transform: i === 0 ? "none" : i === N - 1 ? "translateX(-100%)" : undefined,
                       }}
                     >
-                      {dayLabel(dayList[i])}
+                      {dayLabel(chartList[i])}
                     </span>
                   ))}
                 </div>
