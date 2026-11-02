@@ -61,11 +61,6 @@ function Card({ it, aiReady }: { it: Item; aiReady: boolean }) {
               Isi token AI
             </Link>
           ))}
-        {!it.done && (
-          <Link className="btn ghost" href={it.href}>
-            {it.cta}
-          </Link>
-        )}
         <ActionForm
           action={it.done ? undoTindakan : doneTindakan}
           btnClass="ghost"
