@@ -27,6 +27,10 @@ export function TelegramForm({ masked, chat }: { masked: string | null; chat: st
   useEffect(() => {
     if (!connected) setEditing(true);
   }, [connected]);
+  // Token bot berubah (diganti atau dihapus): tautan Start lama milik bot sebelumnya, jadi dibuang.
+  useEffect(() => {
+    setLink(null);
+  }, [masked]);
 
   const spin = <span className="spin" aria-hidden="true" />;
 
@@ -117,6 +121,7 @@ export function TelegramForm({ masked, chat }: { masked: string | null; chat: st
             form.reset();
             setShow(false);
             setEditing(false);
+            setLink(null);
           }
         });
       }}
