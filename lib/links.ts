@@ -210,7 +210,8 @@ export async function topPairs(windowDays: number): Promise<Pair[]> {
 }
 
 /** Ringkasan klik seluruh tautan untuk halaman Analisa. Semua angka (tren, tautan teratas, negara, perangkat, sumber) mengikuti jendela windowDays. */
-export async function getAnalytics(windowDays: number): Promise<Analytics> {
+/** `endOffset` menggeser jendela ke belakang (1 = berakhir kemarin, hari ini tidak ikut). */
+export async function getAnalytics(windowDays: number, endOffset = 0): Promise<Analytics> {
   const links = await listLinks();
   const empty: Analytics = {
     windowDays,
@@ -234,9 +235,9 @@ export async function getAnalytics(windowDays: number): Promise<Analytics> {
 
   const slugs = links.map((l) => l.slug);
   const days: string[] = [];
-  for (let i = windowDays - 1; i >= 0; i--) days.push(jakartaDay(i));
+  for (let i = windowDays - 1 + endOffset; i >= endOffset; i--) days.push(jakartaDay(i));
   const prevDays: string[] = [];
-  for (let i = windowDays * 2 - 1; i >= windowDays; i--) prevDays.push(jakartaDay(i));
+  for (let i = windowDays * 2 - 1 + endOffset; i >= windowDays + endOffset; i--) prevDays.push(jakartaDay(i));
   const daySet = new Set(days);
   const prevSet = new Set(prevDays);
 

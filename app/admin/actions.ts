@@ -10,6 +10,7 @@ import { getTindakan } from "@/lib/tindakan";
 import { checkAll, clearCheck, markManualOk } from "@/lib/linkcheck";
 import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, validKey } from "@/lib/ai";
 import type { Flash } from "@/lib/flash";
+import { TgError, deleteTg, getTg, sendWeeklyReport, setTg, validBotToken, validChat } from "@/lib/telegram";
 import { RemoteError, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
   deleteLinkData,
@@ -475,4 +476,43 @@ export async function clearChatsAction(formData: FormData): Promise<Flash> {
   }
   revalidatePath("/admin/percakapan");
   return ok(`Semua percakapan ${srcName(f.src)} dihapus.`);
+}
+
+
+// ---------- Laporan mingguan Telegram ----------
+
+function tgErr(e: unknown): Flash {
+  return err(e instanceof TgError ? e.message : "Terjadi kesalahan saat menghubungi Telegram.");
+}
+
+/** Simpan token bot dan chat ID. Token boleh dikosongkan kalau hanya mengganti chat ID. */
+export async function saveTelegram(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const token = str(formData, "token");
+  const chat = str(formData, "chat");
+  const old = await getTg();
+  const useToken = token || old?.token || "";
+  if (!validBotToken(useToken)) return err("Token bot tidak valid. Tempel token utuh dari BotFather.");
+  if (!validChat(chat)) return err("Chat ID tidak valid. Isi angka (mis. 123456789 atau -100123…) atau @namakanal.");
+  await setTg({ token: useToken, chat });
+  revalidatePath("/admin/token");
+  return ok("Telegram disimpan. Tekan Kirim laporan sekarang untuk mencoba.");
+}
+
+export async function deleteTelegram(): Promise<Flash> {
+  await requireAdmin();
+  await deleteTg();
+  revalidatePath("/admin/token");
+  return ok("Pengaturan Telegram dihapus.");
+}
+
+/** Kirim laporan sekarang. Sekaligus jadi tes token dan chat ID. */
+export async function sendReportNow(): Promise<Flash> {
+  await requireAdmin();
+  try {
+    await sendWeeklyReport();
+    return ok("Laporan terkirim ke Telegram.");
+  } catch (e) {
+    return tgErr(e);
+  }
 }

@@ -3,6 +3,8 @@ import { AI_MODEL, getKey, maskKey } from "@/lib/ai";
 import { SOURCES, getCfg, maskToken } from "@/lib/remote";
 import { TokenForm } from "./token-form";
 import { RemoteForm } from "./remote-form";
+import { TelegramForm } from "./telegram-form";
+import { getTg, maskBotToken } from "@/lib/telegram";
 import { RefIcon } from "@/lib/sumber-icon";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +21,7 @@ function hostOf(u: string): string {
 export default async function TokenPage() {
   await requireAdmin();
   const key = await getKey();
+  const tg = await getTg();
   const remotes = await Promise.all(SOURCES.map(async (s) => ({ ...s, cfg: await getCfg(s.id) })));
 
   return (
@@ -53,6 +56,31 @@ export default async function TokenPage() {
           tersimpan tidak dikirim balik ke browser. Tombol Tampilkan hanya berlaku untuk teks yang sedang kamu ketik.
           Tes kunci memakai token yang diketik, atau token tersimpan kalau kolomnya kosong. AI hanya dipanggil saat
           tombol saran ditekan.
+        </p>
+      </div>
+
+      <div className="panel">
+        <h2>
+          <span className="cn">
+            <RefIcon name="Telegram" />
+            Telegram
+          </span>{" "}
+          <small>laporan mingguan, Senin 08.00 WIB</small>
+        </h2>
+        <p className="tk-state">
+          {tg ? (
+            <>
+              Bot: <code>{maskBotToken(tg.token)}</code> · chat <code>{tg.chat}</code>
+            </>
+          ) : (
+            "Belum diatur."
+          )}
+        </p>
+        <TelegramForm masked={tg ? maskBotToken(tg.token) : null} chat={tg?.chat ?? null} />
+        <p className="tk-help">
+          Buat bot lewat @BotFather, lalu tekan Start pada bot itu dari chat tujuan. Token disimpan di database dan tidak
+          dikirim balik ke browser. Tombol Kirim laporan sekarang sekaligus menjadi tes. Laporan otomatis butuh{" "}
+          <code>CRON_SECRET</code> di Vercel.
         </p>
       </div>
 
