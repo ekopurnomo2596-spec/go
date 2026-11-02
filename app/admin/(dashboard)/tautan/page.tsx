@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { listLinksWithCounts } from "@/lib/links";
 import { getChecks } from "@/lib/linkcheck";
-import { CheckNow, CopyLink, CreateForm, DeleteLink, EditLink } from "../forms";
+import { CheckNow, CopyLink, CreateForm, DeleteLink, EditLink, ManualCheck } from "../forms";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Tautan" };
@@ -15,7 +15,7 @@ export default async function AdminPage() {
   const host = (await headers()).get("host") ?? "";
   const { links, counts } = await listLinksWithCounts();
   const checks = await getChecks().catch(() => ({}) as Awaited<ReturnType<typeof getChecks>>);
-  const bad = links.filter((l) => checks[l.slug] && !checks[l.slug].ok);
+  const bad = links.filter((l) => !l.noCheck && checks[l.slug] && !checks[l.slug].ok);
   const sum = Object.values(counts).reduce((a, b) => a + b, 0);
   const top = [...links].sort((a, b) => (counts[b.slug] ?? 0) - (counts[a.slug] ?? 0))[0];
   const topN = top ? counts[top.slug] ?? 0 : 0;
@@ -81,7 +81,19 @@ export default async function AdminPage() {
                   </td>
                   <td className="dest">{l.url}</td>
                   <td>
-                    {checks[l.slug] ? (
+                    {l.noCheck ? (
+                      <div className="chk-stack">
+                        {checks[l.slug]?.manual ? (
+                          <span className="chk ok">
+                            <i aria-hidden="true" />
+                            OK (manual) · {stamp(checks[l.slug].t)}
+                          </span>
+                        ) : (
+                          <span className="chk none">Cek manual</span>
+                        )}
+                        <ManualCheck slug={l.slug} url={l.url} />
+                      </div>
+                    ) : checks[l.slug] ? (
                       <span className={"chk " + (checks[l.slug].ok ? "ok" : "bad")}>
                         <i aria-hidden="true" />
                         {checks[l.slug].label} · {stamp(checks[l.slug].t)}
@@ -94,7 +106,7 @@ export default async function AdminPage() {
                   <td>
                     <div className="actions">
                       <CopyLink slug={l.slug} />
-                      <EditLink slug={l.slug} title={l.title} url={l.url} interstitial={!!l.interstitial} />
+                      <EditLink slug={l.slug} title={l.title} url={l.url} interstitial={!!l.interstitial} noCheck={!!l.noCheck} />
                       <DeleteLink slug={l.slug} />
                     </div>
                   </td>

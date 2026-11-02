@@ -7,7 +7,7 @@ import { LOGIN_BASE } from "@/lib/login-path";
 import { createSession, destroySession, passwordOk, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/redis";
 import { getTindakan } from "@/lib/tindakan";
-import { checkAll } from "@/lib/linkcheck";
+import { checkAll, clearCheck, markManualOk } from "@/lib/linkcheck";
 import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, validKey } from "@/lib/ai";
 import type { Flash } from "@/lib/flash";
 import { RemoteError, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
@@ -82,13 +82,16 @@ export async function updateLink(formData: FormData): Promise<Flash> {
   const url = str(formData, "url");
   const title = str(formData, "title").slice(0, 80);
   const interstitial = formData.get("interstitial") === "on";
+  const noCheck = formData.get("noCheck") === "on";
 
   if (!validSlugFormat(slug)) return err("Slug tidak valid.");
   if (!validUrl(url)) return err("URL tujuan harus diawali http:// atau https://.");
 
   const existing = await getLink(slug);
   if (!existing) return err("Link tidak ditemukan.");
-  await db().set(`link:${slug}`, { ...existing, url, title: title || slug, interstitial });
+  await db().set(`link:${slug}`, { ...existing, url, title: title || slug, interstitial, noCheck });
+  // hasil cek lama tidak berlaku lagi kalau URL atau mode cek berubah
+  if (url !== existing.url || noCheck !== !!existing.noCheck) await clearCheck(slug);
 
   refresh();
   return ok("Link diperbarui.");
@@ -102,6 +105,17 @@ export async function deleteLink(formData: FormData): Promise<Flash> {
 
   refresh();
   return ok("Link dihapus beserta datanya.");
+}
+
+export async function markOkAction(slug: string): Promise<Flash> {
+  await requireAdmin();
+  const s = String(slug ?? "").toLowerCase();
+  if (!validSlugFormat(s)) return err("Slug tidak valid.");
+  const link = await getLink(s);
+  if (!link) return err("Link tidak ditemukan.");
+  await markManualOk(s);
+  revalidatePath("/admin/tautan");
+  return ok(`/${s} ditandai OK.`);
 }
 
 export async function checkLinksAction(): Promise<Flash> {

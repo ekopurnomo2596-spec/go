@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { flash, type Flash } from "@/lib/flash";
-import { checkLinksAction, createLink, deleteLink, updateLink } from "../actions";
+import { checkLinksAction, createLink, deleteLink, markOkAction, updateLink } from "../actions";
 
 async function run(fn: () => Promise<Flash>): Promise<Flash> {
   try {
@@ -138,6 +138,25 @@ export function CheckNow() {
   );
 }
 
+export function ManualCheck({ slug, url }: { slug: string; url: string }) {
+  const [pending, start] = useTransition();
+  return (
+    <span className="chk-manual">
+      <a href={url} target="_blank" rel="noreferrer">Buka</a>
+      <button
+        type="button"
+        className={"ghost" + (pending ? " is-loading" : "")}
+        disabled={pending}
+        aria-busy={pending}
+        onClick={() => start(async () => flash(await run(() => markOkAction(slug))))}
+      >
+        Tandai OK
+        {pending && <span className="spin" aria-hidden="true" />}
+      </button>
+    </span>
+  );
+}
+
 export function CopyLink({ slug }: { slug: string }) {
   const [done, setDone] = useState(false);
   async function copy() {
@@ -188,7 +207,7 @@ export function DeleteLink({ slug }: { slug: string }) {
   );
 }
 
-export function EditLink({ slug, title, url, interstitial }: { slug: string; title: string; url: string; interstitial: boolean }) {
+export function EditLink({ slug, title, url, interstitial, noCheck }: { slug: string; title: string; url: string; interstitial: boolean; noCheck: boolean }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
 
@@ -239,6 +258,11 @@ export function EditLink({ slug, title, url, interstitial }: { slug: string; tit
               <label className="switch" htmlFor={`i-${slug}`}>
                 <span>Halaman perantara (pindah otomatis 3 detik)</span>
                 <input id={`i-${slug}`} name="interstitial" type="checkbox" defaultChecked={interstitial} />
+                <i aria-hidden="true" />
+              </label>
+              <label className="switch" htmlFor={`n-${slug}`}>
+                <span>Jangan dicek otomatis (cek manual, lalu tandai OK)</span>
+                <input id={`n-${slug}`} name="noCheck" type="checkbox" defaultChecked={noCheck} />
                 <i aria-hidden="true" />
               </label>
               <div className="modal-actions">

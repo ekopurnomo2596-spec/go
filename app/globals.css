@@ -749,3 +749,12 @@ tr.zero td { color: var(--muted); }
 .chk.bad i { background: var(--danger); }
 .chk.none { font-weight: 500; }
 .chk-alert { border: 1px solid var(--danger); color: var(--danger); border-radius: 12px; padding: 10px 14px; margin: 0 0 16px; font-size: .88rem; }
+
+.chk-stack { display: grid; gap: 6px; justify-items: start; }
+.chk-manual { display: inline-flex; gap: 6px; align-items: center; }
+.chk-manual a, .chk-manual button {
+  display: inline-flex; align-items: center; justify-content: center; height: 28px; padding: 0 10px;
+  font-size: .75rem; font-weight: 600; line-height: 1; border: 1px solid var(--line); border-radius: 8px;
+  background: transparent; color: var(--ink); text-decoration: none; cursor: pointer;
+}
+.chk-manual a:hover, .chk-manual button:hover { background: var(--hover); opacity: 1; }

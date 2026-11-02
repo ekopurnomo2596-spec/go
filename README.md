@@ -47,3 +47,4 @@ Saat lokal, negara selalu tercatat "Tidak diketahui" karena header negara hanya 
 - Tombol **Cek sekarang** menjalankannya manual.
 - Perlu variabel `CRON_SECRET` di Vercel (isi acak), lalu deploy ulang.
 - Yang diperiksa hanya halaman bisa dibuka (status di bawah 400), bukan isi halamannya.
+- Tautan yang tujuannya memblokir bot (mis. InfinityFree, wa.me, media sosial) bisa diberi tanda **Jangan dicek otomatis** di form Ubah. Statusnya jadi "Cek manual": klik **Buka** untuk mencoba, lalu **Tandai OK** kalau normal.

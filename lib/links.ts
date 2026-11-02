@@ -11,6 +11,8 @@ export type Link = {
   listed: boolean;
   /** Tampilkan halaman perantara (hitung mundur) sebelum pindah */
   interstitial?: boolean;
+  /** Jangan dicek otomatis (cek manual, lalu tandai OK) */
+  noCheck?: boolean;
   createdAt: number;
 };
 
@@ -389,6 +391,7 @@ export async function deleteLinkData(slug: string) {
   const p = db().pipeline();
   p.del(`link:${slug}`);
   p.srem("links", slug);
+  p.hdel("linkcheck", slug);
   p.del(`clicks:${slug}`, `country:${slug}`, `device:${slug}`, `ref:${slug}`, `daily:${slug}`, `recent:${slug}`);
   p.del(`seen:${jakartaDay(0)}:${slug}`, `seen:${jakartaDay(1)}:${slug}`);
   await p.exec();

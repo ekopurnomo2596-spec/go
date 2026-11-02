@@ -6,7 +6,7 @@ import { listLinks } from "./links";
  * Hasil terakhir disimpan di hash Redis `linkcheck` (slug -> JSON).
  * Yang dicek hanya "bisa dibuka (status < 400)", bukan isi halamannya.
  */
-export type CheckResult = { ok: boolean; label: string; t: number };
+export type CheckResult = { ok: boolean; label: string; t: number; manual?: boolean };
 
 const KEY = "linkcheck";
 const TIMEOUT_MS = 8000;
@@ -48,7 +48,9 @@ export async function probe(url: string): Promise<CheckResult> {
 
 /** Cek semua tautan (5 sekaligus), simpan hasilnya, buang hasil tautan yang sudah dihapus. */
 export async function checkAll(): Promise<Record<string, CheckResult>> {
-  const links = await listLinks();
+  const all = await listLinks();
+  const links = all.filter((l) => !l.noCheck); // yang bertanda "jangan dicek" dilewati
+  const keep = new Set(all.map((l) => l.slug));
   const out: Record<string, CheckResult> = {};
   for (let i = 0; i < links.length; i += 5) {
     const part = links.slice(i, i + 5);
@@ -57,7 +59,7 @@ export async function checkAll(): Promise<Record<string, CheckResult>> {
   }
   const p = db().pipeline();
   const old = (await db().hkeys(KEY)) as string[];
-  const stale = old.filter((s) => !(s in out));
+  const stale = old.filter((s) => !keep.has(s)); // hanya hasil tautan yang sudah dihapus
   if (stale.length) p.hdel(KEY, ...stale);
   for (const [slug, r] of Object.entries(out)) p.hset(KEY, { [slug]: JSON.stringify(r) });
   await p.exec();
@@ -76,4 +78,14 @@ export async function getChecks(): Promise<Record<string, CheckResult>> {
     }
   }
   return out;
+}
+
+/** Tandai OK manual untuk tautan yang tidak dicek otomatis. */
+export async function markManualOk(slug: string): Promise<void> {
+  const r: CheckResult = { ok: true, label: "OK (manual)", t: Date.now(), manual: true };
+  await db().hset(KEY, { [slug]: JSON.stringify(r) });
+}
+
+export async function clearCheck(slug: string): Promise<void> {
+  await db().hdel(KEY, slug);
 }
