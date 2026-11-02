@@ -7,6 +7,8 @@ import { ActionForm } from "../../forms";
 import { countryName, formatTime } from "@/lib/format";
 import { Flag } from "@/lib/flag";
 import { Info } from "../../info";
+import { labelDevice, labelRef } from "@/lib/sumber";
+import { DeviceIcon, RefIcon } from "@/lib/sumber-icon";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Statistik" };
@@ -32,27 +34,45 @@ function X({ slug, mode, value, label }: { slug: string; mode: string; value: st
   );
 }
 
-function tally(items: string[]): [string, number][] {
+function tally(items: string[], label: (k: string) => string): [string, number][] {
   const m = new Map<string, number>();
   for (const i of items) {
-    const k = i?.trim() || "Tidak diketahui";
+    const k = label(i?.trim() ?? "");
     m.set(k, (m.get(k) ?? 0) + 1);
   }
   return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
 }
 
-function Mini({ title, rows, total }: { title: string; rows: [string, number][]; total: number }) {
+function Dist({
+  title,
+  rows,
+  total,
+  kind,
+  info,
+}: {
+  title: string;
+  rows: [string, number][];
+  total: number;
+  kind: "ref" | "dev";
+  info?: string;
+}) {
   const max = Math.max(1, ...rows.map(([, n]) => n));
   return (
-    <div className="minigroup">
-      <h3>{title}</h3>
+    <section className="panel">
+      <h2>
+        {title} <small>dari {total} klik terbaru</small>
+        {info && <Info text={info} />}
+      </h2>
       {rows.length === 0 ? (
         <p className="empty">Belum ada data.</p>
       ) : (
         <div className="rbars">
           {rows.map(([k, n]) => (
             <div className="rbar mini" key={k}>
-              <span className="cn">{k}</span>
+              <span className="cn" title={k}>
+                {kind === "ref" ? <RefIcon name={k} /> : <DeviceIcon name={k} />}
+                {k}
+              </span>
               <div className="track">
                 <div className="fill" style={{ width: `${(n / max) * 100}%` }} />
               </div>
@@ -62,7 +82,7 @@ function Mini({ title, rows, total }: { title: string; rows: [string, number][];
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -165,41 +185,41 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
       </section>
 
       <div className="cols">
-        <section className="panel">
-          <h2>
-            Negara <small>sepanjang waktu</small>
-          </h2>
-          {stats.countries.length === 0 ? (
-            <p className="empty">Belum ada klik.</p>
-          ) : (
-            <div className="rbars">
-              {stats.countries.map(([code, n]) => (
-                <div className="rbar" key={code}>
-                  <span className="cn">
-                    <Flag code={code} />
-                    {countryName(code)}
-                  </span>
-                  <div className="track">
-                    <div className="fill" style={{ width: `${(n / maxCountry) * 100}%` }} />
-                  </div>
-                  <span className="v">{n.toLocaleString("id-ID")}</span>
-                  <span className="pct">{stats.total > 0 ? Math.round((n / stats.total) * 100) : 0}%</span>
-                  <X slug={link.slug} mode="country" value={code} label={countryName(code)} />
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="panel">
-          <h2>
-            Sumber &amp; perangkat <small>dari {stats.recent.length} klik terbaru</small>
-            <Info text="Dihitung dari maksimal 50 klik terbaru, bukan hanya hari ini dan bukan total semua klik. Sumber adalah situs asal pengunjung. Tulisan “langsung” berarti asalnya tidak terdeteksi, misalnya link diketik atau dibuka dari aplikasi seperti WhatsApp dan Telegram." />
-          </h2>
-          <Mini title="Sumber" rows={tally(stats.recent.map((c) => c.r))} total={stats.recent.length} />
-          <Mini title="Perangkat" rows={tally(stats.recent.map((c) => c.d))} total={stats.recent.length} />
-        </section>
+        <Dist
+          title="Sumber trafik"
+          rows={tally(stats.recent.map((c) => c.r), labelRef)}
+          total={stats.recent.length}
+          kind="ref"
+          info="Dihitung dari maksimal 50 klik terbaru, bukan hanya hari ini dan bukan total semua klik. Sumber adalah situs asal pengunjung. EMAHAIRSHOP berarti klik dari tombol di website utama. Tulisan “Langsung” berarti asalnya tidak terdeteksi, misalnya link diketik atau dibuka dari aplikasi seperti WhatsApp dan Telegram."
+        />
+        <Dist title="Perangkat" rows={tally(stats.recent.map((c) => c.d), labelDevice)} total={stats.recent.length} kind="dev" />
       </div>
+
+      <section className="panel">
+        <h2>
+          Negara <small>sepanjang waktu</small>
+        </h2>
+        {stats.countries.length === 0 ? (
+          <p className="empty">Belum ada klik.</p>
+        ) : (
+          <div className="rbars">
+            {stats.countries.map(([code, n]) => (
+              <div className="rbar" key={code}>
+                <span className="cn">
+                  <Flag code={code} />
+                  {countryName(code)}
+                </span>
+                <div className="track">
+                  <div className="fill" style={{ width: `${(n / maxCountry) * 100}%` }} />
+                </div>
+                <span className="v">{n.toLocaleString("id-ID")}</span>
+                <span className="pct">{stats.total > 0 ? Math.round((n / stats.total) * 100) : 0}%</span>
+                <X slug={link.slug} mode="country" value={code} label={countryName(code)} />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="panel">
         <h2>Klik terbaru</h2>
@@ -227,8 +247,18 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
                         {countryName(c.c)}
                       </span>
                     </td>
-                    <td>{c.r}</td>
-                    <td>{c.d}</td>
+                    <td>
+                      <span className="cn">
+                        <RefIcon name={labelRef(c.r)} />
+                        {labelRef(c.r)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="cn">
+                        <DeviceIcon name={labelDevice(c.d)} />
+                        {labelDevice(c.d)}
+                      </span>
+                    </td>
                     <td className="num"><X slug={link.slug} mode="click" value={String(c.t)} label="klik ini" /></td>
                   </tr>
                 ))}

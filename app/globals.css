@@ -426,7 +426,7 @@ button.ghost .spin, .btn.ghost .spin { --sc: var(--ink); }
 .dcol .xs, .dcol .xf { height: 26px; }
 .rbars { display: grid; gap: 12px; }
 .rbar { display: grid; grid-template-columns: minmax(110px, 160px) 1fr 28px 40px 26px; gap: 12px; align-items: center; font-size: .86rem; }
-.rbar.mini { grid-template-columns: minmax(80px, 140px) 1fr 28px 40px; }
+.rbar.mini { grid-template-columns: minmax(150px, 170px) 1fr 28px 40px; }
 .rbar .cn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; }
 .rbar .track { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
 .rbar .fill { height: 100%; border-radius: 99px; background: var(--bar); }
@@ -437,7 +437,7 @@ button.ghost .spin, .btn.ghost .spin { --sc: var(--ink); }
 @media (max-width: 860px) {
   .panel { padding: 16px; }
   .rbar { grid-template-columns: minmax(90px, 120px) 1fr 24px 36px 26px; gap: 8px; }
-  .rbar.mini { grid-template-columns: minmax(70px, 100px) 1fr 24px 36px; }
+  .rbar.mini { grid-template-columns: minmax(110px, 130px) 1fr 24px 36px; }
 }
 
 /* ---------- Ikon info + tooltip ---------- */
