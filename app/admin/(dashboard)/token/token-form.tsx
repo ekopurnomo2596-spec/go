@@ -26,9 +26,11 @@ export function TokenForm({ masked }: { masked: string | null }) {
 
   if (masked && !editing) {
     return (
-      <button type="button" className="ghost" onClick={() => setEditing(true)}>
-        Edit
-      </button>
+      <div className="tk-btns tk-top">
+        <button type="button" className="ghost" onClick={() => setEditing(true)}>
+          Edit
+        </button>
+      </div>
     );
   }
 

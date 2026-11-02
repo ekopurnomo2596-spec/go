@@ -142,7 +142,7 @@ export function TelegramForm({ masked, chat, pair: initialPair, kind = "report" 
     return (
       <>
         {codeBlock}
-        <div className="tk-btns">
+        <div className="tk-btns tk-top">
           {sendBtn}
           {noCode}
           <button type="button" className="ghost" onClick={() => setEditing(true)}>

@@ -85,6 +85,27 @@ export async function getBotInfo(token: string): Promise<BotInfo | null> {
   }
 }
 
+/** Label chat yang enak dibaca: @username Telegram, atau nama (kalau tanpa username). Null kalau gagal. */
+export async function getChatLabel(token: string, chat: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/getChat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: chat }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return null;
+    const c = ((await res.json()) as { result?: { username?: string; first_name?: string; last_name?: string; title?: string } }).result;
+    if (!c) return null;
+    if (c.username) return `@${c.username}`;
+    const name = c.title || [c.first_name, c.last_name].filter(Boolean).join(" ");
+    return name || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function sendMessage(c: TgCfg, text: string): Promise<void> {
   await call(c.token, "sendMessage", { chat_id: c.chat, text, disable_web_page_preview: true });
 }

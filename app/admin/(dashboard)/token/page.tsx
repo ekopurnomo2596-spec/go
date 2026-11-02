@@ -4,7 +4,7 @@ import { SOURCES, getCfg, maskToken } from "@/lib/remote";
 import { TokenForm } from "./token-form";
 import { RemoteForm } from "./remote-form";
 import { TelegramForm } from "./telegram-form";
-import { getBotInfo, getPair, getTg, maskBotToken, type BotInfo, type TgCfg } from "@/lib/telegram";
+import { getBotInfo, getChatLabel, getPair, getTg, maskBotToken, type BotInfo, type TgCfg } from "@/lib/telegram";
 import { RefIcon } from "@/lib/sumber-icon";
 
 export const dynamic = "force-dynamic";
@@ -18,19 +18,17 @@ function hostOf(u: string): string {
   }
 }
 
-/** Info bot Telegram, satu baris per hal: nama, username, token (disamarkan), dan chat. */
-function TgInfo({ cfg, info }: { cfg: TgCfg | null; info: BotInfo | null }) {
+/** Info bot Telegram, satu baris per hal: username bot, token (disamarkan), dan akun Telegram yang tersambung. */
+function TgInfo({ cfg, info, chatLabel }: { cfg: TgCfg | null; info: BotInfo | null; chatLabel: string | null }) {
   if (!cfg) return <p className="tk-state">Belum diatur.</p>;
   return (
     <dl className="tk-list">
-      <dt>Nama bot</dt>
-      <dd>{info ? <strong>{info.name}</strong> : <span className="tk-dim">tidak terbaca</span>}</dd>
       <dt>Username</dt>
-      <dd>{info ? <a href={`https://t.me/${info.username}`} target="_blank" rel="noopener noreferrer">@{info.username}</a> : <span className="tk-dim">-</span>}</dd>
+      <dd>{info ? <strong>@{info.username}</strong> : <span className="tk-dim">tidak terbaca</span>}</dd>
       <dt>Token</dt>
       <dd><code>{maskBotToken(cfg.token)}</code></dd>
       <dt>Chat</dt>
-      <dd>{cfg.chat ? <code>{cfg.chat}</code> : <span className="tk-dim">belum tersambung</span>}</dd>
+      <dd>{cfg.chat ? <strong>{chatLabel ?? cfg.chat}</strong> : <span className="tk-dim">belum tersambung</span>}</dd>
     </dl>
   );
 }
@@ -41,7 +39,12 @@ export default async function TokenPage() {
   const tg = await getTg();
   const pair = tg && !tg.chat ? await getPair().catch(() => null) : null;
   const tgv = await getTg("visit");
-  const [tgInfo, tgvInfo] = await Promise.all([tg ? getBotInfo(tg.token) : null, tgv ? getBotInfo(tgv.token) : null]);
+  const [tgInfo, tgvInfo, tgChat, tgvChat] = await Promise.all([
+    tg ? getBotInfo(tg.token) : null,
+    tgv ? getBotInfo(tgv.token) : null,
+    tg?.chat ? getChatLabel(tg.token, tg.chat) : null,
+    tgv?.chat ? getChatLabel(tgv.token, tgv.chat) : null,
+  ]);
   const pairv = tgv && !tgv.chat ? await getPair("visit").catch(() => null) : null;
   const remotes = await Promise.all(SOURCES.map(async (s) => ({ ...s, cfg: await getCfg(s.id) })));
 
@@ -58,9 +61,14 @@ export default async function TokenPage() {
         .tk-list dt { margin: 0; opacity: 0.6; }
         .tk-list dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
         .tk-list dd code { color: var(--ink); background: var(--hover); padding: 2px 8px; border-radius: 6px; }
-        .tk-list dd a { color: #3b6ef0; text-decoration: none; }
-        .tk-list dd a:hover { text-decoration: underline; }
         .tk-list .tk-dim { opacity: 0.55; }
+
+        /* Desktop: tombol aksi (Edit, Kirim tes, dst) pindah ke kanan atas kartu. HP tetap di bawah. */
+        @media (min-width: 720px) {
+          .wrap .tk-panel { position: relative; }
+          .wrap .tk-panel .tk-btns.tk-top { position: absolute; top: 15px; right: 20px; margin: 0; justify-content: flex-end; }
+          .wrap .tk-panel h2 { padding-right: 280px; }
+        }
 
         .wrap .tk-panel .tk-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
         .wrap .tk-panel button,
@@ -130,7 +138,7 @@ export default async function TokenPage() {
           </span>{" "}
           <small>laporan mingguan, Senin 08.00 WIB</small>
         </h2>
-        <TgInfo cfg={tg} info={tgInfo} />
+        <TgInfo cfg={tg} info={tgInfo} chatLabel={tgChat} />
         <TelegramForm masked={tg ? maskBotToken(tg.token) : null} chat={tg?.chat || null} pair={pair} />
       </div>
 
@@ -142,7 +150,7 @@ export default async function TokenPage() {
           </span>{" "}
           <small>notifikasi kunjungan harian</small>
         </h2>
-        <TgInfo cfg={tgv} info={tgvInfo} />
+        <TgInfo cfg={tgv} info={tgvInfo} chatLabel={tgvChat} />
         <TelegramForm kind="visit" masked={tgv ? maskBotToken(tgv.token) : null} chat={tgv?.chat || null} pair={pairv} />
       </div>
 

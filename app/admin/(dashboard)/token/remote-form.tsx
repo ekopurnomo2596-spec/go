@@ -26,9 +26,11 @@ export function RemoteForm({ src, name, connected }: { src: "wa" | "tg"; name: s
 
   if (connected && !editing) {
     return (
-      <button type="button" className="ghost" onClick={() => setEditing(true)}>
-        Edit
-      </button>
+      <div className="tk-btns tk-top">
+        <button type="button" className="ghost" onClick={() => setEditing(true)}>
+          Edit
+        </button>
+      </div>
     );
   }
 
