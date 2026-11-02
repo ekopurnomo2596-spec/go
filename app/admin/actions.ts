@@ -9,6 +9,7 @@ import { db } from "@/lib/redis";
 import { getTindakan } from "@/lib/tindakan";
 import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, validKey } from "@/lib/ai";
 import type { Flash } from "@/lib/flash";
+import { RemoteError, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
   deleteLinkData,
   getLink,
@@ -362,4 +363,92 @@ export async function clearAiHistory(): Promise<Flash> {
   revalidatePath("/admin/tindakan");
   revalidatePath("/admin/ai");
   return ok("Riwayat dihapus.");
+}
+
+
+// ---------- Redis project lain (WhatsApp / Telegram) ----------
+
+function remoteErr(e: unknown): Flash {
+  return err(e instanceof RemoteError ? e.message : "Terjadi kesalahan saat menghubungi Redis.");
+}
+
+function readRemote(fd: FormData) {
+  const src = str(fd, "src");
+  if (!isSrc(src)) return null;
+  return { src, url: str(fd, "url"), token: str(fd, "token") };
+}
+
+export async function saveRemote(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const f = readRemote(formData);
+  if (!f) return err("Sumber tidak dikenal.");
+  if (!validHttps(f.url)) return err("URL harus diawali https:// (REST URL dari Upstash).");
+  if (!validToken(f.token)) return err("Token tidak valid. Tempel token utuh tanpa spasi.");
+  try {
+    await ping({ url: f.url, token: f.token });
+  } catch (e) {
+    return remoteErr(e);
+  }
+  await setCfg(f.src, { url: f.url, token: f.token });
+  revalidatePath("/admin/token");
+  revalidatePath("/admin/percakapan");
+  return ok(`Redis ${srcName(f.src)} tersambung dan disimpan.`);
+}
+
+export async function deleteRemote(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const f = readRemote(formData);
+  if (!f) return err("Sumber tidak dikenal.");
+  await deleteCfg(f.src);
+  revalidatePath("/admin/token");
+  revalidatePath("/admin/percakapan");
+  return ok(`Koneksi Redis ${srcName(f.src)} dihapus.`);
+}
+
+/** Tes koneksi: pakai isian kalau lengkap, kalau kosong pakai yang tersimpan. */
+export async function testRemote(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const f = readRemote(formData);
+  if (!f) return err("Sumber tidak dikenal.");
+  let cfg: Cfg | null = f.url || f.token ? { url: f.url, token: f.token } : await getCfg(f.src);
+  if (!cfg) return err("Isi URL dan token dulu.");
+  if (!validHttps(cfg.url)) return err("URL harus diawali https://.");
+  if (!validToken(cfg.token)) return err("Token tidak valid. Tempel token utuh tanpa spasi.");
+  try {
+    await ping(cfg);
+    return ok("Koneksi berfungsi.");
+  } catch (e) {
+    return remoteErr(e);
+  }
+}
+
+export async function deleteChatAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const f = readRemote(formData);
+  const id = str(formData, "id");
+  if (!f || !validChatId(id)) return err("Permintaan tidak valid.");
+  const cfg = await getCfg(f.src);
+  if (!cfg) return err(`Redis ${srcName(f.src)} belum tersambung.`);
+  try {
+    await deleteConv(cfg, id);
+  } catch (e) {
+    return remoteErr(e);
+  }
+  revalidatePath("/admin/percakapan");
+  return ok("Percakapan dihapus.");
+}
+
+export async function clearChatsAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const f = readRemote(formData);
+  if (!f) return err("Sumber tidak dikenal.");
+  const cfg = await getCfg(f.src);
+  if (!cfg) return err(`Redis ${srcName(f.src)} belum tersambung.`);
+  try {
+    await clearConvs(cfg);
+  } catch (e) {
+    return remoteErr(e);
+  }
+  revalidatePath("/admin/percakapan");
+  return ok(`Semua percakapan ${srcName(f.src)} dihapus.`);
 }

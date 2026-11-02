@@ -680,3 +680,30 @@ tr.zero td { color: var(--muted); }
     position: sticky; right: 0; background: var(--card); padding-left: 12px;
   }
 }
+
+/* ---------- Percakapan (WhatsApp / Telegram) ---------- */
+.cv { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; }
+.cv .panel { margin-bottom: 0; }
+.cv-list ul { list-style: none; margin: 0; padding: 0; max-height: 70vh; overflow-y: auto; }
+.cv-item { display: block; padding: 11px 10px; border-radius: 10px; text-decoration: none; color: var(--ink); }
+.cv-item:hover, .cv-item.on { background: var(--hover); }
+.cv-t { display: block; font-weight: 600; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-m { display: block; color: var(--muted); font-size: .75rem; margin-top: 2px; }
+.cv-back { display: none; }
+.cv-msgs { display: flex; flex-direction: column; gap: 10px; max-height: 70vh; overflow-y: auto; padding-right: 4px; }
+.cv-b { max-width: 82%; padding: 9px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); }
+.cv-b.user { align-self: flex-start; }
+.cv-b.bot { align-self: flex-end; background: var(--hover); }
+.cv-b p { margin: 2px 0; font-size: .88rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cv-who { font-size: .72rem; font-weight: 700; color: var(--gold); }
+.cv-ts { display: block; font-size: .68rem; color: var(--muted); text-align: right; }
+@media (max-width: 860px) {
+  .cv { grid-template-columns: 1fr; }
+  .cv.has-sel .cv-list, .cv:not(.has-sel) .cv-view { display: none; }
+  .cv-back { display: inline-block; }
+  .cv-list ul, .cv-msgs { max-height: none; }
+  .cv-b { max-width: 92%; }
+}
+.cv-clear { margin: -4px 0 10px; }
+.cv-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.cv-head h2 { margin-bottom: 12px; }

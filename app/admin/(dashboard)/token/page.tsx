@@ -1,20 +1,31 @@
 import { requireAdmin } from "@/lib/auth";
 import { AI_MODEL, getKey, maskKey } from "@/lib/ai";
+import { SOURCES, getCfg, maskToken } from "@/lib/remote";
 import { TokenForm } from "./token-form";
+import { RemoteForm } from "./remote-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Token" };
 
+function hostOf(u: string): string {
+  try {
+    return new URL(u).host;
+  } catch {
+    return u;
+  }
+}
+
 export default async function TokenPage() {
   await requireAdmin();
   const key = await getKey();
+  const remotes = await Promise.all(SOURCES.map(async (s) => ({ ...s, cfg: await getCfg(s.id) })));
 
   return (
     <main className="wrap">
       <div className="top">
         <div>
           <h1>Token</h1>
-          <div className="an-sub">Token Gemini untuk saran AI di halaman Tindakan</div>
+          <div className="an-sub">Token Gemini dan koneksi Redis bot WhatsApp &amp; Telegram</div>
         </div>
       </div>
 
@@ -39,6 +50,29 @@ export default async function TokenPage() {
           tombol saran ditekan.
         </p>
       </div>
+
+      {remotes.map((r) => (
+        <div className="panel" key={r.id}>
+          <h2>
+            Redis {r.name} <small>untuk halaman Percakapan</small>
+          </h2>
+          <p className="tk-state">
+            {r.cfg ? (
+              <>
+                Tersambung: <code>{hostOf(r.cfg.url)}</code> · token <code>{maskToken(r.cfg.token)}</code>
+              </>
+            ) : (
+              "Belum tersambung."
+            )}
+          </p>
+          <RemoteForm src={r.id} name={r.name} connected={!!r.cfg} />
+        </div>
+      ))}
+      <p className="tk-help">
+        Isi REST URL dan REST Token dari database Upstash milik project bot (tab REST API di Upstash). Pakai
+        token biasa kalau mau bisa menghapus percakapan dari halaman Percakapan, atau <b>read-only token</b> kalau hanya
+        untuk melihat (tombol hapus akan ditolak). Saat disimpan, koneksi dites dulu.
+      </p>
     </main>
   );
 }
