@@ -151,6 +151,12 @@ export default async function AnalisaPage({
   const recent = [...(snaps[jakartaDay(0)]?.visits ?? [])].reverse();
   const todayVisitors = snaps[jakartaDay(0)]?.visitors ?? 0;
   const emaDaily: [string, number][] = chartList.map((d) => [d, snaps[d]?.visitors ?? 0]);
+  // pembanding: pengunjung per jam kemarin (hanya jika snapshot kemarin punya data per jam)
+  const yVh = snaps[jakartaDay(1)]?.vh;
+  const ghostEma: [string, number][] | undefined =
+    one && showEma && yVh && Object.keys(yVh).length > 0 ? hourOf24(yVh, 23) : undefined;
+  // jam yang sedang berjalan belum tentu ada kunjungan; jangan digambar sebagai 0 (terlihat seperti turun)
+  const trim = (d: [string, number][]) => (one && d.length > 1 && d[d.length - 1][1] === 0 ? d.slice(0, -1) : d);
   const emaCountry: Record<string, number> = {};
   for (const d of dayList)
     for (const [code, n] of Object.entries(snaps[d]?.vc ?? {})) {
@@ -161,8 +167,8 @@ export default async function AnalisaPage({
   const deltaPct = a.prevTotal !== null ? pctDelta(a.total, a.prevTotal) : null;
   const uniqDelta = a.unique !== null && a.prevUnique !== null ? pctDelta(a.unique, a.prevUnique) : null;
   const f1 = (v: number) => v.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const cmp = one ? "Hari ini belum selesai, jadi tidak dibandingkan dengan kemarin. Lihat perbandingannya di grafik." : "";
-  const cmpAvg = cmp;
+  const cmp = one ? "Hari ini belum selesai, jadi tidak dibandingkan dengan kemarin." : "";
+  const cmpAvg = one && ghostEma ? `${cmp} Lihat perbandingannya di grafik.` : cmp;
   const dv = (v: number | null) => (one ? undefined : v);
   const ctrDelta = a.ctr !== null && a.prevCtr !== null ? Math.round((a.ctr - a.prevCtr) * 10) / 10 : null;
   const ctrPill = one ? undefined : ctrDelta === null ? (
@@ -174,22 +180,25 @@ export default async function AnalisaPage({
   );
 
   // ---- grafik tren: satu kolom per hari, titik berada di tengah kolom ----
-  const series: { cls: string; unit: string; name: string; data: [string, number][]; prev: number }[] = [];
-  if (showGo) series.push({ cls: "", unit: "klik", name: goName, data: one ? hourly.slice(0, nowHour + 1).map((v, h) => [hourLabel(h), v] as [string, number]) : ac.daily, prev: 0 });
-  if (showEma) series.push({ cls: showGo ? "b" : "", unit: "pengunjung", name: emaName, data: one ? hourOf24(snaps[jakartaDay(0)]?.vh, nowHour) : emaDaily, prev: sumOf(prevList, "visitors") });
-  const labels = one ? series.length ? series[0].data.map(([l]) => l) : [] : chartList.map(dayLabel);
+  const series: { cls: string; unit: string; name: string; data: [string, number][]; prev: number; ghost?: [string, number][] }[] = [];
+  if (showGo) series.push({ cls: "", unit: "klik", name: goName, data: one ? trim(hourly.slice(0, nowHour + 1).map((v, h) => [hourLabel(h), v] as [string, number])) : ac.daily, prev: 0 });
+  if (showEma) series.push({ cls: showGo ? "b" : "", unit: "pengunjung", name: emaName, data: one ? trim(hourOf24(snaps[jakartaDay(0)]?.vh, nowHour)) : emaDaily, prev: sumOf(prevList, "visitors"), ghost: ghostEma });
+  const labels = one ? Array.from({ length: 24 }, (_, h) => hourLabel(h)) : chartList.map(dayLabel);
   const N = labels.length;
-  const maxDay = Math.max(1, ...series.flatMap((x) => x.data.map(([, v]) => v)));
+  const maxDay = Math.max(1, ...series.flatMap((x) => [...x.data, ...(x.ghost ?? [])].map(([, v]) => v)));
   const px = (i: number) => (N > 1 ? Number(((i / (N - 1)) * 100).toFixed(2)) : 50);
   const colW = N > 1 ? 100 / (N - 1) : 100;
   const py = (v: number) => Number((94 - (v / maxDay) * 88).toFixed(2));
   const drawn = series.map((x) => {
     const pts = x.data.map(([, v], i) => [px(i), py(v)] as const);
+    const gpts = x.ghost?.map(([, v], i) => [px(i), py(v)] as const);
     return {
       ...x,
       pts,
+      gpts,
       line: pts.map(([X, Y], i) => `${i ? "L" : "M"}${X},${Y}`).join(" "),
-      area: N ? `M${pts[0][0]},94 ${pts.map(([X, Y]) => `L${X},${Y}`).join(" ")} L${pts[N - 1][0]},94 Z` : "",
+      gline: gpts ? gpts.map(([X, Y], i) => `${i ? "L" : "M"}${X},${Y}`).join(" ") : "",
+      area: pts.length ? `M${pts[0][0]},94 ${pts.map(([X, Y]) => `L${X},${Y}`).join(" ")} L${pts[pts.length - 1][0]},94 Z` : "",
     };
   });
   const trendTotal = series.reduce((t, x) => t + x.data.reduce((u, [, v]) => u + v, 0), 0);
@@ -197,7 +206,8 @@ export default async function AnalisaPage({
   // label sumbu X: interval tetap, dihitung mundur dari hari terakhir supaya jaraknya rata
   const tickStep = Math.max(1, Math.ceil((N - 1) / 5));
   const tickIdx: number[] = [];
-  for (let i = N - 1; i >= 0; i -= tickStep) tickIdx.unshift(i);
+  if (one) tickIdx.push(0, 6, 12, 18, 23);
+  else for (let i = N - 1; i >= 0; i -= tickStep) tickIdx.unshift(i);
 
   // ---- tautan teratas ----
   const maxTop = Math.max(1, ...a.topLinks.map((l) => l.n));
@@ -325,7 +335,7 @@ export default async function AnalisaPage({
           <section className="an-card an-mb an-trend">
             <h2>
               {src === "go" ? "Tren klik harian" : src === "ema" ? "Tren pengunjung harian" : "Tren harian"}
-              {one && <small>per jam, hari ini</small>}
+              {one && <small>{ghostEma ? "per jam, hari ini (garis putus-putus: kemarin)" : "per jam, hari ini"}</small>}
               {src === "semua" && (
                 <span className="an-lg">
                   <span>
@@ -351,18 +361,31 @@ export default async function AnalisaPage({
                     {drawn.map((d) => (
                       <path key={`a${d.unit}`} className={`an-area ${d.cls}`} d={d.area} />
                     ))}
+                    {drawn.map((d) =>
+                      d.gline ? <path key={`g${d.unit}`} className="an-ln an-prev" d={d.gline} /> : null,
+                    )}
                     {drawn.map((d) => (
                       <path key={`l${d.unit}`} className={`an-ln ${d.cls}`} d={d.line} />
                     ))}
                   </svg>
+                  {one &&
+                    drawn.map((d) => {
+                      const last = d.pts[d.pts.length - 1];
+                      return last ? (
+                        <i key={`e${d.unit}`} className={`an-end ${d.cls}`} style={{ left: `${last[0]}%`, top: `${last[1]}%` }} />
+                      ) : null;
+                    })}
                   <div className="an-hov">
                     {labels.map((day, i) => {
-                      const ys = drawn.map((d) => d.pts[i][1]);
+                      const own = drawn.map((d) => d.pts[i]?.[1]).filter((y): y is number => y !== undefined);
+                      const gh = drawn.map((d) => d.gpts?.[i]?.[1]).filter((y): y is number => y !== undefined);
+                      if (!own.length && !gh.length) return null;
+                      const y = own.length ? Math.min(...own) : Math.min(...gh);
                       return (
                         <div
                           key={day}
-                          className={`an-hc${Math.min(...ys) < 35 ? " lo" : ""}`}
-                          style={{ "--y": `${Math.min(...ys)}%`, left: `${px(i) - colW / 2}%`, width: `${colW}%` } as React.CSSProperties}
+                          className={`an-hc${y < 35 ? " lo" : ""}${own.length ? "" : " nd"}`}
+                          style={{ "--y": `${y}%`, left: `${px(i) - colW / 2}%`, width: `${colW}%` } as React.CSSProperties}
                         >
                           <i className="an-hl" />
                           <i className="an-hdot" />
@@ -370,8 +393,13 @@ export default async function AnalisaPage({
                             <b>{day}</b>
                             {drawn.map((d) => (
                               <span key={d.unit} className="an-tl">
-                                {src === "semua" && <i className={d.cls === "b" ? "k" : "g"} />}
-                                {nf(d.data[i][1])} {d.unit}
+                                {d.data[i] && (
+                                  <>
+                                    {src === "semua" && <i className={d.cls === "b" ? "k" : "g"} />}
+                                    {nf(d.data[i][1])} {d.unit}
+                                  </>
+                                )}
+                                {d.ghost?.[i] && <em className="an-tl-prev">{d.data[i] ? " · " : ""}kemarin {nf(d.ghost[i][1])}</em>}
                               </span>
                             ))}
                           </span>

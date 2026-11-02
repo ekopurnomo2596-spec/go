@@ -803,3 +803,10 @@ tr.zero td { color: var(--muted); }
   .an-kpi-l .info { margin-top: 1px; }
   .an-card { padding: 16px; }
 }
+
+/* Analisa: garis pembanding kemarin + titik akhir garis hari ini */
+.an-ln.an-prev { stroke: var(--muted); stroke-width: 1.8; stroke-dasharray: 5 4; opacity: .75; }
+.an-end { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--an-acc); transform: translate(-50%, -50%); pointer-events: none; }
+.an-end.b { background: var(--ink); }
+.an-hc.nd .an-hdot { display: none; }
+.an-tl-prev { font-style: normal; color: var(--btnt); opacity: .65; }
