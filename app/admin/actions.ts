@@ -10,7 +10,7 @@ import { getTindakan } from "@/lib/tindakan";
 import { checkAll, clearCheck, markManualOk } from "@/lib/linkcheck";
 import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, validKey } from "@/lib/ai";
 import type { Flash } from "@/lib/flash";
-import { TgError, deleteTg, getTg, sendWeeklyReport, setTg, validBotToken, validChat } from "@/lib/telegram";
+import { TgError, deleteTg, finishPair, getTg, sendWeeklyReport, setTg, startPair, validBotToken, validChat } from "@/lib/telegram";
 import { RemoteError, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
   deleteLinkData,
@@ -493,10 +493,10 @@ export async function saveTelegram(formData: FormData): Promise<Flash> {
   const old = await getTg();
   const useToken = token || old?.token || "";
   if (!validBotToken(useToken)) return err("Token bot tidak valid. Tempel token utuh dari BotFather.");
-  if (!validChat(chat)) return err("Chat ID tidak valid. Isi angka (mis. 123456789 atau -100123…) atau @namakanal.");
+  if (chat && !validChat(chat)) return err("Chat ID tidak valid. Isi angka (mis. 123456789 atau -100123…) atau @namakanal, atau kosongkan lalu pakai Sambungkan.");
   await setTg({ token: useToken, chat });
   revalidatePath("/admin/token");
-  return ok("Telegram disimpan. Tekan Kirim laporan sekarang untuk mencoba.");
+  return ok(chat ? "Telegram disimpan. Tekan Kirim laporan sekarang untuk mencoba." : "Token disimpan. Tekan Sambungkan untuk menghubungkan chat.");
 }
 
 export async function deleteTelegram(): Promise<Flash> {
@@ -512,6 +512,29 @@ export async function sendReportNow(): Promise<Flash> {
   try {
     await sendWeeklyReport();
     return ok("Laporan terkirim ke Telegram.");
+  } catch (e) {
+    return tgErr(e);
+  }
+}
+
+/** Langkah 1 penyambungan: buat kode dan tautan Start. */
+export async function startTelegramPair(): Promise<Flash & { link?: string }> {
+  await requireAdmin();
+  try {
+    const { link } = await startPair();
+    return { kind: "ok", text: "Buka tautan, tekan Start di Telegram, lalu tekan Cek.", link };
+  } catch (e) {
+    return tgErr(e);
+  }
+}
+
+/** Langkah 2: cek apakah Start dengan kode itu sudah masuk, lalu simpan chat ID. */
+export async function finishTelegramPair(): Promise<Flash> {
+  await requireAdmin();
+  try {
+    await finishPair();
+    revalidatePath("/admin/token");
+    return ok("Chat tersambung. Pesan konfirmasi sudah dikirim.");
   } catch (e) {
     return tgErr(e);
   }

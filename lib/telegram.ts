@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { db } from "./redis";
 import { getAnalytics, listLinks } from "./links";
 import { getChecks } from "./linkcheck";
@@ -25,8 +26,8 @@ export function maskBotToken(t: string): string {
 
 export async function getTg(): Promise<TgCfg | null> {
   const h = await db().hgetall<{ token?: string; chat?: string }>(KEY);
-  if (!h?.token || !h?.chat) return null;
-  return { token: String(h.token), chat: String(h.chat) };
+  if (!h?.token) return null;
+  return { token: String(h.token), chat: String(h.chat ?? "") };
 }
 
 export async function setTg(c: TgCfg) {
@@ -37,7 +38,7 @@ export async function deleteTg() {
   await db().del(KEY);
 }
 
-async function api(token: string, method: string, body: Record<string, unknown>): Promise<void> {
+async function call(token: string, method: string, body: Record<string, unknown>): Promise<unknown> {
   let res: Response;
   try {
     res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
@@ -50,7 +51,7 @@ async function api(token: string, method: string, body: Record<string, unknown>)
   } catch {
     throw new TgError("Telegram tidak menjawab. Coba lagi sebentar lagi.");
   }
-  if (res.ok) return;
+  if (res.ok) return ((await res.json().catch(() => ({}))) as { result?: unknown }).result;
   if (res.status === 401 || res.status === 404) throw new TgError("Token bot ditolak Telegram. Periksa token-nya.");
   let desc = "";
   try {
@@ -58,19 +59,16 @@ async function api(token: string, method: string, body: Record<string, unknown>)
   } catch {
     /* abaikan */
   }
-  if (/chat not found/i.test(desc)) throw new TgError("Chat tidak ditemukan. Periksa chat ID, dan pastikan sudah menekan Start pada bot.");
+  if (/webhook/i.test(desc)) throw new TgError("Bot ini memakai webhook (dipakai project lain). Pakai bot baru khusus laporan, atau isi chat ID manual.");
+  if (/chat not found/i.test(desc)) throw new TgError("Chat tidak ditemukan. Sambungkan chat lewat tombol Sambungkan, dan pastikan sudah menekan Start pada bot.");
   if (/blocked|kicked|not a member/i.test(desc)) throw new TgError("Bot tidak bisa mengirim ke chat itu (diblokir atau belum jadi anggota).");
-  throw new TgError(`Telegram menolak pesan (${res.status}).`);
+  throw new TgError(`Telegram menolak permintaan (${res.status}).`);
 }
 
 export async function sendMessage(c: TgCfg, text: string): Promise<void> {
-  await api(c.token, "sendMessage", { chat_id: c.chat, text, disable_web_page_preview: true });
+  await call(c.token, "sendMessage", { chat_id: c.chat, text, disable_web_page_preview: true });
 }
 
-/** Cek token dan chat ID tanpa mengirim laporan. */
-export async function sendTest(c: TgCfg): Promise<void> {
-  await sendMessage(c, "✅ Bot terhubung ke go.emahairshop.com. Laporan mingguan akan dikirim ke chat ini.");
-}
 
 /* ---------- teks laporan ---------- */
 
@@ -154,6 +152,43 @@ export async function buildReport(): Promise<string> {
 /** Susun laporan lalu kirim. Melempar TgError kalau belum diatur atau gagal. */
 export async function sendWeeklyReport(): Promise<void> {
   const cfg = await getTg();
-  if (!cfg) throw new TgError("Telegram belum diatur. Isi token bot dan chat ID di halaman Token.");
+  if (!cfg) throw new TgError("Telegram belum diatur. Isi token bot di halaman Token.");
+  if (!cfg.chat) throw new TgError("Chat belum tersambung. Tekan Sambungkan di halaman Token, atau isi chat ID.");
   await sendMessage(cfg, await buildReport());
+}
+
+
+/* ---------- sambungkan chat lewat kode (tanpa cari chat ID) ----------
+ * 1. startPair: buat kode acak (berlaku 10 menit) + tautan t.me/<bot>?start=<kode>
+ * 2. pengguna membuka tautan dan menekan Start, jadi Telegram mengirim "/start <kode>" ke bot
+ * 3. finishPair: baca pesan masuk lewat getUpdates, cocokkan kode, simpan chat ID
+ * Memakai getUpdates, jadi bot tidak boleh sedang memakai webhook (pakai bot khusus laporan).
+ */
+const PAIR = "tg:pair";
+
+export async function startPair(): Promise<{ code: string; link: string }> {
+  const cfg = await getTg();
+  if (!cfg) throw new TgError("Simpan token bot dulu.");
+  const me = (await call(cfg.token, "getMe", {})) as { username?: string } | undefined;
+  if (!me?.username) throw new TgError("Tidak bisa membaca nama bot. Periksa token-nya.");
+  const code = randomBytes(9).toString("base64url");
+  await db().set(PAIR, code, { ex: 600 });
+  return { code, link: `https://t.me/${me.username}?start=${code}` };
+}
+
+export async function finishPair(): Promise<void> {
+  const cfg = await getTg();
+  if (!cfg) throw new TgError("Simpan token bot dulu.");
+  const raw = await db().get<string | number>(PAIR);
+  if (raw === null || raw === undefined) throw new TgError("Kode sudah kedaluwarsa. Tekan Sambungkan lagi.");
+  const code = String(raw);
+  const ups = ((await call(cfg.token, "getUpdates", { limit: 100, allowed_updates: ["message"] })) as
+    | { message?: { text?: string; chat?: { id?: number } } }[]
+    | undefined) ?? [];
+  const hit = [...ups].reverse().find((u) => u.message?.text === `/start ${code}` && u.message.chat?.id !== undefined);
+  if (!hit) throw new TgError("Belum ada pesan Start dengan kode itu. Buka tautannya, tekan Start, lalu cek lagi.");
+  const chat = String(hit.message!.chat!.id);
+  await setTg({ token: cfg.token, chat });
+  await db().del(PAIR);
+  await sendMessage({ token: cfg.token, chat }, "✅ Tersambung. Laporan mingguan go.emahairshop.com akan dikirim ke chat ini tiap Senin 08.00 WIB.");
 }
