@@ -574,17 +574,16 @@ tr.zero td { color: var(--muted); }
 .an-rec-more svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
 .an-rec-more svg.up { transform: rotate(180deg); }
 @media (max-width: 560px) {
-  .an-rec-row { grid-template-columns: 20px minmax(0, 1fr) auto; grid-template-rows: auto auto; row-gap: 3px; column-gap: 10px; padding: 11px 0; align-items: center; }
+  /* satu baris: bendera | nama | sumber/IP | jam */
+  .an-rec-row { grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr) auto; column-gap: 8px; padding: 10px 0; align-items: center; }
   .an-rec-row:first-child { padding-top: 2px; }
   .an-rec-head { display: none; }
-  .an-rec-row > .flag { grid-column: 1; grid-row: 1; }
-  .an-rec-main { grid-column: 2; grid-row: 1; font-size: .9rem; }
-  .an-rec-time { grid-column: 3; grid-row: 1; align-self: center; font-size: .82rem; }
-  .an-rec-sub { grid-column: 2 / 4; grid-row: 2; font-size: .78rem; }
-  /* ikon sumber di bawah bendera, teksnya sejajar dengan nama di atasnya */
-  .an-rec-src { display: contents; }
-  .an-rec-src > .ref-ico { grid-column: 1; grid-row: 2; justify-self: center; width: 14px; height: 14px; }
-  .an-rec-src > span { grid-column: 2 / 4; grid-row: 2; font-size: .78rem; color: var(--muted); }
+  .an-rec-main { font-size: .84rem; }
+  .an-rec-sub { font-size: .76rem; }
+  .an-rec-src { gap: 5px; }
+  .an-rec-src > .ref-ico { width: 14px; height: 14px; flex: none; }
+  .an-rec-src > span { font-size: .76rem; }
+  .an-rec-time { font-size: .76rem; }
 }
 .an-rest { width: 20px; height: 15px; flex: none; border-radius: 2px; background: var(--an-soft); color: var(--muted); font-size: .7rem; line-height: 12px; text-align: center; box-shadow: 0 0 0 1px var(--line); }
 .an-empty { border: 1px solid var(--line); border-radius: 16px; padding: 40px 20px; background: var(--card); text-align: center; color: var(--muted); font-size: .9rem; }
