@@ -50,7 +50,10 @@ export function TelegramForm({ masked, chat }: { masked: string | null; chat: st
               startCheck(async () => {
                 const r = await run(() => finishTelegramPair());
                 flash(r);
-                if (r.kind === "ok") setLink(null);
+                if (r.kind === "ok") {
+                  setLink(null);
+                  setEditing(false);
+                }
               })
             }
           >
@@ -73,7 +76,7 @@ export function TelegramForm({ masked, chat }: { masked: string | null; chat: st
             })
           }
         >
-          {chat ? "Ganti chat (Sambungkan)" : "Sambungkan"}
+          {chat ? "Sambungkan ulang" : "Sambungkan"}
           {pairing && spin}
         </button>
       )}
@@ -97,7 +100,7 @@ export function TelegramForm({ masked, chat }: { masked: string | null; chat: st
     return (
       <div className="tk-btns">
         {sendBtn}
-        {pairBlock}
+        {!chat && pairBlock}
         <button type="button" className="ghost" onClick={() => setEditing(true)}>
           Edit
         </button>
@@ -157,7 +160,14 @@ export function TelegramForm({ masked, chat }: { masked: string | null; chat: st
           spellCheck={false}
           maxLength={40}
         />
-        <p className="tk-hint">Opsional. Kosongkan lalu pakai Sambungkan.</p>
+        {connected ? (
+          <>
+            <p className="tk-hint">Isi manual, atau sambungkan lewat Telegram tanpa perlu tahu chat ID.</p>
+            <div className="tk-btns">{pairBlock}</div>
+          </>
+        ) : (
+          <p className="tk-hint">Opsional. Bisa diisi nanti lewat tombol Sambungkan setelah token disimpan.</p>
+        )}
       </div>
       <div className="tk-btns">
         <button type="submit" className={saving ? "is-loading" : ""} disabled={busy} aria-busy={saving}>
