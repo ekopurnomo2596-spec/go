@@ -85,7 +85,7 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
       ) : (
         <>
         {usage && <UsageBar u={usage} />}
-        <div className={"cv" + (id ? " has-sel" : "")}>
+        <div className={"cv src-" + src + (id ? " has-sel" : "")}>
           <section className="panel cv-list">
             <div className="cv-lh">
               <h2>
