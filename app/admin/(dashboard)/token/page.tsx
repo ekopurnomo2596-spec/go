@@ -32,7 +32,11 @@ export default async function TokenPage() {
 
       <div className="panel">
         <h2>
-          Gemini <small>{AI_MODEL}</small>
+          <span className="cn">
+            <RefIcon name="Gemini" />
+            Gemini
+          </span>{" "}
+          <small>{AI_MODEL}</small>
         </h2>
         <p className="tk-state">
           {key ? (

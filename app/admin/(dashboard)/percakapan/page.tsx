@@ -48,7 +48,7 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
       <div className="top">
         <div>
           <h1>Percakapan</h1>
-          <div className="an-sub">Pesan masuk dan balasan bot. Tersimpan maksimal 30 hari. Hapus butuh token Redis dengan akses tulis.</div>
+          <div className="an-sub">Pesan masuk dan balasan AI. Tersimpan maksimal 30 hari.</div>
         </div>
         <nav className="cv-tabs" aria-label="Sumber percakapan">
           {SOURCES.map((s) => (
@@ -87,7 +87,7 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
                 action={clearChatsAction}
                 formClass="cv-clear"
                 btnClass="danger"
-                confirm={`Hapus SEMUA percakapan ${srcName(src)}? Data di Redis bot ikut terhapus dan tidak bisa dikembalikan.`}
+                confirm={`Hapus SEMUA percakapan ${srcName(src)}? Datanya ikut terhapus dan tidak bisa dikembalikan.`}
                 label="Hapus semua"
               >
                 <input type="hidden" name="src" value={src} />
@@ -127,7 +127,7 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
                   <ActionForm
                     action={deleteChatAction}
                     btnClass="danger"
-                    confirm={`Hapus percakapan "${conv.title}"? Data di Redis bot ikut terhapus.`}
+                    confirm={`Hapus percakapan "${conv.title}"? Datanya ikut terhapus.`}
                     label="Hapus percakapan"
                   >
                     <input type="hidden" name="src" value={src} />
@@ -140,7 +140,7 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
                   <div className="cv-msgs">
                     {conv.messages.map((m, i) => (
                       <div className={"cv-b " + (m.r === "bot" ? "bot" : "user")} key={i}>
-                        <span className="cv-who">{m.r === "bot" ? "Bot" : m.n || "Pengguna"}</span>
+                        <span className="cv-who">{m.r === "bot" ? "AI" : m.n || "Pengguna"}</span>
                         <p>{m.x}</p>
                         <span className="cv-ts">{m.t ? stamp(m.t) : ""}</span>
                       </div>
