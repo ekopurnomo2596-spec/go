@@ -73,18 +73,38 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
       <div className="tk-btns">
         <button
           type="button"
-          className="ghost"
-          onClick={() => {
-            navigator.clipboard?.writeText(pair.code).then(
-              () => {
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              },
-              () => {},
-            );
+          className="ghost tk-icon"
+          aria-label="Salin kode"
+          title="Salin kode"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(pair.code);
+            } catch {
+              const t = document.createElement("textarea");
+              t.value = pair.code;
+              t.style.position = "fixed";
+              t.style.opacity = "0";
+              document.body.appendChild(t);
+              t.select();
+              const ok = document.execCommand("copy");
+              t.remove();
+              if (!ok) return flash({ kind: "err", text: "Gagal menyalin kode." });
+            }
+            flash({ kind: "ok", text: "Kode disalin." });
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
           }}
         >
-          {copied ? "Tersalin" : "Salin kode"}
+          {copied ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="12" height="12" rx="2" />
+              <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+            </svg>
+          )}
         </button>
         <a className="btn ghost" href={`https://t.me/${pair.username}?start=${pair.code}`} target="_blank" rel="noopener noreferrer">
           Buka bot

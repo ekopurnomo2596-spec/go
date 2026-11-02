@@ -44,6 +44,7 @@ export default async function TokenPage() {
         .wrap .tk-panel button:not(.ghost):not(.danger) { background: #3b6ef0; border: 1px solid #3b6ef0; color: #fff; }
         .wrap .tk-panel button:not(.ghost):not(.danger):hover:not(:disabled) { background: #2f5fd8; border-color: #2f5fd8; }
         .wrap .tk-panel .ghost { background: #fff; border: 1px solid #e0e0e0; color: #333; }
+        .wrap .tk-panel button.tk-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 38px; height: 38px; min-height: 38px; padding: 0; border-radius: 10px; }
         .wrap .tk-panel .ghost:hover:not(:disabled) { background: #f6f6f6; }
         .wrap .tk-panel .danger { background: #fff; border: 1px solid #efc4c4; color: #c93636; }
         .wrap .tk-panel .danger:hover:not(:disabled) { background: #fff5f5; }
