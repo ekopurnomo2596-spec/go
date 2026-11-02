@@ -18,7 +18,11 @@ type Snap = {
   vd?: Record<string, number>;
   /** pengunjung baru per jam WIB (kunci "0"-"23") */
   vh?: Record<string, number>;
+  /** kunjungan terakhir hari ini (maks 10): jam WIB, negara, IP */
+  visits?: Visit[];
 };
+
+export type Visit = { t?: string; c?: string; ip?: string };
 
 export type DayRow = { day: string; visitors: number; pageviews: number; chats: number; leads: number };
 
@@ -118,6 +122,7 @@ export type WebSnap = {
   vr: Record<string, number>;
   vd: Record<string, number>;
   vh: Record<string, number>;
+  visits: Visit[];
 };
 
 /** Snapshot kunjungan website utama per hari (hanya hari yang punya data). Snapshot yang masih hidup ikut disalin ke webhist agar riwayat tidak hilang. */
@@ -130,7 +135,7 @@ export async function getWebSnaps(days: string[]): Promise<Record<string, WebSna
     const live = parse(raw[i]);
     const s = live ?? parse(raw[days.length + i]);
     if (!s) return;
-    out[day] = { visitors: Number(s.visitors ?? 0), pageviews: Number(s.pageviews ?? 0), vc: s.vc ?? {}, vr: s.vr ?? {}, vd: s.vd ?? {}, vh: s.vh ?? {} };
+    out[day] = { visitors: Number(s.visitors ?? 0), pageviews: Number(s.pageviews ?? 0), vc: s.vc ?? {}, vr: s.vr ?? {}, vd: s.vd ?? {}, vh: s.vh ?? {}, visits: Array.isArray(s.visits) ? s.visits : [] };
     if (live) save.push([day, { pageviews: live.pageviews, visitors: live.visitors, chats: live.chats, leads: live.leads, vc: live.vc, vr: live.vr, vd: live.vd, vh: live.vh }]);
   });
   if (save.length) {

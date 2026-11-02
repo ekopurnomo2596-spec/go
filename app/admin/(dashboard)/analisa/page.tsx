@@ -142,6 +142,8 @@ export default async function AnalisaPage({
     for (const [k, n] of Object.entries(snaps[d]?.vd ?? {})) emaDev[k] = (emaDev[k] ?? 0) + Number(n || 0);
     for (const [k, n] of Object.entries(snaps[d]?.vr ?? {})) emaRef[k] = (emaRef[k] ?? 0) + Number(n || 0);
   }
+  const recent = [...(snaps[jakartaDay(0)]?.visits ?? [])].reverse();
+  const todayVisitors = snaps[jakartaDay(0)]?.visitors ?? 0;
   const emaDaily: [string, number][] = chartList.map((d) => [d, snaps[d]?.visitors ?? 0]);
   const emaCountry: Record<string, number> = {};
   for (const d of dayList)
@@ -388,6 +390,25 @@ export default async function AnalisaPage({
               </>
             )}
           </section>
+
+          {/* Kunjungan terakhir + jamnya (hari ini, data website utama) */}
+          {one && showEma && recent.length > 0 && (
+            <section className="an-card an-mb">
+              <h2>
+                Kunjungan terakhir <small>hari ini</small>
+              </h2>
+              <div className="an-ctry">
+                {recent.map((v, i) => (
+                  <div className="an-ci" key={i}>
+                    <Flag code={String(v.c ?? "").toUpperCase()} />
+                    <span className="an-cn">{[countryName(String(v.c ?? "").toUpperCase()), v.ip].filter(Boolean).join(" · ")}</span>
+                    <span className="an-pct">{String(v.t ?? "-").replace(":", ".")} WIB</span>
+                  </div>
+                ))}
+              </div>
+              {todayVisitors > recent.length && <p className="an-empty-s">{recent.length} terakhir dari {nf(todayVisitors)} pengunjung</p>}
+            </section>
+          )}
 
           {/* Tautan teratas + perangkat + sumber (data go) */}
           <div className={`an-cols${showGo ? "" : " one"}`}>
