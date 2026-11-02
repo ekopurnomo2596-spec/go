@@ -142,8 +142,13 @@ const hourOf = (t: number) => new Date(t + 7 * 3600e3).getUTCHours();
 
 /** Klik hari ini per jam (WIB), indeks 0-23, semua tautan. Hanya klik yang dicatat sejak pencatatan per jam aktif. */
 export async function getHourlyToday(): Promise<number[]> {
+  return getHourly(0);
+}
+
+/** Klik per jam (WIB) untuk hari ke-`dayOffset` ke belakang (0 = hari ini, 1 = kemarin), indeks 0-23. */
+export async function getHourly(dayOffset: number): Promise<number[]> {
   const out = new Array<number>(24).fill(0);
-  const h = await db().hgetall<Record<string, number | string>>(bdKey("h", jakartaDay(0)));
+  const h = await db().hgetall<Record<string, number | string>>(bdKey("h", jakartaDay(dayOffset)));
   for (const [f, v] of Object.entries(h ?? {})) {
     const hr = Number(f.slice(f.lastIndexOf("|") + 1));
     if (Number.isInteger(hr) && hr >= 0 && hr < 24) out[hr] += Number(v) || 0;
