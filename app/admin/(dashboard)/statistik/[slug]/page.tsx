@@ -227,7 +227,7 @@ export default async function StatsPage({ params }: { params: Promise<{ slug: st
           <p className="empty">Belum ada klik.</p>
         ) : (
           <div className="tablewrap">
-            <table>
+            <table className="clicktable">
               <thead>
                 <tr>
                   <th>Waktu</th>

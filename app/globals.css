@@ -642,3 +642,20 @@ tr.zero td { color: var(--muted); }
 .ai-body .ai-tags:first-child { margin-top: 0; }
 .rbar > .an-src-l { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .rbar .an-rest { background: var(--ico); color: var(--muted); }
+
+/* ---------- Statistik: tabel "Klik terbaru" jadi kartu di HP ---------- */
+@media (max-width: 640px) {
+  .panel .tablewrap table.clicktable, .panel .tablewrap table.clicktable tbody { display: block; }
+  .panel .tablewrap table.clicktable thead { display: none; }
+  .panel .tablewrap table.clicktable tr {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
+    position: relative; padding: 12px 40px 12px 0; border-bottom: 1px solid var(--line);
+  }
+  .panel .tablewrap table.clicktable tbody tr:last-child { border-bottom: 0; }
+  .panel .tablewrap table.clicktable td { display: block; padding: 0; border: 0; min-width: 0; }
+  /* waktu di baris pertama; negara, sumber, perangkat berderet di bawahnya (turun baris kalau sempit) */
+  .panel .tablewrap table.clicktable td:nth-child(1) { flex-basis: 100%; color: var(--muted); font-size: .78rem; }
+  .panel .tablewrap table.clicktable td .cn { white-space: nowrap; }
+  /* tombol hapus di kanan atas kartu */
+  .panel .tablewrap table.clicktable td:nth-child(5) { position: absolute; top: 8px; right: 0; }
+}
