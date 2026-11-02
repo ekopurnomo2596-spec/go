@@ -410,7 +410,7 @@ export async function recordClick(
 
 /** Klik terbaru lintas-tautan hari ini (maks `limit`), untuk Analisa. */
 export async function getRecentClicksToday(limit = 10): Promise<Click[]> {
-  const raw = (await db().lrange<unknown[]>("recent:all", 0, limit - 1)) ?? [];
+  const raw = (await db().lrange<unknown>("recent:all", 0, limit - 1)) ?? [];
   const today = jakartaDay(0);
   return raw
     .map((x) => (typeof x === "string" ? safeParse(x) : (x as Click)))
