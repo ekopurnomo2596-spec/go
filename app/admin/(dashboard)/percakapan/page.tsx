@@ -75,24 +75,26 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
       ) : (
         <div className={"cv" + (id ? " has-sel" : "")}>
           <section className="panel cv-list">
-            <h2>
-              <span className="cn">
-                <RefIcon name={srcName(src)} />
-                {srcName(src)}
-              </span>{" "}
-              <small>{chats.length} percakapan</small>
-            </h2>
-            {chats.length > 0 && (
-              <ActionForm
-                action={clearChatsAction}
-                formClass="cv-clear"
-                btnClass="danger"
-                confirm={`Hapus SEMUA percakapan ${srcName(src)}? Datanya ikut terhapus dan tidak bisa dikembalikan.`}
-                label="Hapus semua"
-              >
-                <input type="hidden" name="src" value={src} />
-              </ActionForm>
-            )}
+            <div className="cv-lh">
+              <h2>
+                <span className="cn">
+                  <RefIcon name={srcName(src)} />
+                  {srcName(src)}
+                </span>{" "}
+                <small>{chats.length} chat</small>
+              </h2>
+              {chats.length > 0 && (
+                <ActionForm
+                  action={clearChatsAction}
+                  formClass="cv-clear"
+                  btnClass="danger"
+                  confirm={`Hapus SEMUA percakapan ${srcName(src)}? Datanya ikut terhapus dan tidak bisa dikembalikan.`}
+                  label="Hapus semua"
+                >
+                  <input type="hidden" name="src" value={src} />
+                </ActionForm>
+              )}
+            </div>
             {chats.length === 0 ? (
               <p className="empty">Belum ada percakapan.</p>
             ) : (
