@@ -26,6 +26,13 @@ export default async function TokenPage() {
 
   return (
     <main className="wrap">
+      <style>{`
+        .tk-panel h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+        .tk-panel h2 small { font-weight: 400; }
+        .tk-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+        .tk-meta .tk-k { opacity: 0.6; }
+        .tk-meta .tk-sep { width: 1px; height: 12px; background: currentColor; opacity: 0.2; }
+      `}</style>
       <div className="top">
         <div>
           <h1>Token</h1>
@@ -33,7 +40,7 @@ export default async function TokenPage() {
         </div>
       </div>
 
-      <div className="panel">
+      <div className="panel tk-panel">
         <h2>
           <span className="cn">
             <RefIcon name="Gemini" />
@@ -41,25 +48,20 @@ export default async function TokenPage() {
           </span>{" "}
           <small>{AI_MODEL}</small>
         </h2>
-        <p className="tk-state">
+        <p className="tk-state tk-meta">
           {key ? (
             <>
-              Token tersimpan: <code>{maskKey(key)}</code>
+              <span className="tk-k">Token tersimpan</span>
+              <code>{maskKey(key)}</code>
             </>
           ) : (
             "Belum ada token."
           )}
         </p>
         <TokenForm masked={key ? maskKey(key) : null} />
-        <p className="tk-help">
-          Token disimpan di database dan hanya dipakai di server. Di layar hanya tampil sebagian, dan token yang sudah
-          tersimpan tidak dikirim balik ke browser. Tombol Tampilkan hanya berlaku untuk teks yang sedang kamu ketik.
-          Tes kunci memakai token yang diketik, atau token tersimpan kalau kolomnya kosong. AI hanya dipanggil saat
-          tombol saran ditekan.
-        </p>
       </div>
 
-      <div className="panel">
+      <div className="panel tk-panel">
         <h2>
           <span className="cn">
             <RefIcon name="Telegram" />
@@ -67,33 +69,24 @@ export default async function TokenPage() {
           </span>{" "}
           <small>laporan mingguan, Senin 08.00 WIB</small>
         </h2>
-        <p className="tk-state">
+        <p className="tk-state tk-meta">
           {tg ? (
             <>
-              Bot: <code>{maskBotToken(tg.token)}</code> ·{" "}
-              {tg.chat ? (
-                <>
-                  chat <code>{tg.chat}</code>
-                </>
-              ) : (
-                "chat belum tersambung"
-              )}
+              <span className="tk-k">Bot</span>
+              <code>{maskBotToken(tg.token)}</code>
+              <span className="tk-sep" aria-hidden="true" />
+              <span className="tk-k">Chat</span>
+              {tg.chat ? <code>{tg.chat}</code> : <span>belum tersambung</span>}
             </>
           ) : (
             "Belum diatur."
           )}
         </p>
         <TelegramForm masked={tg ? maskBotToken(tg.token) : null} chat={tg?.chat || null} />
-        <p className="tk-help">
-          Buat bot lewat @BotFather, simpan tokennya, lalu tekan Sambungkan: buka tautannya, tekan Start, dan tekan Cek.
-          Chat ID tersimpan otomatis. Pakai bot khusus laporan (bukan bot yang sudah dipakai project lain dengan webhook).
-          Token disimpan di database dan tidak dikirim balik ke browser. Laporan otomatis butuh <code>CRON_SECRET</code>{" "}
-          di Vercel.
-        </p>
       </div>
 
       {remotes.map((r) => (
-        <div className="panel" key={r.id}>
+        <div className="panel tk-panel" key={r.id}>
           <h2>
             <span className="cn">
               <RefIcon name={r.name} />
@@ -101,10 +94,14 @@ export default async function TokenPage() {
             </span>{" "}
             <small>untuk halaman Percakapan</small>
           </h2>
-          <p className="tk-state">
+          <p className="tk-state tk-meta">
             {r.cfg ? (
               <>
-                Tersambung: <code>{hostOf(r.cfg.url)}</code> · token <code>{maskToken(r.cfg.token)}</code>
+                <span className="tk-k">Tersambung</span>
+                <code>{hostOf(r.cfg.url)}</code>
+                <span className="tk-sep" aria-hidden="true" />
+                <span className="tk-k">Token</span>
+                <code>{maskToken(r.cfg.token)}</code>
               </>
             ) : (
               "Belum tersambung."
