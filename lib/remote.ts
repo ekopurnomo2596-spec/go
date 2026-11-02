@@ -148,3 +148,17 @@ export async function clearConvs(c: Cfg): Promise<void> {
     })(),
   );
 }
+
+/* ---------- pemakaian pesan layanan WhatsApp bulan ini ----------
+ * svc:{YYYY-MM}  jumlah balasan bot yang terkirim bulan itu (bulan WIB), diisi project WhatsApp.
+ * Jatah gratis Meta: 1.000 per nomor per bulan.
+ */
+export type SvcUsage = { used: number; free: number; reset: string };
+
+export async function getSvcUsage(c: Cfg): Promise<SvcUsage> {
+  const r = client(c);
+  const month = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 7);
+  const used = await guard(r.get<number | string>(`svc:${month}`));
+  const [y, m] = month.split("-").map(Number);
+  return { used: Number(used) || 0, free: 1000, reset: new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10) };
+}

@@ -720,3 +720,12 @@ tr.zero td { color: var(--muted); }
 .cv-lh h2 { min-width: 0; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
 .cv-lh h2 small { margin: 0; line-height: 1; }
 .cv-tabs a:focus-visible { outline: 2px solid var(--lineh); outline-offset: 1px; }
+
+/* ---------- Pemakaian pesan WhatsApp ---------- */
+.usage-h { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: .9rem; }
+.usage-h .bad { color: var(--danger); font-weight: 700; }
+.usage-bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.usage-bar span { display: block; height: 100%; border-radius: 999px; background: var(--bar); }
+.usage-bar span.warm { background: #d9a400; }
+.usage-bar span.hot { background: var(--danger); }
+.usage-n { margin: 8px 0 0; color: var(--muted); font-size: .78rem; }

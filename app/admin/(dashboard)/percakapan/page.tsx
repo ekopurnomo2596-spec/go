@@ -9,17 +9,22 @@ import {
   SOURCES,
   getCfg,
   getConv,
+  getSvcUsage,
   isSrc,
   listConvs,
   srcName,
   validChatId,
   type ChatRow,
+  type SvcUsage,
   type Msg,
   type Src,
 } from "@/lib/remote";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Percakapan" };
+
+const BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+const num = (n: number) => n.toLocaleString("id-ID");
 
 function stamp(ts: number): string {
   return new Date(ts).toLocaleString("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "short", timeStyle: "short" });
@@ -34,10 +39,15 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
 
   let chats: ChatRow[] = [];
   let conv: { title: string; messages: Msg[] } | null = null;
+  let usage: SvcUsage | null = null;
   let error = "";
   if (cfg) {
     try {
-      [chats, conv] = await Promise.all([listConvs(cfg, 100), id ? getConv(cfg, id) : Promise.resolve(null)]);
+      [chats, conv, usage] = await Promise.all([
+        listConvs(cfg, 100),
+        id ? getConv(cfg, id) : Promise.resolve(null),
+        src === "wa" ? getSvcUsage(cfg).catch(() => null) : Promise.resolve(null),
+      ]);
     } catch (e) {
       error = e instanceof RemoteError ? e.message : "Gagal membaca percakapan.";
     }
@@ -73,6 +83,8 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
           </p>
         </section>
       ) : (
+        <>
+        {usage && <UsageBar u={usage} />}
         <div className={"cv" + (id ? " has-sel" : "")}>
           <section className="panel cv-list">
             <div className="cv-lh">
@@ -155,7 +167,31 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
             )}
           </section>
         </div>
+        </>
       )}
     </main>
+  );
+}
+
+function UsageBar({ u }: { u: SvcUsage }) {
+  const pct = Math.min(100, Math.round((u.used / u.free) * 100));
+  const over = u.used > u.free;
+  const [ry, rm, rd] = u.reset.split("-").map(Number);
+  return (
+    <section className="panel usage" aria-label="Pemakaian pesan bulan ini">
+      <div className="usage-h">
+        <b>Pesan layanan bulan ini</b>
+        <span className={over ? "bad" : ""}>
+          {num(u.used)} / {num(u.free)}
+        </span>
+      </div>
+      <div className="usage-bar" role="progressbar" aria-valuemin={0} aria-valuemax={u.free} aria-valuenow={Math.min(u.used, u.free)}>
+        <span className={pct >= 90 ? "hot" : pct >= 70 ? "warm" : ""} style={{ width: pct + "%" }} />
+      </div>
+      <p className="usage-n">
+        {over ? `Jatah gratis habis, ${num(u.used - u.free)} balasan terakhir ditagih Meta.` : `Sisa ${num(u.free - u.used)} balasan gratis.`} Reset {rd}{" "}
+        {BULAN[rm - 1]} {ry}.
+      </p>
+    </section>
   );
 }
