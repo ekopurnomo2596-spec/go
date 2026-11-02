@@ -112,6 +112,11 @@ export default async function DashboardPage() {
           </section>
 
           <div className="cols">
+            <WebBars title="Sumber trafik" rows={groupByLabel(w.referrers, labelRef)} kind="ref" />
+            <WebBars title="Perangkat" rows={groupByLabel(w.devices, labelDevice)} kind="dev" />
+          </div>
+
+          <div className="cols">
             <section className="panel">
               <h2>
                 Negara pengunjung <small>14 hari</small>
@@ -161,11 +166,6 @@ export default async function DashboardPage() {
                 </table>
               </div>
             </section>
-          </div>
-
-          <div className="cols">
-            <WebBars title="Sumber trafik" rows={groupByLabel(w.referrers, labelRef)} kind="ref" />
-            <WebBars title="Perangkat" rows={groupByLabel(w.devices, labelDevice)} kind="dev" />
           </div>
         </>
       )}
