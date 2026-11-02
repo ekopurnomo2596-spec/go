@@ -668,22 +668,15 @@ tr.zero td { color: var(--muted); }
 .rbar > .an-src-l { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .rbar .an-rest { background: var(--ico); color: var(--muted); }
 
-/* ---------- Statistik: tabel "Klik terbaru" jadi kartu di HP ---------- */
+/* ---------- Statistik: tabel "Klik terbaru" di HP = tabel yang sama, bisa digeser ---------- */
+.panel .tablewrap:has(.clicktable) { -webkit-overflow-scrolling: touch; }
 @media (max-width: 640px) {
-  .panel .tablewrap table.clicktable, .panel .tablewrap table.clicktable tbody { display: block; }
-  .panel .tablewrap table.clicktable thead { display: none; }
-  .panel .tablewrap table.clicktable tr {
-    display: flex; flex-wrap: nowrap; align-items: center; gap: 12px;
-    overflow-x: auto; -webkit-overflow-scrolling: touch;
-    padding: 12px 0; border-bottom: 1px solid var(--line);
-  }
-  .panel .tablewrap table.clicktable tbody tr:last-child { border-bottom: 0; }
-  .panel .tablewrap table.clicktable td { display: block; padding: 0; border: 0; min-width: 0; flex: none; }
-  /* waktu, negara, sumber, perangkat tetap satu baris (geser ke samping kalau sempit) */
-  .panel .tablewrap table.clicktable td:nth-child(1) { color: var(--muted); font-size: .78rem; white-space: nowrap; }
-  .panel .tablewrap table.clicktable td .cn { white-space: nowrap; }
-  /* tombol hapus menempel di kanan, selalu terlihat tanpa ikut digeser */
+  .panel .tablewrap table.clicktable { min-width: 540px; }
+  .panel .tablewrap table.clicktable th,
+  .panel .tablewrap table.clicktable td { white-space: nowrap; vertical-align: middle; }
+  /* kolom hapus tetap menempel di kanan saat digeser */
+  .panel .tablewrap table.clicktable th:nth-child(5),
   .panel .tablewrap table.clicktable td:nth-child(5) {
-    position: sticky; right: 0; margin-left: auto; padding-left: 8px; background: var(--card);
+    position: sticky; right: 0; background: var(--card); padding-left: 12px;
   }
 }
