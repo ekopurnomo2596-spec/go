@@ -80,7 +80,7 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
                 <span className="cn">
                   <RefIcon name={srcName(src)} />
                   {srcName(src)}
-                </span>{" "}
+                </span>
                 <small>{chats.length} chat</small>
               </h2>
               {chats.length > 0 && (
