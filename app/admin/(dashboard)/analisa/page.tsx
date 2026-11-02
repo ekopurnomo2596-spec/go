@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
-import { getAnalytics, getHourly, getHourlyToday, getRecentClicksToday } from "@/lib/links";
+import { getAnalytics, getHourlyToday, getRecentClicksToday } from "@/lib/links";
 import { countryName, jakartaDay } from "@/lib/format";
 import { getWebSnaps } from "@/lib/visits";
 import { SourceSelect } from "./source-select";
@@ -115,7 +115,6 @@ export default async function AnalisaPage({
   const chartDays = one ? 7 : days;
   const ac = a;
   const hourly = one && showGo ? await getHourlyToday() : [];
-  const hourlyY = one && showGo ? await getHourly(1) : [];
   const recentGo = one && showGo ? await getRecentClicksToday(10) : [];
   const goTime = (t: number) => {
     const d = new Date(t + 7 * 3600e3);
@@ -156,30 +155,9 @@ export default async function AnalisaPage({
   const yVh = snaps[jakartaDay(1)]?.vh;
   const ghostEma: [string, number][] | undefined =
     one && showEma && yVh && Object.keys(yVh).length > 0 ? hourOf24(yVh, 23) : undefined;
-  // pembanding persen untuk "Hari ini": kemarin sampai jam:menit yang sama
-  const nowMin = new Date(Date.now() + 7 * 3600e3).getUTCMinutes();
-  const hhmm = `${String(nowHour).padStart(2, "0")}.${String(nowMin).padStart(2, "0")}`;
   const ySnap = snaps[jakartaDay(1)];
-  let yUpTo: number | null = null;
-  if (one && showEma && ySnap) {
-    const vis = ySnap.visits;
-    if (vis.length > 0 && vis.length >= ySnap.visitors) {
-      // daftar kunjungan kemarin lengkap (maks 10): hitung yang jamnya <= sekarang, akurat sampai menit
-      const nowKey = nowHour * 60 + nowMin;
-      yUpTo = vis.filter((v) => {
-        const [h, m] = String(v.t ?? "").split(":").map(Number);
-        return Number.isFinite(h) && Number.isFinite(m) && h * 60 + m <= nowKey;
-      }).length;
-    } else if (yVh && Object.keys(yVh).length > 0) {
-      // pakai data per jam; jam yang sedang berjalan dihitung sebanding menitnya
-      let n = 0;
-      for (let h = 0; h < nowHour; h++) n += Number(yVh[String(h)] ?? 0);
-      n += (Number(yVh[String(nowHour)] ?? 0) * (nowMin + 1)) / 60;
-      yUpTo = Math.round(n);
-    }
-  }
-  const sameDelta = yUpTo === null ? undefined : pctDelta(todayVisitors, yUpTo);
-  const visDelta = one ? sameDelta : avgDelta("visitors");
+  const dayBefore = snaps[jakartaDay(2)];
+  const visDelta = one ? (ySnap ? pctDelta(todayVisitors, ySnap.visitors) : undefined) : avgDelta("visitors");
   // jam yang sedang berjalan belum tentu ada kunjungan; jangan digambar sebagai 0 (terlihat seperti turun)
   const trim = (d: [string, number][]) => (one && d.length > 1 && d[d.length - 1][1] === 0 ? d.slice(0, -1) : d);
   const emaCountry: Record<string, number> = {};
@@ -192,53 +170,16 @@ export default async function AnalisaPage({
   const deltaPct = a.prevTotal !== null ? pctDelta(a.total, a.prevTotal) : null;
   const uniqDelta = a.unique !== null && a.prevUnique !== null ? pctDelta(a.unique, a.prevUnique) : null;
   const f1 = (v: number) => v.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const cmp = one ? "Hari ini belum selesai, jadi tidak dibandingkan dengan kemarin." : "";
-  const grafikNote = ghostEma ? " Lihat perbandingannya di grafik." : "";
-  const cmpAvg =
-    one && yUpTo !== null
-      ? `Persen dibandingkan kemarin sampai jam ${hhmm} (${nf(yUpTo)} pengunjung).${grafikNote}`
-      : one
-        ? `${cmp}${grafikNote}`
-        : cmp;
-  const dv = (v: number | null) => (one ? undefined : v);
-
-  // ---- pembanding persen untuk "Hari ini": kemarin sampai jam:menit yang sama ----
-  // porsi klik kemarin yang sudah terjadi sampai sekarang (dari klik per jam)
-  const yClickFrac = (() => {
-    if (!one || !showGo) return null;
-    const tot = hourlyY.reduce((t, v) => t + v, 0);
-    if (tot <= 0) return null;
-    let n = 0;
-    for (let h = 0; h < nowHour; h++) n += hourlyY[h] ?? 0;
-    n += ((hourlyY[nowHour] ?? 0) * (nowMin + 1)) / 60;
-    return n / tot;
-  })();
-  const todayDelta = (cur: number, prevEst: number | null) =>
-    prevEst === null ? undefined : prevEst <= 0 ? (cur > 0 ? null : 0) : pctDelta(cur, prevEst);
-  const yClicksEst = yClickFrac !== null && a.prevTotal !== null ? Math.round(a.prevTotal * yClickFrac) : null;
-  const yUniqEst = yClickFrac !== null && a.prevUnique !== null ? Math.round(a.prevUnique * yClickFrac) : null;
-  const yPvEst =
-    one && ySnap && yUpTo !== null && ySnap.visitors > 0 ? Math.round((ySnap.pageviews * yUpTo) / ySnap.visitors) : null;
-  const clickDelta = one ? todayDelta(a.total, yClicksEst) : deltaPct;
-  const uniqDeltaView = one ? (a.unique !== null ? todayDelta(a.unique, yUniqEst) : undefined) : uniqDelta;
-  const pvDelta = one ? todayDelta(ePv, yPvEst) : avgDelta("pageviews");
-  const dayBefore = snaps[jakartaDay(2)];
-  const prevVisDelta = one && ySnap && dayBefore ? todayDelta(ySnap.visitors, dayBefore.visitors) : undefined;
-  const cmpClick = one
-    ? yClicksEst !== null
-      ? `Persen dibandingkan kemarin sampai jam ${hhmm} (perkiraan ${nf(yClicksEst)} klik).`
-      : cmp
-    : "";
-  const cmpUniq = one
-    ? yUniqEst !== null
-      ? `Persen dibandingkan kemarin sampai jam ${hhmm} (perkiraan ${nf(yUniqEst)} pengunjung).`
-      : cmp
-    : "";
-  const cmpPv = one
-    ? yPvEst !== null
-      ? `Persen dibandingkan kemarin sampai jam ${hhmm} (perkiraan ${nf(yPvEst)} halaman).`
-      : cmp
-    : "";
+  const cmp = one ? "Persen dibandingkan kemarin sehari penuh." : "";
+  const cmpAvg = cmp;
+  const dv = (v: number | null) => v;
+  const clickDelta = deltaPct;
+  const uniqDeltaView = uniqDelta;
+  const pvDelta = one ? (ySnap ? pctDelta(ePv, ySnap.pageviews) : undefined) : avgDelta("pageviews");
+  const prevVisDelta = one && ySnap && dayBefore ? pctDelta(ySnap.visitors, dayBefore.visitors) : undefined;
+  const cmpClick = cmp;
+  const cmpUniq = cmp;
+  const cmpPv = cmp;
   const ctrDelta = a.ctr !== null && a.prevCtr !== null ? Math.round((a.ctr - a.prevCtr) * 10) / 10 : null;
   const ctrPill = one && a.prevCtr === null ? undefined : ctrDelta === null ? (
     <Pill tone="up">Baru</Pill>
