@@ -707,3 +707,9 @@ tr.zero td { color: var(--muted); }
 .cv-clear { margin: -4px 0 10px; }
 .cv-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
 .cv-head h2 { margin-bottom: 12px; }
+.cv-tabs { display: inline-flex; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
+.cv-tabs a { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; font-weight: 600; padding: 8px 14px; border-radius: 9px; color: var(--muted); text-decoration: none; }
+.cv-tabs a:hover { color: var(--ink); }
+.cv-tabs a[aria-current] { background: var(--btn); color: var(--btnt); }
+.cv-tabs .ref-ico { width: 18px; height: 18px; }
+.panel h2 .cn .ref-ico { width: 20px; height: 20px; }

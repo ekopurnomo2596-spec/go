@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { flash, type Flash } from "@/lib/flash";
 import { deleteRemote, saveRemote, testRemote } from "../../actions";
 
@@ -19,6 +19,18 @@ export function RemoteForm({ src, name, connected }: { src: "wa" | "tg"; name: s
   const [testing, startTest] = useTransition();
   const [removing, startRemove] = useTransition();
   const busy = saving || testing || removing;
+  const [editing, setEditing] = useState(!connected);
+  useEffect(() => {
+    if (!connected) setEditing(true);
+  }, [connected]);
+
+  if (connected && !editing) {
+    return (
+      <button type="button" className="ghost" onClick={() => setEditing(true)}>
+        Edit
+      </button>
+    );
+  }
 
   return (
     <form
@@ -35,6 +47,7 @@ export function RemoteForm({ src, name, connected }: { src: "wa" | "tg"; name: s
           if (r.kind === "ok") {
             form.reset();
             setShow(false);
+            setEditing(false);
           }
         });
       }}
@@ -86,6 +99,20 @@ export function RemoteForm({ src, name, connected }: { src: "wa" | "tg"; name: s
           Tes koneksi
           {testing && <span className="spin" aria-hidden="true" />}
         </button>
+        {connected && (
+          <button
+            type="button"
+            className="ghost"
+            disabled={busy}
+            onClick={() => {
+              formRef.current?.reset();
+              setShow(false);
+              setEditing(false);
+            }}
+          >
+            Batal
+          </button>
+        )}
         {connected && (
           <button
             type="button"

@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { formatTime } from "@/lib/format";
 import { clearChatsAction, deleteChatAction } from "../../actions";
 import { ActionForm } from "../forms";
+import { RefIcon } from "@/lib/sumber-icon";
 import {
   RemoteError,
   SOURCES,
@@ -49,9 +50,10 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
           <h1>Percakapan</h1>
           <div className="an-sub">Pesan masuk dan balasan bot. Tersimpan maksimal 30 hari. Hapus butuh token Redis dengan akses tulis.</div>
         </div>
-        <nav className="an-tabs" aria-label="Sumber percakapan">
+        <nav className="cv-tabs" aria-label="Sumber percakapan">
           {SOURCES.map((s) => (
             <Link key={s.id} href={`/admin/percakapan?s=${s.id}`} aria-current={s.id === src ? "page" : undefined}>
+              <RefIcon name={s.name} />
               {s.name}
             </Link>
           ))}
@@ -74,7 +76,11 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
         <div className={"cv" + (id ? " has-sel" : "")}>
           <section className="panel cv-list">
             <h2>
-              {srcName(src)} <small>{chats.length} percakapan</small>
+              <span className="cn">
+                <RefIcon name={srcName(src)} />
+                {srcName(src)}
+              </span>{" "}
+              <small>{chats.length} percakapan</small>
             </h2>
             {chats.length > 0 && (
               <ActionForm

@@ -3,6 +3,7 @@ import { AI_MODEL, getKey, maskKey } from "@/lib/ai";
 import { SOURCES, getCfg, maskToken } from "@/lib/remote";
 import { TokenForm } from "./token-form";
 import { RemoteForm } from "./remote-form";
+import { RefIcon } from "@/lib/sumber-icon";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Token" };
@@ -54,7 +55,11 @@ export default async function TokenPage() {
       {remotes.map((r) => (
         <div className="panel" key={r.id}>
           <h2>
-            Redis {r.name} <small>untuk halaman Percakapan</small>
+            <span className="cn">
+              <RefIcon name={r.name} />
+              Redis {r.name}
+            </span>{" "}
+            <small>untuk halaman Percakapan</small>
           </h2>
           <p className="tk-state">
             {r.cfg ? (

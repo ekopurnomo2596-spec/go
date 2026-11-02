@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { flash, type Flash } from "@/lib/flash";
 import { deleteAiKey, saveAiKey, testAiKey } from "../../actions";
 
@@ -19,6 +19,18 @@ export function TokenForm({ masked }: { masked: string | null }) {
   const [testing, startTest] = useTransition();
   const [removing, startRemove] = useTransition();
   const busy = saving || testing || removing;
+  const [editing, setEditing] = useState(!masked);
+  useEffect(() => {
+    if (!masked) setEditing(true);
+  }, [masked]);
+
+  if (masked && !editing) {
+    return (
+      <button type="button" className="ghost" onClick={() => setEditing(true)}>
+        Edit
+      </button>
+    );
+  }
 
   return (
     <form
@@ -35,6 +47,7 @@ export function TokenForm({ masked }: { masked: string | null }) {
           if (r.kind === "ok") {
             form.reset();
             setShow(false);
+            setEditing(false);
           }
         });
       }}
@@ -74,6 +87,20 @@ export function TokenForm({ masked }: { masked: string | null }) {
           Tes kunci
           {testing && <span className="spin" aria-hidden="true" />}
         </button>
+        {masked && (
+          <button
+            type="button"
+            className="ghost"
+            disabled={busy}
+            onClick={() => {
+              formRef.current?.reset();
+              setShow(false);
+              setEditing(false);
+            }}
+          >
+            Batal
+          </button>
+        )}
         {masked && (
           <button
             type="button"

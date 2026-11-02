@@ -28,6 +28,10 @@ export function SideNav() {
         <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M21 7v6h-6" /></svg>
         Analisa
       </Link>
+      <Link href="/admin/percakapan" onClick={closeMenu} className={"snavLink" + (onChat ? " active" : "")}>
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+        Percakapan
+      </Link>
       <Link href="/admin/tindakan" onClick={closeMenu} className={"snavLink" + (onTindakan ? " active" : "")}>
         <svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h9" /></svg>
         Tindakan
@@ -43,10 +47,6 @@ export function SideNav() {
       <Link href="/admin/ai" onClick={closeMenu} className={"snavLink" + (onAi ? " active" : "")}>
         <svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z" /></svg>
         AI
-      </Link>
-      <Link href="/admin/percakapan" onClick={closeMenu} className={"snavLink" + (onChat ? " active" : "")}>
-        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-        Percakapan
       </Link>
       <Link href="/admin/token" onClick={closeMenu} className={"snavLink" + (onToken ? " active" : "")}>
         <svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></svg>
