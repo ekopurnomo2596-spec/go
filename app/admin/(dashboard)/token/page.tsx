@@ -123,7 +123,7 @@ export default async function TokenPage() {
           <h2>
             <span className="cn">
               <RefIcon name={r.name} />
-              Redis {r.name}
+              Chat {r.name}
             </span>{" "}
             <small>untuk halaman Percakapan</small>
           </h2>
@@ -143,11 +143,6 @@ export default async function TokenPage() {
           <RemoteForm src={r.id} name={r.name} connected={!!r.cfg} />
         </div>
       ))}
-      <p className="tk-help">
-        Isi REST URL dan REST Token dari database Upstash milik project bot (tab REST API di Upstash). Pakai
-        token biasa kalau mau bisa menghapus percakapan dari halaman Percakapan, atau <b>read-only token</b> kalau hanya
-        untuk melihat (tombol hapus akan ditolak). Saat disimpan, koneksi dites dulu.
-      </p>
     </main>
   );
 }
