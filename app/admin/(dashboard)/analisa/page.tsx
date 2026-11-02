@@ -402,14 +402,13 @@ export default async function AnalisaPage({
               <h2>
                 Klik terakhir <small>hari ini</small>
               </h2>
-              <div className="an-ctry">
+              <div className="an-rec">
                 {recentGo.map((c, i) => (
-                  <div className="an-ci" key={i}>
+                  <div className="an-rec-row" key={i}>
                     <Flag code={c.c} />
-                    <span className="an-cn">
-                      {[c.s && `/${c.s}`, labelRef(c.r)].filter(Boolean).join(" · ")}
-                    </span>
-                    <span className="an-pct">{goTime(c.t)} WIB</span>
+                    <span className="an-rec-main">{c.s ? `/${c.s}` : "-"}</span>
+                    <span className="an-rec-sub">{labelRef(c.r)}</span>
+                    <span className="an-rec-time">{goTime(c.t)} WIB</span>
                   </div>
                 ))}
               </div>
@@ -422,12 +421,13 @@ export default async function AnalisaPage({
               <h2>
                 Kunjungan terakhir <small>hari ini</small>
               </h2>
-              <div className="an-ctry">
+              <div className="an-rec">
                 {recent.map((v, i) => (
-                  <div className="an-ci" key={i}>
+                  <div className="an-rec-row" key={i}>
                     <Flag code={String(v.c ?? "").toUpperCase()} />
-                    <span className="an-cn">{[countryName(String(v.c ?? "").toUpperCase()), v.ip].filter(Boolean).join(" · ")}</span>
-                    <span className="an-pct">{String(v.t ?? "-").replace(":", ".")} WIB</span>
+                    <span className="an-rec-main">{countryName(String(v.c ?? "").toUpperCase())}</span>
+                    <span className="an-rec-sub">{v.ip ?? ""}</span>
+                    <span className="an-rec-time">{String(v.t ?? "-").replace(":", ".")} WIB</span>
                   </div>
                 ))}
               </div>
