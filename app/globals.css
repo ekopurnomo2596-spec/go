@@ -732,3 +732,11 @@ tr.zero td { color: var(--muted); }
 
 /* Telegram: item terpilih biru (WhatsApp tetap hijau) */
 .cv.src-tg .cv-item.on { border-color: #229ed9; box-shadow: inset 3px 0 0 #229ed9; }
+
+/* Tombol salin tautan */
+.actions > button.copybtn {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 38px; height: 38px; padding: 0; background: transparent; color: var(--ink);
+  border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+}
+.actions > button.copybtn:hover { background: var(--hover); opacity: 1; }

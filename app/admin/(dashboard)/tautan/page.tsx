@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { listLinksWithCounts } from "@/lib/links";
-import { CreateForm, DeleteLink, EditLink } from "../forms";
+import { CopyLink, CreateForm, DeleteLink, EditLink } from "../forms";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Tautan" };
@@ -69,6 +69,7 @@ export default async function AdminPage() {
                   <td className="num">{n(counts[l.slug] ?? 0)}</td>
                   <td>
                     <div className="actions">
+                      <CopyLink slug={l.slug} />
                       <EditLink slug={l.slug} title={l.title} url={l.url} interstitial={!!l.interstitial} />
                       <DeleteLink slug={l.slug} />
                     </div>
