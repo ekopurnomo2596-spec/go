@@ -424,18 +424,6 @@ export default async function AnalisaPage({
                   </div>
                 ))}
               />
-                {recentGo.map((c, i) => (
-                  <div className="an-rec-row" key={i}>
-                    <Flag code={c.c} />
-                    <span className="an-rec-main">{c.s ? `/${c.s}` : "-"}</span>
-                    <span className="an-rec-sub an-rec-src" title={labelRef(c.r)}>
-                      <RefIcon name={labelRef(c.r)} />
-                      <span>{labelRef(c.r)}</span>
-                    </span>
-                    <span className="an-rec-time">{goTime(c.t)} WIB</span>
-                  </div>
-                ))}
-              </div>
             </section>
           )}
 
@@ -463,15 +451,6 @@ export default async function AnalisaPage({
                   </div>
                 ))}
               />
-                {recent.map((v, i) => (
-                  <div className="an-rec-row" key={i}>
-                    <Flag code={String(v.c ?? "").toUpperCase()} />
-                    <span className="an-rec-main">{countryName(String(v.c ?? "").toUpperCase())}</span>
-                    <span className="an-rec-sub">{v.ip ?? ""}</span>
-                    <span className="an-rec-time">{String(v.t ?? "-").replace(":", ".")} WIB</span>
-                  </div>
-                ))}
-              </div>
               {todayVisitors > recent.length && <p className="an-empty-s">{recent.length} terakhir dari {nf(todayVisitors)} pengunjung</p>}
             </section>
           )}
