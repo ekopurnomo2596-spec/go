@@ -31,10 +31,10 @@ export function TelegramForm({ masked, chat }: { masked: string | null; chat: st
   const spin = <span className="spin" aria-hidden="true" />;
 
   const pairBlock = connected && (
-    <div className="tk-btns">
+    <>
       {link ? (
         <>
-          <a className="ghost" href={link} target="_blank" rel="noopener noreferrer">
+          <a className="btn ghost" href={link} target="_blank" rel="noopener noreferrer">
             Buka bot &amp; Start
           </a>
           <button
@@ -73,7 +73,7 @@ export function TelegramForm({ masked, chat }: { masked: string | null; chat: st
           {pairing && spin}
         </button>
       )}
-    </div>
+    </>
   );
 
   const sendBtn = chat ? (
@@ -91,15 +91,13 @@ export function TelegramForm({ masked, chat }: { masked: string | null; chat: st
 
   if (connected && !editing) {
     return (
-      <>
-        <div className="tk-btns">
-          {sendBtn}
-          <button type="button" className="ghost" onClick={() => setEditing(true)}>
-            Edit
-          </button>
-        </div>
+      <div className="tk-btns">
+        {sendBtn}
         {pairBlock}
-      </>
+        <button type="button" className="ghost" onClick={() => setEditing(true)}>
+          Edit
+        </button>
+      </div>
     );
   }
 
