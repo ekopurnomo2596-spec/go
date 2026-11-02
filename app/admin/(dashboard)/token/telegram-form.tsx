@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { flash, type Flash } from "@/lib/flash";
-import type { Pair } from "@/lib/telegram";
-import { deleteTelegram, saveTelegram, sendReportNow, startTelegramPair } from "../../actions";
+import type { Pair, TgKind } from "@/lib/telegram";
+import { deleteTelegram, saveTelegram, sendReportNow, sendVisitTestNow, startTelegramPair } from "../../actions";
 
 async function run<T extends Flash>(fn: () => Promise<T>): Promise<T | Flash> {
   try {
@@ -14,7 +14,9 @@ async function run<T extends Flash>(fn: () => Promise<T>): Promise<T | Flash> {
   }
 }
 
-export function TelegramForm({ masked, chat, pair: initialPair }: { masked: string | null; chat: string | null; pair: Pair | null }) {
+export function TelegramForm({ masked, chat, pair: initialPair, kind = "report" }: { masked: string | null; chat: string | null; pair: Pair | null; kind?: TgKind }) {
+  const visit = kind === "visit";
+  const id = visit ? "tgv-token" : "tg-token";
   const formRef = useRef<HTMLFormElement>(null);
   const [show, setShow] = useState(false);
   const [pair, setPair] = useState<Pair | null>(initialPair);
@@ -58,7 +60,7 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
 
   const newCode = () =>
     startPair(async () => {
-      const r = await startTelegramPair().catch(() => null);
+      const r = await startTelegramPair(kind).catch(() => null);
       if (!r) return flash({ kind: "err", text: "Gagal. Periksa koneksi lalu coba lagi." });
       flash(r);
       if (r.kind === "ok" && r.pair) setPair(r.pair);
@@ -122,9 +124,9 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
       className={sending ? "is-loading" : ""}
       disabled={busy}
       aria-busy={sending}
-      onClick={() => startSend(async () => flash(await run(() => sendReportNow())))}
+      onClick={() => startSend(async () => flash(await run(() => (visit ? sendVisitTestNow() : sendReportNow()))))}
     >
-      Kirim laporan sekarang
+      {visit ? "Kirim tes" : "Kirim laporan sekarang"}
       {sending && spin}
     </button>
   ) : null;
@@ -161,7 +163,7 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
         const form = e.currentTarget;
         const fd = new FormData(form);
         startSave(async () => {
-          const r = await run(() => saveTelegram(fd));
+          const r = await run(() => saveTelegram(fd, kind));
           flash(r);
           if (r.kind === "ok") {
             form.reset();
@@ -173,10 +175,10 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
       }}
     >
       <div className="tk-field">
-        <label htmlFor="tg-token">{connected ? "Ganti token bot" : "Token bot"}</label>
+        <label htmlFor={id}>{connected ? "Ganti token bot" : "Token bot"}</label>
         <div className="tk-row">
           <input
-            id="tg-token"
+            id={id}
             name="token"
             type={show ? "text" : "password"}
             placeholder={connected ? "Tempel token baru" : "123456789:AA… dari BotFather"}
@@ -190,7 +192,7 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
           </button>
         </div>
         <p className="tk-hint">
-          {connected ? "Kosongkan kalau token tidak berubah. " : ""}Setelah disimpan, kamu dapat kode untuk dikirim ke bot supaya chat tersambung otomatis.
+          {connected ? "Kosongkan kalau token tidak berubah. " : ""}Pakai bot khusus (bukan bot chat portal). Setelah disimpan, kamu dapat kode untuk dikirim ke bot supaya chat tersambung otomatis.
         </p>
       </div>
       <div className="tk-btns">
@@ -219,9 +221,9 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
             disabled={busy}
             aria-busy={removing}
             onClick={() => {
-              if (!window.confirm("Hapus pengaturan Telegram? Laporan mingguan tidak akan terkirim sampai diisi lagi.")) return;
+              if (!window.confirm(visit ? "Hapus pengaturan Telegram? Notifikasi kunjungan tidak akan terkirim sampai diisi lagi." : "Hapus pengaturan Telegram? Laporan mingguan tidak akan terkirim sampai diisi lagi.")) return;
               startRemove(async () => {
-                const r = await run(() => deleteTelegram());
+                const r = await run(() => deleteTelegram(kind));
                 flash(r);
                 setPair(null);
               });

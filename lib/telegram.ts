@@ -10,6 +10,10 @@ import { groupByLabel, labelRef } from "./sumber";
  * diisi dari halaman Token. Token tidak pernah dikirim balik ke browser.
  */
 const KEY = "tg:report";
+/** "report" = laporan mingguan, "visit" = notifikasi kunjungan harian (dibaca portal dari Redis yang sama). */
+export type TgKind = "report" | "visit";
+const keyOf = (k: TgKind) => (k === "visit" ? "tg:visit" : KEY);
+const pairKeyOf = (k: TgKind) => (k === "visit" ? "tg:visit:pair" : "tg:pair");
 const TIMEOUT_MS = 10000;
 
 export type TgCfg = { token: string; chat: string; secret?: string };
@@ -24,18 +28,18 @@ export function maskBotToken(t: string): string {
   return t.length > 10 ? `${t.slice(0, 4)}…${t.slice(-4)}` : "••••";
 }
 
-export async function getTg(): Promise<TgCfg | null> {
-  const h = await db().hgetall<{ token?: string; chat?: string; secret?: string }>(KEY);
+export async function getTg(kind: TgKind = "report"): Promise<TgCfg | null> {
+  const h = await db().hgetall<{ token?: string; chat?: string; secret?: string }>(keyOf(kind));
   if (!h?.token) return null;
   return { token: String(h.token), chat: String(h.chat ?? ""), secret: h.secret ? String(h.secret) : undefined };
 }
 
-export async function setTg(c: TgCfg) {
-  await db().hset(KEY, { token: c.token, chat: c.chat, secret: c.secret ?? "" });
+export async function setTg(c: TgCfg, kind: TgKind = "report") {
+  await db().hset(keyOf(kind), { token: c.token, chat: c.chat, secret: c.secret ?? "" });
 }
 
-export async function deleteTg() {
-  await db().del(KEY);
+export async function deleteTg(kind: TgKind = "report") {
+  await db().del(keyOf(kind));
 }
 
 async function call(token: string, method: string, body: Record<string, unknown>): Promise<unknown> {
@@ -166,7 +170,6 @@ export async function sendWeeklyReport(): Promise<void> {
  *    dan bot langsung membalas. Webhook dipasang saat token disimpan (setWebhook).
  * Bot jadi tidak boleh dipakai project lain (satu bot hanya punya satu webhook), pakai bot khusus laporan.
  */
-const PAIR = "tg:pair";
 const PAIR_TTL = 600;
 const ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // 32 huruf, tanpa yang mirip (0/O, 1/I)
 
@@ -176,25 +179,25 @@ const makeCode = () => Array.from(randomBytes(8), (b: number) => ALPHABET[b & 31
 export const makeSecret = () => randomBytes(24).toString("base64url");
 
 /** Kode yang sedang menunggu (belum kedaluwarsa), atau null. */
-export async function getPair(): Promise<Pair | null> {
-  const raw = await db().get<string>(PAIR);
+export async function getPair(kind: TgKind = "report"): Promise<Pair | null> {
+  const raw = await db().get<string>(pairKeyOf(kind));
   if (raw === null || raw === undefined) return null;
   const [code, username] = String(raw).split("|");
   return code && username ? { code, username } : null;
 }
 
-export async function startPair(): Promise<Pair> {
-  const cfg = await getTg();
+export async function startPair(kind: TgKind = "report"): Promise<Pair> {
+  const cfg = await getTg(kind);
   if (!cfg) throw new TgError("Simpan token bot dulu.");
   const me = (await call(cfg.token, "getMe", {})) as { username?: string } | undefined;
   if (!me?.username) throw new TgError("Tidak bisa membaca nama bot. Periksa token-nya.");
   const code = makeCode();
-  await db().set(PAIR, `${code}|${me.username}`, { ex: PAIR_TTL });
+  await db().set(pairKeyOf(kind), `${code}|${me.username}`, { ex: PAIR_TTL });
   return { code, username: me.username };
 }
 
-export async function clearPair() {
-  await db().del(PAIR);
+export async function clearPair(kind: TgKind = "report") {
+  await db().del(pairKeyOf(kind));
 }
 
 /** Pasang webhook supaya pesan ke bot dikirim Telegram ke aplikasi ini. */
@@ -215,20 +218,33 @@ function sameSecret(a: string, b: string): boolean {
 type Update = { message?: { text?: string; chat?: { id?: number } } };
 
 /** Dipanggil webhook. Mengembalikan false kalau secret salah (bukan dari Telegram). */
-export async function handleUpdate(update: Update, secretHeader: string | null): Promise<boolean> {
-  const cfg = await getTg();
+export async function handleUpdate(update: Update, secretHeader: string | null, kind: TgKind = "report"): Promise<boolean> {
+  const cfg = await getTg(kind);
   if (!cfg?.secret || !secretHeader || !sameSecret(cfg.secret, secretHeader)) return false;
   if (cfg.chat) return true; // sudah tersambung: pesan lain diabaikan
   const text = (update.message?.text ?? "").trim().toLowerCase();
   const id = update.message?.chat?.id;
   if (!text || id === undefined) return true;
-  const pair = await getPair();
+  const pair = await getPair(kind);
   if (!pair) return true;
   const code = pair.code.toLowerCase();
   if (text !== code && text !== `/start ${code}`) return true;
   const chat = String(id);
-  await setTg({ ...cfg, chat });
-  await clearPair();
-  await sendMessage({ token: cfg.token, chat }, "✅ Tersambung. Laporan mingguan go.emahairshop.com akan dikirim ke chat ini tiap Senin 08.00 WIB.");
+  await setTg({ ...cfg, chat }, kind);
+  await clearPair(kind);
+  await sendMessage(
+    { token: cfg.token, chat },
+    kind === "visit"
+      ? "✅ Tersambung. Notifikasi pengunjung baru emahairshop.com akan dikirim ke chat ini."
+      : "✅ Tersambung. Laporan mingguan go.emahairshop.com akan dikirim ke chat ini tiap Senin 08.00 WIB.",
+  );
   return true;
+}
+
+/** Pesan tes untuk notifikasi kunjungan (tampilannya sama dengan notif dari portal). */
+export async function sendVisitTest(): Promise<void> {
+  const cfg = await getTg("visit");
+  if (!cfg) throw new TgError("Telegram belum diatur. Isi token bot di halaman Token.");
+  if (!cfg.chat) throw new TgError("Chat belum tersambung. Kirim kode ke bot dari halaman Token.");
+  await sendMessage(cfg, "Tes notifikasi kunjungan\nNotifikasi pengunjung baru akan dikirim ke chat ini.");
 }

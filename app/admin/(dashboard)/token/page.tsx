@@ -23,6 +23,8 @@ export default async function TokenPage() {
   const key = await getKey();
   const tg = await getTg();
   const pair = tg && !tg.chat ? await getPair().catch(() => null) : null;
+  const tgv = await getTg("visit");
+  const pairv = tgv && !tgv.chat ? await getPair("visit").catch(() => null) : null;
   const remotes = await Promise.all(SOURCES.map(async (s) => ({ ...s, cfg: await getCfg(s.id) })));
 
   return (
@@ -116,6 +118,30 @@ export default async function TokenPage() {
           )}
         </p>
         <TelegramForm masked={tg ? maskBotToken(tg.token) : null} chat={tg?.chat || null} pair={pair} />
+      </div>
+
+      <div className="panel tk-panel">
+        <h2>
+          <span className="cn">
+            <RefIcon name="Telegram" />
+            Telegram
+          </span>{" "}
+          <small>notifikasi kunjungan harian</small>
+        </h2>
+        <p className="tk-state tk-meta">
+          {tgv ? (
+            <>
+              <span className="tk-k">Bot</span>
+              <code>{maskBotToken(tgv.token)}</code>
+              <span className="tk-sep" aria-hidden="true" />
+              <span className="tk-k">Chat</span>
+              {tgv.chat ? <code>{tgv.chat}</code> : <span>belum tersambung</span>}
+            </>
+          ) : (
+            "Belum diatur."
+          )}
+        </p>
+        <TelegramForm kind="visit" masked={tgv ? maskBotToken(tgv.token) : null} chat={tgv?.chat || null} pair={pairv} />
       </div>
 
       {remotes.map((r) => (

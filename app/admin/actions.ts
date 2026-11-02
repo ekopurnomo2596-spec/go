@@ -10,7 +10,7 @@ import { getTindakan } from "@/lib/tindakan";
 import { checkAll, clearCheck, markManualOk } from "@/lib/linkcheck";
 import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, validKey } from "@/lib/ai";
 import type { Flash } from "@/lib/flash";
-import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair } from "@/lib/telegram";
+import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
 import { RemoteError, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
   deleteLinkData,
@@ -486,46 +486,48 @@ function tgErr(e: unknown): Flash {
 }
 
 /** Alamat webhook dari alamat halaman yang sedang dibuka (harus HTTPS publik, syarat Telegram). */
-async function webhookUrl(): Promise<string> {
+async function webhookUrl(kind: TgKind): Promise<string> {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
   const proto = h.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
-  return `${proto}://${host}/api/telegram`;
+  return `${proto}://${host}/api/telegram${kind === "visit" ? "/visit" : ""}`;
 }
 
 /** Simpan token bot, pasang webhook, lalu buat kode untuk dikirim ke bot. Chat lama dilepas kalau token berubah. */
-export async function saveTelegram(formData: FormData): Promise<Flash & { pair?: Pair }> {
+export async function saveTelegram(formData: FormData, kind: TgKind = "report"): Promise<Flash & { pair?: Pair }> {
   await requireAdmin();
+  if (kind !== "visit") kind = "report";
   const token = str(formData, "token");
-  const old = await getTg();
+  const old = await getTg(kind);
   const useToken = token || old?.token || "";
   if (!validBotToken(useToken)) return err("Token bot tidak valid. Tempel token utuh dari BotFather.");
   const changed = useToken !== old?.token;
   if (!changed) return ok("Token tidak berubah.");
   const secret = makeSecret();
-  await setTg({ token: useToken, chat: "", secret });
+  await setTg({ token: useToken, chat: "", secret }, kind);
   try {
-    await setWebhook(useToken, await webhookUrl(), secret);
-    const pair = await startPair();
+    await setWebhook(useToken, await webhookUrl(kind), secret);
+    const pair = await startPair(kind);
     if (old) await removeWebhook(old.token);
     revalidatePath("/admin/token");
     return { kind: "ok", text: "Token disimpan. Kirim kode ke bot untuk menyambungkan.", pair };
   } catch (e) {
     // token yang ditolak Telegram tidak ikut tersimpan: pulihkan yang lama
-    if (old) await setTg(old);
-    else await deleteTg();
-    await clearPair();
+    if (old) await setTg(old, kind);
+    else await deleteTg(kind);
+    await clearPair(kind);
     revalidatePath("/admin/token");
     return tgErr(e);
   }
 }
 
-export async function deleteTelegram(): Promise<Flash> {
+export async function deleteTelegram(kind: TgKind = "report"): Promise<Flash> {
   await requireAdmin();
-  const old = await getTg();
+  if (kind !== "visit") kind = "report";
+  const old = await getTg(kind);
   if (old) await removeWebhook(old.token);
-  await deleteTg();
-  await clearPair();
+  await deleteTg(kind);
+  await clearPair(kind);
   revalidatePath("/admin/token");
   return ok("Pengaturan Telegram dihapus.");
 }
@@ -542,11 +544,22 @@ export async function sendReportNow(): Promise<Flash> {
 }
 
 /** Buat kode baru (kode lama kedaluwarsa setelah 10 menit). */
-export async function startTelegramPair(): Promise<Flash & { pair?: Pair }> {
+export async function startTelegramPair(kind: TgKind = "report"): Promise<Flash & { pair?: Pair }> {
   await requireAdmin();
   try {
-    const pair = await startPair();
+    const pair = await startPair(kind === "visit" ? "visit" : "report");
     return { kind: "ok", text: "Kode baru dibuat. Kirim ke bot untuk menyambungkan.", pair };
+  } catch (e) {
+    return tgErr(e);
+  }
+}
+
+/** Kirim pesan tes notifikasi kunjungan. */
+export async function sendVisitTestNow(): Promise<Flash> {
+  await requireAdmin();
+  try {
+    await sendVisitTest();
+    return ok("Pesan tes terkirim ke Telegram.");
   } catch (e) {
     return tgErr(e);
   }
