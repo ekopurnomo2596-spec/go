@@ -10,7 +10,7 @@ import { getTindakan } from "@/lib/tindakan";
 import { checkAll, clearCheck, markManualOk } from "@/lib/linkcheck";
 import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, validKey } from "@/lib/ai";
 import type { Flash } from "@/lib/flash";
-import { TgError, clearPair, deleteTg, finishPair, getTg, sendWeeklyReport, setTg, startPair, validBotToken, type Pair } from "@/lib/telegram";
+import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair } from "@/lib/telegram";
 import { RemoteError, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
   deleteLinkData,
@@ -485,7 +485,15 @@ function tgErr(e: unknown): Flash {
   return err(e instanceof TgError ? e.message : "Terjadi kesalahan saat menghubungi Telegram.");
 }
 
-/** Simpan token bot lalu langsung buat kode untuk disambungkan. Chat lama dilepas kalau token berubah. */
+/** Alamat webhook dari alamat halaman yang sedang dibuka (harus HTTPS publik, syarat Telegram). */
+async function webhookUrl(): Promise<string> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+  const proto = h.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
+  return `${proto}://${host}/api/telegram`;
+}
+
+/** Simpan token bot, pasang webhook, lalu buat kode untuk dikirim ke bot. Chat lama dilepas kalau token berubah. */
 export async function saveTelegram(formData: FormData): Promise<Flash & { pair?: Pair }> {
   await requireAdmin();
   const token = str(formData, "token");
@@ -493,17 +501,20 @@ export async function saveTelegram(formData: FormData): Promise<Flash & { pair?:
   const useToken = token || old?.token || "";
   if (!validBotToken(useToken)) return err("Token bot tidak valid. Tempel token utuh dari BotFather.");
   const changed = useToken !== old?.token;
-  await setTg({ token: useToken, chat: changed ? "" : (old?.chat ?? "") });
-  if (changed) await clearPair();
-  revalidatePath("/admin/token");
-  if (!changed && old?.chat) return ok("Telegram disimpan.");
+  if (!changed) return ok("Token tidak berubah.");
+  const secret = makeSecret();
+  await setTg({ token: useToken, chat: "", secret });
   try {
+    await setWebhook(useToken, await webhookUrl(), secret);
     const pair = await startPair();
+    if (old) await removeWebhook(old.token);
+    revalidatePath("/admin/token");
     return { kind: "ok", text: "Token disimpan. Kirim kode ke bot untuk menyambungkan.", pair };
   } catch (e) {
     // token yang ditolak Telegram tidak ikut tersimpan: pulihkan yang lama
     if (old) await setTg(old);
     else await deleteTg();
+    await clearPair();
     revalidatePath("/admin/token");
     return tgErr(e);
   }
@@ -511,6 +522,8 @@ export async function saveTelegram(formData: FormData): Promise<Flash & { pair?:
 
 export async function deleteTelegram(): Promise<Flash> {
   await requireAdmin();
+  const old = await getTg();
+  if (old) await removeWebhook(old.token);
   await deleteTg();
   await clearPair();
   revalidatePath("/admin/token");
@@ -528,24 +541,12 @@ export async function sendReportNow(): Promise<Flash> {
   }
 }
 
-/** Langkah 1 penyambungan: buat kode baru. */
+/** Buat kode baru (kode lama kedaluwarsa setelah 10 menit). */
 export async function startTelegramPair(): Promise<Flash & { pair?: Pair }> {
   await requireAdmin();
   try {
     const pair = await startPair();
-    return { kind: "ok", text: "Kode baru dibuat. Kirim ke bot, lalu tekan Cek.", pair };
-  } catch (e) {
-    return tgErr(e);
-  }
-}
-
-/** Langkah 2: cek apakah Start dengan kode itu sudah masuk, lalu simpan chat ID. */
-export async function finishTelegramPair(): Promise<Flash> {
-  await requireAdmin();
-  try {
-    await finishPair();
-    revalidatePath("/admin/token");
-    return ok("Chat tersambung. Pesan konfirmasi sudah dikirim.");
+    return { kind: "ok", text: "Kode baru dibuat. Kirim ke bot untuk menyambungkan.", pair };
   } catch (e) {
     return tgErr(e);
   }

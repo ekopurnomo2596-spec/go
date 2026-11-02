@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { db } from "./redis";
 import { getAnalytics, listLinks } from "./links";
 import { getChecks } from "./linkcheck";
@@ -12,7 +12,7 @@ import { groupByLabel, labelRef } from "./sumber";
 const KEY = "tg:report";
 const TIMEOUT_MS = 10000;
 
-export type TgCfg = { token: string; chat: string };
+export type TgCfg = { token: string; chat: string; secret?: string };
 
 /** Galat yang pesannya aman ditampilkan (tidak pernah memuat token). */
 export class TgError extends Error {}
@@ -25,13 +25,13 @@ export function maskBotToken(t: string): string {
 }
 
 export async function getTg(): Promise<TgCfg | null> {
-  const h = await db().hgetall<{ token?: string; chat?: string }>(KEY);
+  const h = await db().hgetall<{ token?: string; chat?: string; secret?: string }>(KEY);
   if (!h?.token) return null;
-  return { token: String(h.token), chat: String(h.chat ?? "") };
+  return { token: String(h.token), chat: String(h.chat ?? ""), secret: h.secret ? String(h.secret) : undefined };
 }
 
 export async function setTg(c: TgCfg) {
-  await db().hset(KEY, { token: c.token, chat: c.chat });
+  await db().hset(KEY, { token: c.token, chat: c.chat, secret: c.secret ?? "" });
 }
 
 export async function deleteTg() {
@@ -59,8 +59,9 @@ async function call(token: string, method: string, body: Record<string, unknown>
   } catch {
     /* abaikan */
   }
-  if (/webhook/i.test(desc)) throw new TgError("Bot ini memakai webhook (dipakai project lain). Pakai bot baru khusus laporan.");
-  if (/chat not found/i.test(desc)) throw new TgError("Chat tidak ditemukan. Kirim kode ke bot lagi (pastikan sudah menekan Start pada bot) untuk menyambungkan ulang.");
+  if (/bad webhook|https/i.test(desc)) throw new TgError("Telegram menolak alamat webhook. Halaman ini harus dibuka lewat alamat HTTPS publik (bukan localhost).");
+  if (/webhook/i.test(desc)) throw new TgError("Bot ini sedang dipakai project lain. Pakai bot baru khusus laporan.");
+  if (/chat not found/i.test(desc)) throw new TgError("Chat tidak ditemukan. Pastikan sudah menekan Start pada bot.");
   if (/blocked|kicked|not a member/i.test(desc)) throw new TgError("Bot tidak bisa mengirim ke chat itu (diblokir atau belum jadi anggota).");
   throw new TgError(`Telegram menolak permintaan (${res.status}).`);
 }
@@ -160,25 +161,26 @@ export async function sendWeeklyReport(): Promise<void> {
 
 /* ---------- sambungkan chat lewat kode (tanpa cari chat ID) ----------
  * 1. startPair: buat kode acak (berlaku 10 menit), disimpan di Redis
- * 2. pengguna mengirim kode itu ke bot (atau membuka tautan Start yang sudah memuat kode)
- * 3. finishPair: baca pesan masuk lewat getUpdates, cocokkan kode, simpan chat ID
- * Memakai getUpdates, jadi bot tidak boleh sedang memakai webhook (pakai bot khusus laporan).
+ * 2. pengguna mengirim kode itu ke bot
+ * 3. Telegram memanggil webhook (/api/telegram); handleUpdate mencocokkan kode, menyimpan chat ID,
+ *    dan bot langsung membalas. Webhook dipasang saat token disimpan (setWebhook).
+ * Bot jadi tidak boleh dipakai project lain (satu bot hanya punya satu webhook), pakai bot khusus laporan.
  */
 const PAIR = "tg:pair";
 const PAIR_TTL = 600;
 const ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // 32 huruf, tanpa yang mirip (0/O, 1/I)
 
-export type Pair = { code: string; username: string; link: string };
+export type Pair = { code: string; username: string };
 
 const makeCode = () => Array.from(randomBytes(8), (b: number) => ALPHABET[b & 31]).join("");
+export const makeSecret = () => randomBytes(24).toString("base64url");
 
 /** Kode yang sedang menunggu (belum kedaluwarsa), atau null. */
 export async function getPair(): Promise<Pair | null> {
   const raw = await db().get<string>(PAIR);
   if (raw === null || raw === undefined) return null;
   const [code, username] = String(raw).split("|");
-  if (!code || !username) return null;
-  return { code, username, link: `https://t.me/${username}?start=${code}` };
+  return code && username ? { code, username } : null;
 }
 
 export async function startPair(): Promise<Pair> {
@@ -188,29 +190,45 @@ export async function startPair(): Promise<Pair> {
   if (!me?.username) throw new TgError("Tidak bisa membaca nama bot. Periksa token-nya.");
   const code = makeCode();
   await db().set(PAIR, `${code}|${me.username}`, { ex: PAIR_TTL });
-  return { code, username: me.username, link: `https://t.me/${me.username}?start=${code}` };
+  return { code, username: me.username };
 }
 
 export async function clearPair() {
   await db().del(PAIR);
 }
 
-export async function finishPair(): Promise<void> {
+/** Pasang webhook supaya pesan ke bot dikirim Telegram ke aplikasi ini. */
+export async function setWebhook(token: string, url: string, secret: string): Promise<void> {
+  await call(token, "setWebhook", { url, secret_token: secret, allowed_updates: ["message"], drop_pending_updates: true });
+}
+
+export async function removeWebhook(token: string): Promise<void> {
+  await call(token, "deleteWebhook", {}).catch(() => {});
+}
+
+function sameSecret(a: string, b: string): boolean {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
+
+type Update = { message?: { text?: string; chat?: { id?: number } } };
+
+/** Dipanggil webhook. Mengembalikan false kalau secret salah (bukan dari Telegram). */
+export async function handleUpdate(update: Update, secretHeader: string | null): Promise<boolean> {
   const cfg = await getTg();
-  if (!cfg) throw new TgError("Simpan token bot dulu.");
+  if (!cfg?.secret || !secretHeader || !sameSecret(cfg.secret, secretHeader)) return false;
+  if (cfg.chat) return true; // sudah tersambung: pesan lain diabaikan
+  const text = (update.message?.text ?? "").trim().toLowerCase();
+  const id = update.message?.chat?.id;
+  if (!text || id === undefined) return true;
   const pair = await getPair();
-  if (!pair) throw new TgError("Kode sudah kedaluwarsa. Buat kode baru.");
+  if (!pair) return true;
   const code = pair.code.toLowerCase();
-  const ups = ((await call(cfg.token, "getUpdates", { limit: 100, allowed_updates: ["message"] })) as
-    | { message?: { text?: string; chat?: { id?: number; type?: string } } }[]
-    | undefined) ?? [];
-  const hit = [...ups].reverse().find((u) => {
-    const t = (u.message?.text ?? "").trim().toLowerCase();
-    return (t === code || t === `/start ${code}`) && u.message?.chat?.id !== undefined;
-  });
-  if (!hit) throw new TgError("Belum ada pesan berisi kode itu. Kirim kodenya ke bot, lalu cek lagi.");
-  const chat = String(hit.message!.chat!.id);
-  await setTg({ token: cfg.token, chat });
+  if (text !== code && text !== `/start ${code}`) return true;
+  const chat = String(id);
+  await setTg({ ...cfg, chat });
   await clearPair();
   await sendMessage({ token: cfg.token, chat }, "✅ Tersambung. Laporan mingguan go.emahairshop.com akan dikirim ke chat ini tiap Senin 08.00 WIB.");
+  return true;
 }

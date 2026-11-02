@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { flash, type Flash } from "@/lib/flash";
 import type { Pair } from "@/lib/telegram";
-import { deleteTelegram, finishTelegramPair, saveTelegram, sendReportNow, startTelegramPair } from "../../actions";
+import { deleteTelegram, saveTelegram, sendReportNow, startTelegramPair } from "../../actions";
 
 async function run<T extends Flash>(fn: () => Promise<T>): Promise<T | Flash> {
   try {
@@ -22,8 +23,8 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
   const [sending, startSend] = useTransition();
   const [removing, startRemove] = useTransition();
   const [pairing, startPair] = useTransition();
-  const [checking, startCheck] = useTransition();
-  const busy = saving || sending || removing || pairing || checking;
+  const busy = saving || sending || removing || pairing;
+  const router = useRouter();
   const connected = !!masked;
   const [editing, setEditing] = useState(!connected);
   useEffect(() => {
@@ -33,10 +34,25 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
   useEffect(() => {
     setPair(initialPair);
   }, [masked, initialPair]);
-  // Chat sudah tersambung: kode tidak diperlukan lagi.
+  // Chat sudah tersambung (bot menjawab kode lewat webhook): kode tidak diperlukan lagi.
+  const hadPair = useRef(!!initialPair);
   useEffect(() => {
-    if (chat) setPair(null);
-  }, [chat]);
+    if (pair) hadPair.current = true;
+    if (chat) {
+      setPair(null);
+      if (hadPair.current) {
+        hadPair.current = false;
+        flash({ kind: "ok", text: "Chat tersambung. Bot sudah membalas." });
+      }
+    }
+  }, [chat, pair]);
+  // Selama menunggu kode dikirim ke bot, cek status tiap 3 detik (halaman dimuat ulang diam-diam).
+  const waiting = !!pair && !chat;
+  useEffect(() => {
+    if (!waiting) return;
+    const t = setInterval(() => router.refresh(), 3000);
+    return () => clearInterval(t);
+  }, [waiting, router]);
 
   const spin = <span className="spin" aria-hidden="true" />;
 
@@ -51,7 +67,7 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
   const codeBlock = pair && !chat && (
     <div className="tk-code">
       <p>
-        Kirim kode ini ke bot <b>@{pair.username}</b> di Telegram (berlaku 10 menit), lalu tekan Cek.
+        Kirim kode ini ke bot <b>@{pair.username}</b> di Telegram (berlaku 10 menit). Tersambung otomatis begitu bot menjawab.
       </p>
       <code className="tk-big">{pair.code}</code>
       <div className="tk-btns">
@@ -70,28 +86,9 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
         >
           {copied ? "Tersalin" : "Salin kode"}
         </button>
-        <a className="btn ghost" href={pair.link} target="_blank" rel="noopener noreferrer">
+        <a className="btn ghost" href={`https://t.me/${pair.username}?start=${pair.code}`} target="_blank" rel="noopener noreferrer">
           Buka bot
         </a>
-        <button
-          type="button"
-          className={checking ? "is-loading" : ""}
-          disabled={busy}
-          aria-busy={checking}
-          onClick={() =>
-            startCheck(async () => {
-              const r = await run(() => finishTelegramPair());
-              flash(r);
-              if (r.kind === "ok") {
-                setPair(null);
-                setEditing(false);
-              }
-            })
-          }
-        >
-          Cek
-          {checking && spin}
-        </button>
         <button type="button" className="ghost" disabled={busy} onClick={newCode}>
           Kode baru
         </button>
@@ -126,11 +123,6 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
         <div className="tk-btns">
           {sendBtn}
           {noCode}
-          {chat && (
-            <button type="button" className="ghost" disabled={busy} onClick={newCode}>
-              Sambungkan ulang
-            </button>
-          )}
           <button type="button" className="ghost" onClick={() => setEditing(true)}>
             Edit
           </button>
@@ -155,7 +147,7 @@ export function TelegramForm({ masked, chat, pair: initialPair }: { masked: stri
             form.reset();
             setShow(false);
             setEditing(false);
-            setPair("pair" in r ? (r.pair ?? null) : null);
+            if ("pair" in r && r.pair) setPair(r.pair);
           }
         });
       }}
