@@ -10,7 +10,7 @@ import { getTindakan } from "@/lib/tindakan";
 import { checkAll, clearCheck, markManualOk } from "@/lib/linkcheck";
 import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, validKey } from "@/lib/ai";
 import type { Flash } from "@/lib/flash";
-import { TgError, deleteTg, finishPair, getTg, sendWeeklyReport, setTg, startPair, validBotToken, validChat } from "@/lib/telegram";
+import { TgError, clearPair, deleteTg, finishPair, getTg, sendWeeklyReport, setTg, startPair, validBotToken, type Pair } from "@/lib/telegram";
 import { RemoteError, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
   deleteLinkData,
@@ -485,23 +485,34 @@ function tgErr(e: unknown): Flash {
   return err(e instanceof TgError ? e.message : "Terjadi kesalahan saat menghubungi Telegram.");
 }
 
-/** Simpan token bot dan chat ID. Token boleh dikosongkan kalau hanya mengganti chat ID. */
-export async function saveTelegram(formData: FormData): Promise<Flash> {
+/** Simpan token bot lalu langsung buat kode untuk disambungkan. Chat lama dilepas kalau token berubah. */
+export async function saveTelegram(formData: FormData): Promise<Flash & { pair?: Pair }> {
   await requireAdmin();
   const token = str(formData, "token");
-  const chat = str(formData, "chat");
   const old = await getTg();
   const useToken = token || old?.token || "";
   if (!validBotToken(useToken)) return err("Token bot tidak valid. Tempel token utuh dari BotFather.");
-  if (chat && !validChat(chat)) return err("Chat ID tidak valid. Isi angka (mis. 123456789 atau -100123…) atau @namakanal, atau kosongkan lalu pakai Sambungkan.");
-  await setTg({ token: useToken, chat });
+  const changed = useToken !== old?.token;
+  await setTg({ token: useToken, chat: changed ? "" : (old?.chat ?? "") });
+  if (changed) await clearPair();
   revalidatePath("/admin/token");
-  return ok(chat ? "Telegram disimpan. Tekan Kirim laporan sekarang untuk mencoba." : "Token disimpan. Tekan Sambungkan untuk menghubungkan chat.");
+  if (!changed && old?.chat) return ok("Telegram disimpan.");
+  try {
+    const pair = await startPair();
+    return { kind: "ok", text: "Token disimpan. Kirim kode ke bot untuk menyambungkan.", pair };
+  } catch (e) {
+    // token yang ditolak Telegram tidak ikut tersimpan: pulihkan yang lama
+    if (old) await setTg(old);
+    else await deleteTg();
+    revalidatePath("/admin/token");
+    return tgErr(e);
+  }
 }
 
 export async function deleteTelegram(): Promise<Flash> {
   await requireAdmin();
   await deleteTg();
+  await clearPair();
   revalidatePath("/admin/token");
   return ok("Pengaturan Telegram dihapus.");
 }
@@ -517,12 +528,12 @@ export async function sendReportNow(): Promise<Flash> {
   }
 }
 
-/** Langkah 1 penyambungan: buat kode dan tautan Start. */
-export async function startTelegramPair(): Promise<Flash & { link?: string }> {
+/** Langkah 1 penyambungan: buat kode baru. */
+export async function startTelegramPair(): Promise<Flash & { pair?: Pair }> {
   await requireAdmin();
   try {
-    const { link } = await startPair();
-    return { kind: "ok", text: "Buka tautan, tekan Start di Telegram, lalu tekan Cek.", link };
+    const pair = await startPair();
+    return { kind: "ok", text: "Kode baru dibuat. Kirim ke bot, lalu tekan Cek.", pair };
   } catch (e) {
     return tgErr(e);
   }

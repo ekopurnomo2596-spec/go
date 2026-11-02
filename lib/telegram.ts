@@ -59,8 +59,8 @@ async function call(token: string, method: string, body: Record<string, unknown>
   } catch {
     /* abaikan */
   }
-  if (/webhook/i.test(desc)) throw new TgError("Bot ini memakai webhook (dipakai project lain). Pakai bot baru khusus laporan, atau isi chat ID manual.");
-  if (/chat not found/i.test(desc)) throw new TgError("Chat tidak ditemukan. Sambungkan chat lewat tombol Sambungkan, dan pastikan sudah menekan Start pada bot.");
+  if (/webhook/i.test(desc)) throw new TgError("Bot ini memakai webhook (dipakai project lain). Pakai bot baru khusus laporan.");
+  if (/chat not found/i.test(desc)) throw new TgError("Chat tidak ditemukan. Kirim kode ke bot lagi (pastikan sudah menekan Start pada bot) untuk menyambungkan ulang.");
   if (/blocked|kicked|not a member/i.test(desc)) throw new TgError("Bot tidak bisa mengirim ke chat itu (diblokir atau belum jadi anggota).");
   throw new TgError(`Telegram menolak permintaan (${res.status}).`);
 }
@@ -153,42 +153,64 @@ export async function buildReport(): Promise<string> {
 export async function sendWeeklyReport(): Promise<void> {
   const cfg = await getTg();
   if (!cfg) throw new TgError("Telegram belum diatur. Isi token bot di halaman Token.");
-  if (!cfg.chat) throw new TgError("Chat belum tersambung. Tekan Sambungkan di halaman Token, atau isi chat ID.");
+  if (!cfg.chat) throw new TgError("Chat belum tersambung. Kirim kode ke bot dari halaman Token.");
   await sendMessage(cfg, await buildReport());
 }
 
 
 /* ---------- sambungkan chat lewat kode (tanpa cari chat ID) ----------
- * 1. startPair: buat kode acak (berlaku 10 menit) + tautan t.me/<bot>?start=<kode>
- * 2. pengguna membuka tautan dan menekan Start, jadi Telegram mengirim "/start <kode>" ke bot
+ * 1. startPair: buat kode acak (berlaku 10 menit), disimpan di Redis
+ * 2. pengguna mengirim kode itu ke bot (atau membuka tautan Start yang sudah memuat kode)
  * 3. finishPair: baca pesan masuk lewat getUpdates, cocokkan kode, simpan chat ID
  * Memakai getUpdates, jadi bot tidak boleh sedang memakai webhook (pakai bot khusus laporan).
  */
 const PAIR = "tg:pair";
+const PAIR_TTL = 600;
+const ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // 32 huruf, tanpa yang mirip (0/O, 1/I)
 
-export async function startPair(): Promise<{ code: string; link: string }> {
+export type Pair = { code: string; username: string; link: string };
+
+const makeCode = () => Array.from(randomBytes(8), (b: number) => ALPHABET[b & 31]).join("");
+
+/** Kode yang sedang menunggu (belum kedaluwarsa), atau null. */
+export async function getPair(): Promise<Pair | null> {
+  const raw = await db().get<string>(PAIR);
+  if (raw === null || raw === undefined) return null;
+  const [code, username] = String(raw).split("|");
+  if (!code || !username) return null;
+  return { code, username, link: `https://t.me/${username}?start=${code}` };
+}
+
+export async function startPair(): Promise<Pair> {
   const cfg = await getTg();
   if (!cfg) throw new TgError("Simpan token bot dulu.");
   const me = (await call(cfg.token, "getMe", {})) as { username?: string } | undefined;
   if (!me?.username) throw new TgError("Tidak bisa membaca nama bot. Periksa token-nya.");
-  const code = randomBytes(9).toString("base64url");
-  await db().set(PAIR, code, { ex: 600 });
-  return { code, link: `https://t.me/${me.username}?start=${code}` };
+  const code = makeCode();
+  await db().set(PAIR, `${code}|${me.username}`, { ex: PAIR_TTL });
+  return { code, username: me.username, link: `https://t.me/${me.username}?start=${code}` };
+}
+
+export async function clearPair() {
+  await db().del(PAIR);
 }
 
 export async function finishPair(): Promise<void> {
   const cfg = await getTg();
   if (!cfg) throw new TgError("Simpan token bot dulu.");
-  const raw = await db().get<string | number>(PAIR);
-  if (raw === null || raw === undefined) throw new TgError("Kode sudah kedaluwarsa. Tekan Sambungkan lagi.");
-  const code = String(raw);
+  const pair = await getPair();
+  if (!pair) throw new TgError("Kode sudah kedaluwarsa. Buat kode baru.");
+  const code = pair.code.toLowerCase();
   const ups = ((await call(cfg.token, "getUpdates", { limit: 100, allowed_updates: ["message"] })) as
-    | { message?: { text?: string; chat?: { id?: number } } }[]
+    | { message?: { text?: string; chat?: { id?: number; type?: string } } }[]
     | undefined) ?? [];
-  const hit = [...ups].reverse().find((u) => u.message?.text === `/start ${code}` && u.message.chat?.id !== undefined);
-  if (!hit) throw new TgError("Belum ada pesan Start dengan kode itu. Buka tautannya, tekan Start, lalu cek lagi.");
+  const hit = [...ups].reverse().find((u) => {
+    const t = (u.message?.text ?? "").trim().toLowerCase();
+    return (t === code || t === `/start ${code}`) && u.message?.chat?.id !== undefined;
+  });
+  if (!hit) throw new TgError("Belum ada pesan berisi kode itu. Kirim kodenya ke bot, lalu cek lagi.");
   const chat = String(hit.message!.chat!.id);
   await setTg({ token: cfg.token, chat });
-  await db().del(PAIR);
+  await clearPair();
   await sendMessage({ token: cfg.token, chat }, "✅ Tersambung. Laporan mingguan go.emahairshop.com akan dikirim ke chat ini tiap Senin 08.00 WIB.");
 }

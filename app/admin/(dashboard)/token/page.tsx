@@ -4,7 +4,7 @@ import { SOURCES, getCfg, maskToken } from "@/lib/remote";
 import { TokenForm } from "./token-form";
 import { RemoteForm } from "./remote-form";
 import { TelegramForm } from "./telegram-form";
-import { getTg, maskBotToken } from "@/lib/telegram";
+import { getPair, getTg, maskBotToken } from "@/lib/telegram";
 import { RefIcon } from "@/lib/sumber-icon";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +22,7 @@ export default async function TokenPage() {
   await requireAdmin();
   const key = await getKey();
   const tg = await getTg();
+  const pair = tg && !tg.chat ? await getPair().catch(() => null) : null;
   const remotes = await Promise.all(SOURCES.map(async (s) => ({ ...s, cfg: await getCfg(s.id) })));
 
   return (
@@ -58,6 +59,9 @@ export default async function TokenPage() {
           box-sizing: border-box; width: 100%; height: 36px; padding: 0 12px; font: inherit; font-size: 14px;
           background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; outline: none;
         }
+        .wrap .tk-panel .tk-code { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid #e0e0e0; border-radius: 10px; background: #fafafa; }
+        .wrap .tk-panel .tk-code p { margin: 0; font-size: 13px; }
+        .wrap .tk-panel .tk-code code.tk-big { align-self: flex-start; font-size: 20px; font-weight: 600; letter-spacing: 0.12em; padding: 6px 12px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; user-select: all; }
         .wrap .tk-panel .tk-form input::placeholder { color: #9a9a9a; }
         .wrap .tk-panel .tk-form input:focus { border-color: #3b6ef0; box-shadow: 0 0 0 3px rgba(59, 110, 240, 0.15); }
       `}</style>
@@ -110,7 +114,7 @@ export default async function TokenPage() {
             "Belum diatur."
           )}
         </p>
-        <TelegramForm masked={tg ? maskBotToken(tg.token) : null} chat={tg?.chat || null} />
+        <TelegramForm masked={tg ? maskBotToken(tg.token) : null} chat={tg?.chat || null} pair={pair} />
       </div>
 
       {remotes.map((r) => (
