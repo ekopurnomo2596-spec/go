@@ -70,6 +70,21 @@ async function call(token: string, method: string, body: Record<string, unknown>
   throw new TgError(`Telegram menolak permintaan (${res.status}).`);
 }
 
+export type BotInfo = { name: string; username: string };
+
+/** Nama tampilan dan @username bot (getMe). Null kalau gagal/lambat, supaya halaman Token tetap terbuka. */
+export async function getBotInfo(token: string): Promise<BotInfo | null> {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/getMe`, { cache: "no-store", signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return null;
+    const me = ((await res.json()) as { result?: { first_name?: string; username?: string } }).result;
+    if (!me?.username) return null;
+    return { name: String(me.first_name ?? me.username), username: String(me.username) };
+  } catch {
+    return null;
+  }
+}
+
 export async function sendMessage(c: TgCfg, text: string): Promise<void> {
   await call(c.token, "sendMessage", { chat_id: c.chat, text, disable_web_page_preview: true });
 }
@@ -203,10 +218,42 @@ export async function clearPair(kind: TgKind = "report") {
 /** Pasang webhook supaya pesan ke bot dikirim Telegram ke aplikasi ini. */
 export async function setWebhook(token: string, url: string, secret: string): Promise<void> {
   await call(token, "setWebhook", { url, secret_token: secret, allowed_updates: ["message"], drop_pending_updates: true });
+  await clearBotMenus(token).catch(() => {}); // bot ini tidak memakai menu perintah
 }
 
 export async function removeWebhook(token: string): Promise<void> {
   await call(token, "deleteWebhook", {}).catch(() => {});
+}
+
+/**
+ * Hapus SEMUA daftar perintah bot (/menu, /statistik, dst). Tombol "Menu" di Telegram hanya muncul kalau bot
+ * punya perintah terdaftar. deleteMyCommands tanpa scope hanya menghapus scope default, jadi perintah yang
+ * pernah didaftarkan di scope lain (private chat, grup, per-chat, per-bahasa) harus disapu juga.
+ * Mengembalikan true kalau semua panggilan berhasil.
+ */
+export async function clearBotMenus(token: string, chatIds: Array<string | number | undefined> = []): Promise<boolean> {
+  const chats = [...new Set(chatIds.filter((c) => c !== undefined && c !== "").map(String))];
+  const scopes: Array<Record<string, unknown> | undefined> = [
+    undefined,
+    { type: "default" },
+    { type: "all_private_chats" },
+    { type: "all_group_chats" },
+    { type: "all_chat_administrators" },
+    ...chats.map((id) => ({ type: "chat", chat_id: id })),
+  ];
+  const jobs: Promise<unknown>[] = [];
+  for (const scope of scopes) {
+    for (const language_code of [undefined, "id", "en"]) {
+      const body: Record<string, unknown> = {};
+      if (scope) body.scope = scope;
+      if (language_code) body.language_code = language_code;
+      jobs.push(call(token, "deleteMyCommands", body));
+    }
+  }
+  jobs.push(call(token, "setChatMenuButton", { menu_button: { type: "default" } }));
+  for (const id of chats) jobs.push(call(token, "setChatMenuButton", { chat_id: id, menu_button: { type: "default" } }));
+  const r = await Promise.allSettled(jobs);
+  return r.every((x) => x.status === "fulfilled");
 }
 
 function sameSecret(a: string, b: string): boolean {
@@ -221,6 +268,17 @@ type Update = { message?: { text?: string; chat?: { id?: number } } };
 export async function handleUpdate(update: Update, secretHeader: string | null, kind: TgKind = "report"): Promise<boolean> {
   const cfg = await getTg(kind);
   if (!cfg?.secret || !secretHeader || !sameSecret(cfg.secret, secretHeader)) return false;
+  // Bersihkan menu perintah bot sekali per token (penanda di Redis), supaya tombol "Menu" hilang walau token
+  // sudah tersimpan sebelumnya. Dipicu pesan apa pun ke bot.
+  const mark = `tg:menuclean:${kind}`;
+  const tail = cfg.token.slice(-8);
+  try {
+    if ((await db().get<string>(mark)) !== tail && (await clearBotMenus(cfg.token, [cfg.chat, update.message?.chat?.id]))) {
+      await db().set(mark, tail);
+    }
+  } catch {
+    /* abaikan: bukan hal kritis */
+  }
   if (cfg.chat) return true; // sudah tersambung: pesan lain diabaikan
   const text = (update.message?.text ?? "").trim().toLowerCase();
   const id = update.message?.chat?.id;
