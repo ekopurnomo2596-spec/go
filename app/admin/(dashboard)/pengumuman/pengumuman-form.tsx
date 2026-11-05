@@ -6,7 +6,10 @@ import { savePengumuman } from "../../actions";
 
 const MAX = 200;
 
-export function PengumumanForm({ on, text, url }: { on: boolean; text: string; url: string }) {
+// epoch ms -> "YYYY-MM-DDTHH:mm" dalam WIB (UTC+7), format input datetime-local
+const toWib = (ms: number | null) => (ms ? new Date(ms + 7 * 3600_000).toISOString().slice(0, 16) : "");
+
+export function PengumumanForm({ on, text, url, start, end }: { on: boolean; text: string; url: string; start: number | null; end: number | null }) {
   const [pending, start] = useTransition();
   const [len, setLen] = useState(text.length);
 
@@ -33,12 +36,14 @@ export function PengumumanForm({ on, text, url }: { on: boolean; text: string; u
         .pg-form .pg-field { display: flex; flex-direction: column; gap: 6px; }
         .pg-form label.pg-l { font-size: 13px; font-weight: 500; margin: 0; }
         .pg-form .pg-hint { font-size: 12px; opacity: 0.6; margin: 0; }
-        .pg-form textarea, .pg-form input[type="url"] {
+        .pg-form textarea, .pg-form input[type="url"], .pg-form input[type="datetime-local"] {
           box-sizing: border-box; width: 100%; padding: 9px 12px; font: inherit; font-size: 14px;
           background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; outline: none;
         }
         .pg-form textarea { min-height: 84px; resize: vertical; line-height: 1.5; }
-        .pg-form textarea:focus, .pg-form input[type="url"]:focus { border-color: #3b6ef0; box-shadow: 0 0 0 3px rgba(59, 110, 240, 0.15); }
+        .pg-form .pg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 520px) { .pg-form .pg-row { grid-template-columns: 1fr; } }
+        .pg-form textarea:focus, .pg-form input[type="url"]:focus, .pg-form input[type="datetime-local"]:focus { border-color: #3b6ef0; box-shadow: 0 0 0 3px rgba(59, 110, 240, 0.15); }
         .pg-form .pg-act { display: flex; justify-content: flex-end; }
       `}</style>
 
@@ -76,6 +81,18 @@ export function PengumumanForm({ on, text, url }: { on: boolean; text: string; u
         />
         <p className="pg-hint">Kalau diisi, seluruh kotak pengumuman bisa diklik.</p>
       </div>
+
+      <div className="pg-row">
+        <div className="pg-field">
+          <label className="pg-l" htmlFor="pg-start">Mulai tampil (opsional)</label>
+          <input id="pg-start" name="start" type="datetime-local" defaultValue={toWib(start)} />
+        </div>
+        <div className="pg-field">
+          <label className="pg-l" htmlFor="pg-end">Berhenti tampil (opsional)</label>
+          <input id="pg-end" name="end" type="datetime-local" defaultValue={toWib(end)} />
+        </div>
+      </div>
+      <p className="pg-hint">Waktu dalam WIB. Kosongkan untuk tampil langsung / tanpa batas akhir. Pengumuman muncul dan hilang otomatis, tidak perlu cron. Tetap aktifkan saklar "Tampilkan di portal".</p>
 
       <div className="pg-act">
         <button type="submit" className={pending ? "is-loading" : ""} disabled={pending} aria-busy={pending}>

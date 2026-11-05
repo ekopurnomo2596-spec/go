@@ -571,11 +571,25 @@ export async function savePengumuman(formData: FormData): Promise<Flash> {
   const text = str(formData, "text").replace(/\s+/g, " ").slice(0, MAX_TEXT);
   const url = str(formData, "url");
   const on = formData.get("on") === "on";
+  // Input datetime-local dibaca sebagai WIB (UTC+7); server Vercel berjalan di UTC.
+  const wib = (k: string) => {
+    const v = str(formData, k);
+    if (!v) return null;
+    const t = new Date(v + ":00+07:00").getTime();
+    return Number.isFinite(t) ? t : NaN;
+  };
+  const start = wib("start");
+  const end = wib("end");
 
   if (on && !text) return err("Isi pengumuman belum ditulis.");
   if (url && !validInfoUrl(url)) return err("Tautan harus diawali http:// atau https://.");
+  if ((start !== null && Number.isNaN(start)) || (end !== null && Number.isNaN(end))) return err("Format tanggal atau jam tidak valid.");
+  if (start && end && end <= start) return err("Waktu berakhir harus setelah waktu mulai.");
+  if (on && end && end <= Date.now()) return err("Waktu berakhir sudah lewat. Pilih waktu yang akan datang.");
 
-  await setInfo({ on, text, url });
+  await setInfo({ on, text, url, start, end });
   revalidatePath("/admin/pengumuman");
-  return ok(on ? "Pengumuman disimpan dan tampil di portal." : "Pengumuman disimpan. Tidak ditampilkan di portal.");
+  if (!on) return ok("Pengumuman disimpan. Tidak ditampilkan di portal.");
+  if (start && start > Date.now()) return ok("Pengumuman disimpan dan akan tampil sesuai jadwal.");
+  return ok("Pengumuman disimpan dan tampil di portal.");
 }

@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/auth";
-import { getInfo } from "@/lib/pengumuman";
+import { getInfo, infoStatus } from "@/lib/pengumuman";
 import { PengumumanForm } from "./pengumuman-form";
 
 export const dynamic = "force-dynamic";
@@ -21,9 +21,9 @@ export default async function PengumumanPage() {
       <div className="panel">
         <h2>
           Info portal{" "}
-          <small>{info?.on ? "sedang tampil" : "tidak tampil"}</small>
+          <small>{{ tampil: "sedang tampil", terjadwal: "terjadwal, belum mulai", berakhir: "jadwal sudah berakhir", mati: "tidak tampil" }[info ? infoStatus(info) : "mati"]}</small>
         </h2>
-        <PengumumanForm key={info?.v ?? 0} on={info?.on ?? false} text={info?.text ?? ""} url={info?.url ?? ""} />
+        <PengumumanForm key={info?.v ?? 0} on={info?.on ?? false} text={info?.text ?? ""} url={info?.url ?? ""} start={info?.start ?? null} end={info?.end ?? null} />
       </div>
     </main>
   );
