@@ -11,6 +11,7 @@ import { checkAll, clearCheck, markManualOk } from "@/lib/linkcheck";
 import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, validKey } from "@/lib/ai";
 import type { Flash } from "@/lib/flash";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
+import { MAX_TEXT, setInfo, validInfoUrl } from "@/lib/pengumuman";
 import { RemoteError, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
   deleteLinkData,
@@ -563,4 +564,18 @@ export async function sendVisitTestNow(): Promise<Flash> {
   } catch (e) {
     return tgErr(e);
   }
+}
+
+export async function savePengumuman(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const text = str(formData, "text").replace(/\s+/g, " ").slice(0, MAX_TEXT);
+  const url = str(formData, "url");
+  const on = formData.get("on") === "on";
+
+  if (on && !text) return err("Isi pengumuman belum ditulis.");
+  if (url && !validInfoUrl(url)) return err("Tautan harus diawali http:// atau https://.");
+
+  await setInfo({ on, text, url });
+  revalidatePath("/admin/pengumuman");
+  return ok(on ? "Pengumuman disimpan dan tampil di portal." : "Pengumuman disimpan. Tidak ditampilkan di portal.");
 }
