@@ -8,10 +8,10 @@ import { createSession, destroySession, passwordOk, requireAdmin } from "@/lib/a
 import { db } from "@/lib/redis";
 import { getTindakan } from "@/lib/tindakan";
 import { checkAll, clearCheck, markManualOk } from "@/lib/linkcheck";
-import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, validKey } from "@/lib/ai";
+import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, translateInfo, validKey } from "@/lib/ai";
 import type { Flash } from "@/lib/flash";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
-import { MAX_TEXT, setInfo, validInfoUrl } from "@/lib/pengumuman";
+import { INFO_LANGS, MAX_TEXT, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
 import { RemoteError, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
   deleteLinkData,
@@ -587,9 +587,28 @@ export async function savePengumuman(formData: FormData): Promise<Flash> {
   if (start && end && end <= start) return err("Waktu berakhir harus setelah waktu mulai.");
   if (on && end && end <= Date.now()) return err("Waktu berakhir sudah lewat. Pilih waktu yang akan datang.");
 
-  await setInfo({ on, text, url, start, end });
+  // Terjemahan 8 bahasa dibuat AI saat disimpan. Dipakai ulang kalau teks tidak berubah.
+  const prev = await getInfo().catch(() => null);
+  let texts: InfoTexts = prev && prev.text === text ? prev.texts : {};
+  let note = "";
+  if (on && text && Object.keys(texts).length < INFO_LANGS.length) {
+    const rl = "rl:ai";
+    const n = await db().incr(rl);
+    if (n === 1) await db().expire(rl, 3600);
+    if (n > 30) {
+      note = " Terjemahan dilewati: terlalu banyak permintaan AI, coba lagi dalam satu jam.";
+    } else {
+      try {
+        texts = await translateInfo(text);
+      } catch (e) {
+        note = ` Terjemahan gagal (${e instanceof AiError ? e.message : "kesalahan tak dikenal"}). Sementara tampil satu bahasa untuk semua.`;
+      }
+    }
+  }
+
+  await setInfo({ on, text, texts, url, start, end });
   revalidatePath("/admin/pengumuman");
   if (!on) return ok("Pengumuman disimpan. Tidak ditampilkan di portal.");
-  if (start && start > Date.now()) return ok("Pengumuman disimpan dan akan tampil sesuai jadwal.");
-  return ok("Pengumuman disimpan dan tampil di portal.");
+  if (start && start > Date.now()) return ok("Pengumuman disimpan dan akan tampil sesuai jadwal." + note);
+  return ok("Pengumuman disimpan dan tampil di portal dalam 8 bahasa." + note);
 }
