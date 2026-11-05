@@ -18,11 +18,11 @@ type Snap = {
   vd?: Record<string, number>;
   /** pengunjung baru per jam WIB (kunci "0"-"23") */
   vh?: Record<string, number>;
-  /** kunjungan terakhir hari ini (maks 10): jam WIB, negara, IP */
+  /** kunjungan terakhir hari ini (maks 10): jam WIB, negara, IP, sumber (hostname referrer atau "langsung") */
   visits?: Visit[];
 };
 
-export type Visit = { t?: string; c?: string; ip?: string };
+export type Visit = { t?: string; c?: string; ip?: string; r?: string };
 
 export type DayRow = { day: string; visitors: number; pageviews: number; chats: number; leads: number };
 

@@ -567,6 +567,7 @@ tr.zero td { color: var(--muted); }
 .an-rec-time { color: var(--muted); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .an-rec-head { padding: 0 0 8px !important; font-size: .72rem; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); border-top: 0 !important; border-bottom: 1px solid var(--line); }
 .an-rec-head + .an-rec-row { border-top: 0; padding-top: 9px; }
+.an-rec-5 { grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
 .an-rec-src { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .an-rec-src > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .an-rec-more { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 8px; padding: 9px 0 0; border: 0; border-top: 1px solid var(--line); background: none; color: var(--muted); font: inherit; font-size: .82rem; cursor: pointer; }
@@ -577,6 +578,8 @@ tr.zero td { color: var(--muted); }
   /* satu baris: bendera | nama | sumber/IP | jam */
   .an-rec-row { grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr) auto; column-gap: 8px; padding: 10px 0; align-items: center; }
   .an-rec-row:first-child { padding-top: 2px; }
+  .an-rec-5 { grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1fr) auto; }
+  .an-rec-ip { display: none; }
   .an-rec-head { display: none; }
   .an-rec-main { font-size: .84rem; }
   .an-rec-sub { font-size: .76rem; }

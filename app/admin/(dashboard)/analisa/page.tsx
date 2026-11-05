@@ -473,18 +473,27 @@ export default async function AnalisaPage({
               </h2>
               <RecentList
                 head={
-                  <div className="an-rec-row an-rec-head" aria-hidden="true">
+                  <div className="an-rec-row an-rec-5 an-rec-head" aria-hidden="true">
                     <span />
                     <span>Negara</span>
-                    <span>IP</span>
+                    <span>Sumber</span>
+                    <span className="an-rec-ip">IP</span>
                     <span className="an-rec-time">Jam</span>
                   </div>
                 }
                 rows={recent.map((v, i) => (
-                  <div className="an-rec-row" key={i}>
+                  <div className="an-rec-row an-rec-5" key={i}>
                     <Flag code={String(v.c ?? "").toUpperCase()} />
                     <span className="an-rec-main">{countryName(String(v.c ?? "").toUpperCase())}</span>
-                    <span className="an-rec-sub">{v.ip ?? ""}</span>
+                    {v.r ? (
+                      <span className="an-rec-sub an-rec-src" title={labelRef(v.r)}>
+                        <RefIcon name={labelRef(v.r)} />
+                        <span>{labelRef(v.r)}</span>
+                      </span>
+                    ) : (
+                      <span className="an-rec-sub">-</span>
+                    )}
+                    <span className="an-rec-sub an-rec-ip">{v.ip ?? ""}</span>
                     <span className="an-rec-time">{String(v.t ?? "-").replace(":", ".")} WIB</span>
                   </div>
                 ))}
