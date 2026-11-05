@@ -50,7 +50,7 @@ export function SideNav() {
         AI
       </Link>
       <Link href="/admin/pengumuman" onClick={closeMenu} className={"snavLink" + (onInfo ? " active" : "")}>
-        <svg viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13" /></svg>
+        <svg viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6" /></svg>
         Pengumuman
       </Link>
       <Link href="/admin/token" onClick={closeMenu} className={"snavLink" + (onToken ? " active" : "")}>
