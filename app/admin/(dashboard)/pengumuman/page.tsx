@@ -23,7 +23,7 @@ export default async function PengumumanPage() {
           Info portal{" "}
           <small>{{ tampil: "sedang tampil", terjadwal: "terjadwal, belum mulai", berakhir: "jadwal sudah berakhir", mati: "tidak tampil" }[info ? infoStatus(info) : "mati"]}</small>
         </h2>
-        <PengumumanForm key={info?.v ?? 0} on={info?.on ?? false} text={info?.text ?? ""} url={info?.url ?? ""} start={info?.start ?? null} end={info?.end ?? null} />
+        <PengumumanForm key={info?.v ?? 0} on={info?.on ?? false} text={info?.text ?? ""} url={info?.url ?? ""} startAt={info?.start ?? null} endAt={info?.end ?? null} />
       </div>
     </main>
   );

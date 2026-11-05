@@ -9,7 +9,7 @@ const MAX = 200;
 // epoch ms -> "YYYY-MM-DDTHH:mm" dalam WIB (UTC+7), format input datetime-local
 const toWib = (ms: number | null) => (ms ? new Date(ms + 7 * 3600_000).toISOString().slice(0, 16) : "");
 
-export function PengumumanForm({ on, text, url, start, end }: { on: boolean; text: string; url: string; start: number | null; end: number | null }) {
+export function PengumumanForm({ on, text, url, startAt, endAt }: { on: boolean; text: string; url: string; startAt: number | null; endAt: number | null }) {
   const [pending, start] = useTransition();
   const [len, setLen] = useState(text.length);
 
@@ -85,11 +85,11 @@ export function PengumumanForm({ on, text, url, start, end }: { on: boolean; tex
       <div className="pg-row">
         <div className="pg-field">
           <label className="pg-l" htmlFor="pg-start">Mulai tampil (opsional)</label>
-          <input id="pg-start" name="start" type="datetime-local" defaultValue={toWib(start)} />
+          <input id="pg-start" name="start" type="datetime-local" defaultValue={toWib(startAt)} />
         </div>
         <div className="pg-field">
           <label className="pg-l" htmlFor="pg-end">Berhenti tampil (opsional)</label>
-          <input id="pg-end" name="end" type="datetime-local" defaultValue={toWib(end)} />
+          <input id="pg-end" name="end" type="datetime-local" defaultValue={toWib(endAt)} />
         </div>
       </div>
       <p className="pg-hint">Waktu dalam WIB. Kosongkan untuk tampil langsung / tanpa batas akhir. Pengumuman muncul dan hilang otomatis, tidak perlu cron. Tetap aktifkan saklar "Tampilkan di portal".</p>
