@@ -36,7 +36,7 @@ export default async function PengumumanPage() {
             {INFO_LANGS.filter((l) => info.texts[l]).map((l) => (
               <li key={l} style={{ display: "flex", gap: 10 }}>
                 <b style={{ width: 24, textTransform: "uppercase", opacity: 0.6 }}>{l}</b>
-                <span dir={l === "ar" ? "rtl" : "ltr"}>{info.texts[l]}</span>
+                <span dir="ltr">{info.texts[l]}</span>
               </li>
             ))}
           </ul>

@@ -63,7 +63,7 @@ export function PengumumanForm({ on, text, url, startAt, endAt }: { on: boolean;
           placeholder="Contoh: Libur Lebaran, pesanan dikirim kembali mulai 5 April."
           onChange={(e) => setLen(e.target.value.length)}
         />
-        <p className="pg-hint">{len} dari {MAX} karakter. Tulis dalam satu bahasa. Saat disimpan, AI menerjemahkannya otomatis ke 8 bahasa portal.</p>
+        <p className="pg-hint">{len} dari {MAX} karakter. Tulis dalam satu bahasa. Saat disimpan, AI menerjemahkannya otomatis ke 7 bahasa portal.</p>
       </div>
 
       <div className="pg-field">

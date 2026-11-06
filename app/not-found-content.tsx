@@ -8,14 +8,13 @@ const FL: Record<string, string> = {
   it: '<svg viewBox="0 0 24 24"><rect width="24" height="24" fill="#fff"/><rect width="8" height="24" fill="#15803d"/><rect x="16" width="8" height="24" fill="#dc2626"/></svg>',
   es: '<svg viewBox="0 0 24 24"><rect width="24" height="24" fill="#c60b1e"/><rect y="6" width="24" height="12" fill="#ffc400"/></svg>',
   fr: '<svg viewBox="0 0 24 24"><rect width="24" height="24" fill="#fff"/><rect width="8" height="24" fill="#1d4ed8"/><rect x="16" width="8" height="24" fill="#dc2626"/></svg>',
-  ar: '<svg viewBox="0 0 24 24"><rect width="24" height="24" fill="#15803d"/><rect x="5" y="15" width="14" height="2" rx="1" fill="#fff"/><rect x="8" y="8" width="8" height="2" rx="1" fill="#fff"/></svg>',
   de: '<svg viewBox="0 0 24 24"><rect width="24" height="8" fill="#111"/><rect y="8" width="24" height="8" fill="#dd0000"/><rect y="16" width="24" height="8" fill="#ffce00"/></svg>',
   ru: '<svg viewBox="0 0 24 24"><rect width="24" height="8" fill="#fff"/><rect y="8" width="24" height="8" fill="#1c57a5"/><rect y="16" width="24" height="8" fill="#d52b1e"/></svg>',
 };
 
 const LN: Record<string, string> = {
   id: "Indonesia", en: "English", it: "Italiano", es: "Español",
-  fr: "Français", ar: "العربية", de: "Deutsch", ru: "Русский",
+  fr: "Français", de: "Deutsch", ru: "Русский",
 };
 
 // [judul, sub, tombol beranda, hak cipta]
@@ -25,7 +24,6 @@ const T: Record<string, string[]> = {
   it: ["Pagina non trovata", "Link non valido o non più disponibile.", "Torna alla Home", "© 2026 EMAHAIRSHOP. Tutti i diritti riservati."],
   es: ["Página no encontrada", "Enlace no válido o ya no disponible.", "Volver al inicio", "© 2026 EMAHAIRSHOP. Todos los derechos reservados."],
   fr: ["Page introuvable", "Lien invalide ou plus disponible.", "Retour à l'accueil", "© 2026 EMAHAIRSHOP. Tous droits réservés."],
-  ar: ["الصفحة غير موجودة", "الرابط غير صالح أو لم يعد متاحًا.", "العودة إلى الرئيسية", "© 2026 EMAHAIRSHOP. جميع الحقوق محفوظة."],
   de: ["Seite nicht gefunden", "Ungültiger Link oder nicht mehr verfügbar.", "Zurück zur Startseite", "© 2026 EMAHAIRSHOP. Alle Rechte vorbehalten."],
   ru: ["Страница не найдена", "Ссылка недействительна или недоступна.", "На главную", "© 2026 EMAHAIRSHOP. Все права защищены."],
 };
@@ -44,7 +42,7 @@ export default function NotFoundContent() {
   useEffect(() => {
     const d = T[lg];
     document.documentElement.lang = lg;
-    document.documentElement.dir = lg === "ar" ? "rtl" : "ltr";
+    document.documentElement.dir = "ltr";
     document.title = "EMAHAIRSHOP | " + d[0];
   }, [lg]);
 

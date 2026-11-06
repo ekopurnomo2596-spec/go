@@ -37,8 +37,6 @@ p.sub{color:var(--muted);font-size:13px;margin:8px 0 32px}
 .lm button{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;border-radius:11px;padding:9px 10px;color:var(--ink);font:500 14px Inter,system-ui,sans-serif;cursor:pointer;text-align:left}
 .lm button:hover,.lm button.a{background:var(--ico)}
 .lm button.a{font-weight:700}
-[dir=rtl] .lm{right:auto;left:0}
-[dir=rtl] .linklist a{text-align:right}
 </style></head><body><header class="nav"><a class="lg" href="https://emahairshop.com/"><div class="logo-nav-container"><div class="logo-top"><span class="line-top"></span><span class="text-ext">Extension</span></div><div class="logo-main">EMAHAIRSHOP</div><div class="line-bottom"></div><div class="logo-year">2019</div></div></a><div class="lw" id="lw"><button class="lb" id="lb" type="button" aria-label="Language"><span class="fl" id="lf"></span><span id="lc">ID</span><svg class="c" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><div class="lm" id="lmn"></div></div></header><main class="public"><div class="code">404</div><div class="divider"></div><h1 data-i="0">Halaman tidak ditemukan</h1><p class="sub" data-i="1">Tautan tidak valid atau sudah tidak tersedia.</p><div class="linklist"><a href="https://emahairshop.com/"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></span><span data-i="2">Kembali ke Beranda</span></a></div><p class="foot" data-i="3">&copy; 2026 EMAHAIRSHOP. Seluruh hak cipta dilindungi.</p></main><script>var R=document.documentElement,LG="id";
 var FL={
   id: '<svg viewBox="0 0 24 24"><rect width="24" height="12" fill="#e11d48"/><rect y="12" width="24" height="12" fill="#fff"/></svg>',
@@ -46,13 +44,12 @@ var FL={
   it: '<svg viewBox="0 0 24 24"><rect width="24" height="24" fill="#fff"/><rect width="8" height="24" fill="#15803d"/><rect x="16" width="8" height="24" fill="#dc2626"/></svg>',
   es: '<svg viewBox="0 0 24 24"><rect width="24" height="24" fill="#c60b1e"/><rect y="6" width="24" height="12" fill="#ffc400"/></svg>',
   fr: '<svg viewBox="0 0 24 24"><rect width="24" height="24" fill="#fff"/><rect width="8" height="24" fill="#1d4ed8"/><rect x="16" width="8" height="24" fill="#dc2626"/></svg>',
-  ar: '<svg viewBox="0 0 24 24"><rect width="24" height="24" fill="#15803d"/><rect x="5" y="15" width="14" height="2" rx="1" fill="#fff"/><rect x="8" y="8" width="8" height="2" rx="1" fill="#fff"/></svg>',
   de: '<svg viewBox="0 0 24 24"><rect width="24" height="8" fill="#111"/><rect y="8" width="24" height="8" fill="#dd0000"/><rect y="16" width="24" height="8" fill="#ffce00"/></svg>',
   ru: '<svg viewBox="0 0 24 24"><rect width="24" height="8" fill="#fff"/><rect y="8" width="24" height="8" fill="#1c57a5"/><rect y="16" width="24" height="8" fill="#d52b1e"/></svg>',
 };
 var LN={
   id: "Indonesia", en: "English", it: "Italiano", es: "Español",
-  fr: "Français", ar: "العربية", de: "Deutsch", ru: "Русский",
+  fr: "Français", de: "Deutsch", ru: "Русский",
 };
 var T={
   id: ["Halaman tidak ditemukan", "Tautan tidak valid atau sudah tidak tersedia.", "Kembali ke Beranda", "© 2026 EMAHAIRSHOP. Seluruh hak cipta dilindungi."],
@@ -60,13 +57,12 @@ var T={
   it: ["Pagina non trovata", "Link non valido o non più disponibile.", "Torna alla Home", "© 2026 EMAHAIRSHOP. Tutti i diritti riservati."],
   es: ["Página no encontrada", "Enlace no válido o ya no disponible.", "Volver al inicio", "© 2026 EMAHAIRSHOP. Todos los derechos reservados."],
   fr: ["Page introuvable", "Lien invalide ou plus disponible.", "Retour à l'accueil", "© 2026 EMAHAIRSHOP. Tous droits réservés."],
-  ar: ["الصفحة غير موجودة", "الرابط غير صالح أو لم يعد متاحًا.", "العودة إلى الرئيسية", "© 2026 EMAHAIRSHOP. جميع الحقوق محفوظة."],
   de: ["Seite nicht gefunden", "Ungültiger Link oder nicht mehr verfügbar.", "Zurück zur Startseite", "© 2026 EMAHAIRSHOP. Alle Rechte vorbehalten."],
   ru: ["Страница не найдена", "Ссылка недействительна или недоступна.", "На главную", "© 2026 EMAHAIRSHOP. Все права защищены."],
 };
 function applyLang(){var d=T[LG];
 document.querySelectorAll("[data-i]").forEach(function(e){e.textContent=d[+e.getAttribute("data-i")]});
-R.lang=LG;R.dir=LG==="ar"?"rtl":"ltr";document.title="EMAHAIRSHOP | "+d[0];
+R.lang=LG;R.dir="ltr";document.title="EMAHAIRSHOP | "+d[0];
 document.getElementById("lf").innerHTML=FL[LG];
 document.getElementById("lc").textContent=LG.toUpperCase();
 document.querySelectorAll("#lmn button").forEach(function(b){b.classList.toggle("a",b.getAttribute("data-l")===LG)})}

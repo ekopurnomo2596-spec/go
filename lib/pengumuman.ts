@@ -9,7 +9,7 @@ export const INFO_KEY = "portal:info";
 export const MAX_TEXT = 200;
 
 /** Bahasa yang ada di portal. Urutan tidak penting, kodenya harus sama dengan LN di index.html. */
-export const INFO_LANGS = ["en", "id", "it", "es", "fr", "ar", "de", "ru"] as const;
+export const INFO_LANGS = ["en", "id", "it", "es", "fr", "de", "ru"] as const;
 export type InfoLang = (typeof INFO_LANGS)[number];
 export type InfoTexts = Partial<Record<InfoLang, string>>;
 

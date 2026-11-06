@@ -587,7 +587,7 @@ export async function savePengumuman(formData: FormData): Promise<Flash> {
   if (start && end && end <= start) return err("Waktu berakhir harus setelah waktu mulai.");
   if (on && end && end <= Date.now()) return err("Waktu berakhir sudah lewat. Pilih waktu yang akan datang.");
 
-  // Terjemahan 8 bahasa dibuat AI saat disimpan. Dipakai ulang kalau teks tidak berubah.
+  // Terjemahan 7 bahasa dibuat AI saat disimpan. Dipakai ulang kalau teks tidak berubah.
   const prev = await getInfo().catch(() => null);
   let texts: InfoTexts = prev && prev.text === text ? prev.texts : {};
   let note = "";
@@ -610,5 +610,5 @@ export async function savePengumuman(formData: FormData): Promise<Flash> {
   revalidatePath("/admin/pengumuman");
   if (!on) return ok("Pengumuman disimpan. Tidak ditampilkan di portal.");
   if (start && start > Date.now()) return ok("Pengumuman disimpan dan akan tampil sesuai jadwal." + note);
-  return ok("Pengumuman disimpan dan tampil di portal dalam 8 bahasa." + note);
+  return ok("Pengumuman disimpan dan tampil di portal dalam 7 bahasa." + note);
 }

@@ -230,9 +230,6 @@ details form { display: grid; gap: 8px; margin-top: 6px; min-width: 260px; }
 .lm button { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; border-radius: 11px; padding: 9px 10px; color: var(--ink); font: 500 14px inherit; font-family: inherit; cursor: pointer; text-align: left; }
 .lm button:hover, .lm button.a { background: var(--ico); }
 .lm button.a { font-weight: 700; }
-[dir=rtl] .lm { right: auto; left: 0; }
-[dir=rtl] .linklist a { text-align: right; }
-[dir=rtl] .linklist .ch { transform: scaleX(-1); }
 
 /* ---------- Admin: tabel link jadi kartu di HP ---------- */
 @media (max-width: 640px) {
