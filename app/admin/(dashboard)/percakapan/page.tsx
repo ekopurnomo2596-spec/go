@@ -181,8 +181,11 @@ function UsageBar({ u }: { u: SvcUsage }) {
     <section className="panel usage" aria-label="Pemakaian pesan bulan ini">
       <div className="usage-h">
         <b>Pesan layanan bulan ini</b>
-        <span className={over ? "bad" : ""}>
-          {num(u.used)} / {num(u.free)}
+        <span className="usage-r">
+          <span className={over ? "bad" : ""}>
+            {num(u.used)} / {num(u.free)}
+          </span>
+          <SyncUsage />
         </span>
       </div>
       <div className="usage-bar" role="progressbar" aria-valuemin={0} aria-valuemax={u.free} aria-valuenow={Math.min(u.used, u.free)}>
@@ -193,7 +196,6 @@ function UsageBar({ u }: { u: SvcUsage }) {
         {BULAN[rm - 1]} {ry}.{" "}
         {u.metaAt ? `Angka Meta terakhir disinkronkan ${stamp(u.metaAt)}.` : "Angka Meta belum pernah disinkronkan."}
       </p>
-      <SyncUsage />
     </section>
   );
 }

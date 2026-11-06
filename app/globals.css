@@ -753,7 +753,11 @@ tr.zero td { color: var(--muted); }
 
 /* ---------- Pemakaian pesan WhatsApp ---------- */
 .usage-h { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: .9rem; }
+.usage-h { align-items: center; }
 .usage-h .bad { color: var(--danger); font-weight: 700; }
+.usage-r { display: flex; align-items: center; gap: 10px; }
+.usage-r button { padding: 4px 12px; font-size: .78rem; line-height: 1.4; border-radius: 8px; }
+.usage-r button .spin { width: 12px; height: 12px; }
 .usage-bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
 .usage-bar span { display: block; height: 100%; border-radius: 999px; background: var(--bar); }
 .usage-bar span.warm { background: #d9a400; }
