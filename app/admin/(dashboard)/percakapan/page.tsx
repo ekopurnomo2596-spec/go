@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { formatTime } from "@/lib/format";
 import { clearChatsAction, deleteChatAction } from "../../actions";
-import { ActionForm } from "../forms";
+import { ActionForm, SyncUsage } from "../forms";
 import { RefIcon } from "@/lib/sumber-icon";
 import {
   RemoteError,
@@ -190,8 +190,10 @@ function UsageBar({ u }: { u: SvcUsage }) {
       </div>
       <p className="usage-n">
         {over ? `Jatah gratis habis, ${num(u.used - u.free)} balasan terakhir ditagih Meta.` : `Sisa ${num(u.free - u.used)} balasan gratis.`} Reset {rd}{" "}
-        {BULAN[rm - 1]} {ry}.
+        {BULAN[rm - 1]} {ry}.{" "}
+        {u.metaAt ? `Angka Meta terakhir disinkronkan ${stamp(u.metaAt)}.` : "Angka Meta belum pernah disinkronkan."}
       </p>
+      <SyncUsage />
     </section>
   );
 }

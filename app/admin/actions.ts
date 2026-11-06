@@ -12,7 +12,7 @@ import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, t
 import type { Flash } from "@/lib/flash";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
 import { INFO_LANGS, MAX_TEXT, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
-import { RemoteError, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
+import { RemoteError, getSvcUsage, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
   deleteLinkData,
   getLink,
@@ -462,6 +462,35 @@ export async function deleteChatAction(formData: FormData): Promise<Flash> {
   }
   revalidatePath("/admin/percakapan");
   return ok("Percakapan dihapus.");
+}
+
+/** Minta project WhatsApp menarik angka terbaru dari Meta (POST WA_SYNC_URL), lalu baca ulang dari Redis. */
+export async function syncUsageAction(): Promise<Flash> {
+  await requireAdmin();
+  const cfg = await getCfg("wa");
+  if (!cfg) return err("Redis WhatsApp belum tersambung.");
+  const url = (process.env.WA_SYNC_URL || "").trim();
+  const secret = (process.env.WA_SYNC_SECRET || "").trim();
+  if (!url.startsWith("https://") || !secret) return err("WA_SYNC_URL dan WA_SYNC_SECRET belum diisi di env go-main.");
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { authorization: `Bearer ${secret}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
+    });
+    const j = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) return err(j.error || `Sinkron gagal (HTTP ${res.status}).`);
+  } catch {
+    return err("Project WhatsApp tidak menjawab. Periksa WA_SYNC_URL.");
+  }
+  try {
+    await getSvcUsage(cfg);
+  } catch (e) {
+    return remoteErr(e);
+  }
+  revalidatePath("/admin/percakapan");
+  return ok("Pemakaian disinkronkan dengan Meta.");
 }
 
 export async function clearChatsAction(formData: FormData): Promise<Flash> {

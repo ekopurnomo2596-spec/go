@@ -153,12 +153,16 @@ export async function clearConvs(c: Cfg): Promise<void> {
  * svc:{YYYY-MM}  jumlah balasan bot yang terkirim bulan itu (bulan WIB), diisi project WhatsApp.
  * Jatah gratis Meta: 1.000 per nomor per bulan.
  */
-export type SvcUsage = { used: number; free: number; reset: string };
+export type SvcUsage = { used: number; free: number; reset: string; local: number; meta: number | null; metaAt: number | null };
 
 export async function getSvcUsage(c: Cfg): Promise<SvcUsage> {
   const r = client(c);
   const month = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 7);
-  const used = await guard(r.get<number | string>(`svc:${month}`));
+  // svcmeta:{bulan} = { n, at } angka resmi dari Meta, ditulis project WhatsApp saat sinkron. Bot memakai angka terbesar dari keduanya.
+  const [svc, sm] = await guard(Promise.all([r.get<number | string>(`svc:${month}`), r.get<{ n?: number; at?: number } | null>(`svcmeta:${month}`)]));
+  const local = Number(svc) || 0;
+  const meta = sm && typeof sm === "object" && Number.isFinite(Number(sm.n)) ? Number(sm.n) : null;
+  const metaAt = sm && typeof sm === "object" && Number(sm.at) > 0 ? Number(sm.at) : null;
   const [y, m] = month.split("-").map(Number);
-  return { used: Number(used) || 0, free: 1000, reset: new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10) };
+  return { used: Math.max(local, meta ?? 0), free: 1000, reset: new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10), local, meta, metaAt };
 }
