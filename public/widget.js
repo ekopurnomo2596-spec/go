@@ -29,12 +29,12 @@ button,input{font-family:inherit}
 #echat-close{width:32px;height:32px;border:0;border-radius:999px;background:transparent;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center}
 #echat-close:hover{background:var(--ico)}
 #echat-body{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;font-size:14px}
-.echat-msg{max-width:88%;padding:9px 13px;border-radius:16px;white-space:pre-wrap;word-break:break-word}
+.echat-msg{margin:0;max-width:88%;padding:9px 13px;border-radius:16px;white-space:pre-wrap;word-break:break-word}
 .echat-intro,.echat-a{background:var(--ico);align-self:flex-start}
 .echat-u{background:var(--btn);color:var(--btnt);align-self:flex-end}
-.echat-msg+.echat-wa{margin-top:-18px}
+.echat-msg+.echat-wa{margin-top:-4px}
 .echat-wa{align-self:flex-start;display:inline-block;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;background:#25d366;color:#fff;text-decoration:none}
-#echat-think{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:6px}
+#echat-think{margin:0;font-size:12px;color:var(--mute);display:flex;align-items:center;gap:6px}
 .echat-dots{display:inline-flex;gap:3px}
 .echat-dots span{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.35;animation:echatDot 1.2s ease-in-out infinite}
 .echat-dots span:nth-child(2){animation-delay:.2s}
