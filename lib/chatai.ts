@@ -1,4 +1,5 @@
 import { db } from "./redis";
+import { DEFAULT_COMPANY, DEFAULT_PRICE_FROM, DEFAULT_SYSTEM, DEFAULT_WELCOME_BONUS } from "./chatprompt-default";
 
 /**
  * Pengaturan chatbot WEB (widget chat di emahairshop.com, dijalankan oleh project "portal").
@@ -123,4 +124,86 @@ export async function listGoogleModels(key: string): Promise<string[]> {
   } catch {
     return [];
   }
+}
+
+// ---------- prompt chatbot ----------
+// Prompt dulu hardcode di api/chat.js (portal). Sekarang disimpan di Redis dan dibaca portal
+// (cache 30 detik) dari key yang sama dengan di bawah ini. Kalau kosong, portal pakai prompt darurat
+// yang sangat pendek, jadi simpan sekali dari halaman Model AI setelah pemasangan.
+
+const PROMPT_SYSTEM_KEY = "cfg:prompt:system";
+const PROMPT_COMPANY_KEY = "cfg:prompt:company";
+const PROMPT_VARS_KEY = "cfg:prompt:vars";
+export const MAX_PROMPT_CHARS = 60_000;
+
+export type PromptData = {
+  system: string;
+  company: string;
+  priceFrom: string;
+  welcomeBonus: string;
+};
+
+export const DEFAULT_PROMPT: PromptData = {
+  system: DEFAULT_SYSTEM,
+  company: DEFAULT_COMPANY,
+  priceFrom: DEFAULT_PRICE_FROM,
+  welcomeBonus: DEFAULT_WELCOME_BONUS,
+};
+
+/** Isi prompt tersimpan; source "default" kalau belum pernah disimpan dari dashboard (editor diisi bawaan). */
+export async function getPrompt(): Promise<{ data: PromptData; source: "admin" | "default" }> {
+  const [system, company, vars] = await Promise.all([
+    db().get<string>(PROMPT_SYSTEM_KEY),
+    db().get<string>(PROMPT_COMPANY_KEY),
+    db().get<{ priceFrom?: string; welcomeBonus?: string } | string>(PROMPT_VARS_KEY),
+  ]);
+  if (typeof system !== "string" || !system.trim() || typeof company !== "string" || !company.trim()) {
+    return { data: DEFAULT_PROMPT, source: "default" };
+  }
+  let v: { priceFrom?: string; welcomeBonus?: string } = {};
+  if (typeof vars === "string") {
+    try {
+      v = JSON.parse(vars);
+    } catch {
+      // abaikan, pakai bawaan
+    }
+  } else if (vars && typeof vars === "object") {
+    v = vars;
+  }
+  return {
+    data: {
+      system,
+      company,
+      priceFrom: v.priceFrom ?? DEFAULT_PRICE_FROM,
+      welcomeBonus: v.welcomeBonus ?? DEFAULT_WELCOME_BONUS,
+    },
+    source: "admin",
+  };
+}
+
+/** Mengembalikan pesan error, atau null kalau valid. */
+export function validatePrompt(d: PromptData): string | null {
+  if (!d.system.trim()) return "Prompt utama tidak boleh kosong.";
+  if (!d.company.trim()) return "Info perusahaan tidak boleh kosong.";
+  if (d.system.length > MAX_PROMPT_CHARS || d.company.length > MAX_PROMPT_CHARS) {
+    return `Maksimal ${MAX_PROMPT_CHARS.toLocaleString("id-ID")} karakter per kolom.`;
+  }
+  if (!d.system.includes("{{COMPANY}}")) {
+    return "Prompt utama harus memuat {{COMPANY}} supaya Info perusahaan ikut terkirim ke AI.";
+  }
+  if (d.priceFrom.length > 20 || d.welcomeBonus.length > 20) return "Harga mulai / welcome bonus maksimal 20 karakter.";
+  return null;
+}
+
+export async function setPrompt(d: PromptData) {
+  await Promise.all([
+    db().set(PROMPT_SYSTEM_KEY, d.system),
+    db().set(PROMPT_COMPANY_KEY, d.company),
+    db().set(PROMPT_VARS_KEY, JSON.stringify({ priceFrom: d.priceFrom.trim(), welcomeBonus: d.welcomeBonus.trim() })),
+  ]);
+}
+
+/** Hapus prompt tersimpan; portal pakai prompt darurat sampai disimpan lagi. */
+export async function resetPrompt() {
+  await db().del(PROMPT_SYSTEM_KEY, PROMPT_COMPANY_KEY, PROMPT_VARS_KEY);
 }

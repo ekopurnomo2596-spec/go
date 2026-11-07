@@ -1,7 +1,8 @@
 import { requireAdmin } from "@/lib/auth";
-import { getChatKey, getModels, maskChatToken } from "@/lib/chatai";
+import { DEFAULT_PROMPT, getChatKey, getModels, getPrompt, maskChatToken } from "@/lib/chatai";
 import { ChatKeyForm } from "./chat-key-form";
 import { ModelsForm } from "./models-form";
+import { PromptForm } from "./prompt-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Model AI" };
@@ -10,6 +11,7 @@ export default async function ModelAiPage() {
   await requireAdmin();
   const key = await getChatKey();
   const { models, source } = await getModels();
+  const { data: prompt, source: promptSource } = await getPrompt();
 
   return (
     <main className="wrap">
@@ -24,12 +26,17 @@ export default async function ModelAiPage() {
         .ma-hint { color: var(--muted); font-size: .8rem; margin: 10px 0 0; }
         .ma-foot { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
         .ma-sugg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .pr-vars { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 14px; }
+        .pr-vars label, .pr-field { display: flex; flex-direction: column; gap: 6px; font-size: .82rem; }
+        .pr-field { margin-bottom: 14px; }
+        .pr-field small { color: var(--muted); margin-left: 6px; }
+        .pr-field textarea { width: 100%; font-family: ui-monospace, Menlo, monospace; font-size: .78rem; line-height: 1.5; resize: vertical; min-height: 160px; }
         .ma-sugg button { padding: 4px 10px; font-size: .76rem; border-radius: 999px; }
       `}</style>
       <div className="top">
         <div>
           <h1>Model AI</h1>
-          <div className="an-sub">Model Gemini yang dipakai chatbot web di emahairshop.com</div>
+          <div className="an-sub">Model dan prompt Gemini yang dipakai chatbot web di emahairshop.com</div>
         </div>
       </div>
 
@@ -53,6 +60,23 @@ export default async function ModelAiPage() {
           dibaca portal dalam ±30 detik.
         </p>
         <ModelsForm initial={models} hasKey={!!key} />
+      </div>
+
+      <div className="panel">
+        <h2>
+          Prompt chatbot <small>{promptSource === "admin" ? "diatur dari sini" : "belum disimpan dari sini"}</small>
+        </h2>
+        <p className="ma-hint" style={{ margin: "0 0 14px" }}>
+          Dulu ada di <code>api/chat.js</code> di portal, sekarang diatur dari sini dan dibaca portal dalam ±30 detik.
+          {promptSource === "default" && (
+            <>
+              {" "}
+              <strong>Belum pernah disimpan:</strong> editor berisi teks bawaan, tapi chatbot memakai prompt darurat
+              yang sangat pendek sampai kamu klik <strong>Simpan</strong> sekali.
+            </>
+          )}
+        </p>
+        <PromptForm initial={prompt} defaults={DEFAULT_PROMPT} />
       </div>
     </main>
   );

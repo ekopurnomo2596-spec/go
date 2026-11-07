@@ -15,11 +15,14 @@ import {
   listGoogleModels,
   parseModelList,
   resetModels,
+  resetPrompt,
   setChatKey,
   setModels,
+  setPrompt,
   testModel as testChatModel,
   validChatToken,
   validModelName,
+  validatePrompt,
 } from "@/lib/chatai";
 import type { Flash } from "@/lib/flash";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
@@ -421,6 +424,29 @@ export async function resetModelsAction(): Promise<Flash> {
   await resetModels();
   revalidatePath("/admin/model-ai");
   return ok("Dikembalikan ke bawaan portal.");
+}
+
+export async function savePromptAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const data = {
+    system: String(formData.get("system") ?? "").replace(/\r\n/g, "\n"),
+    company: String(formData.get("company") ?? "").replace(/\r\n/g, "\n").trim(),
+    priceFrom: str(formData, "priceFrom"),
+    welcomeBonus: str(formData, "welcomeBonus"),
+  };
+  const bad = validatePrompt(data);
+  if (bad) return err(bad);
+  await setPrompt(data);
+  revalidatePath("/admin/model-ai");
+  return ok("Prompt disimpan. Portal membacanya dalam ±30 detik.");
+}
+
+/** Hapus prompt tersimpan dan kembalikan isi bawaan. Setelah ini portal memakai prompt darurat sampai Simpan lagi. */
+export async function resetPromptAction(): Promise<Flash> {
+  await requireAdmin();
+  await resetPrompt();
+  revalidatePath("/admin/model-ai");
+  return ok("Prompt tersimpan dihapus. Isi bawaan dimuat di editor; klik Simpan supaya dipakai chatbot.");
 }
 
 /** Saran nama model dari Google, pakai token yang tersimpan. Kosong kalau token belum diisi. */
