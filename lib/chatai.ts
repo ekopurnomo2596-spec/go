@@ -1,5 +1,5 @@
 import { db } from "./redis";
-import { DEFAULT_COMPANY, DEFAULT_PRICE_FROM, DEFAULT_SYSTEM, DEFAULT_WELCOME_BONUS } from "./chatprompt-default";
+import { DEFAULT_PRICE_FROM, DEFAULT_PROMPT_TEXT, DEFAULT_WELCOME_BONUS } from "./chatprompt-default";
 
 /**
  * Pengaturan chatbot WEB (widget chat di emahairshop.com, dijalankan oleh project "portal").
@@ -163,7 +163,7 @@ export type PromptData = {
 };
 
 export const DEFAULT_PROMPT: PromptData = {
-  prompt: DEFAULT_SYSTEM.split("{{COMPANY}}").join(DEFAULT_COMPANY),
+  prompt: DEFAULT_PROMPT_TEXT,
   priceFrom: DEFAULT_PRICE_FROM,
   welcomeBonus: DEFAULT_WELCOME_BONUS,
 };
