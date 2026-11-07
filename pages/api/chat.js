@@ -5,7 +5,8 @@
 // boleh menjawab konsultasi umum hair extension dari pengetahuan sendiri.
 //
 // Env vars yang perlu diset di dashboard Vercel project ini:
-//   GEMINI_API_KEYS   - wajib. Satu atau lebih API key Gemini, dipisah koma: "key1,key2,key3"
+//   GEMINI_API_KEYS   - cadangan. Key Gemini sekarang diatur dari dashboard go (Pengaturan Chatbot, Redis "cfg:chat:keys").
+//                       Env ini hanya dipakai kalau belum ada key di dashboard. Dipisah koma: "key1,key2,key3"
 //   GEMINI_MODELS     - opsional. Model Gemini, dipisah koma, dicoba berurutan. Bisa ditimpa dari halaman /admin
 //                       (perlu KV + ADMIN_PASSWORD, lihat api/admin.js).
 //                       Default: "gemini-3.5-flash,gemini-3.1-flash-lite,gemini-2.5-flash"
@@ -16,7 +17,8 @@
 //                       "on" = alert URGENT biasa senyap di luar jam CS (FRAUD & LEAD tetap berbunyi).
 //   TELEGRAM_LOG_CHAT_ID - opsional. Chat/grup/channel Telegram terpisah untuk ARSIP: semua percakapan
 //                       (pertanyaan + jawaban) dikirim ke sana secara senyap. Kosong = tidak ada arsip.
-//   CHAT_DAILY_LIMIT  - opsional. Batas total request per hari untuk SEMUA pengunjung. Default 300.
+//   CHAT_DAILY_LIMIT  - cadangan. Batas harian sekarang diatur dari dashboard go (Redis "cfg:chat:limit").
+//                       Env ini hanya dipakai kalau dashboard belum diisi. Default 300.
 //   AI_CHAT           - opsional. Set "off" untuk mematikan endpoint ini.
 //   TELEGRAM_VISIT_CHAT_ID - opsional. Notif "pengunjung baru buka website" (page view, 1x per IP/hari).
 //                       Kosong = pakai TELEGRAM_CHAT_ID yang sama dengan notif chat.
@@ -45,10 +47,24 @@ async function getModels() {
   return modelsCache.list;
 }
 
-const KEYS = (process.env.GEMINI_API_KEYS || "")
+const ENV_KEYS = (process.env.GEMINI_API_KEYS || "")
   .split(",").map((s) => s.trim()).filter(Boolean);
+// Key Gemini diatur dari dashboard (Redis "cfg:chat:keys", satu key per baris). Kalau kosong, pakai env.
+// Di-cache 30 detik per instance. KEYS diganti isinya, jadi semua kode di bawah tetap membaca KEYS seperti biasa.
+let KEYS = ENV_KEYS;
+let keysAt = 0;
+async function loadKeys() {
+  if (Date.now() - keysAt < 30_000) return;
+  const v = await kv(["GET", "cfg:chat:keys"]);
+  if (v === undefined) return; // KV gagal, pertahankan daftar yang sedang dipakai
+  keysAt = Date.now();
+  const list = typeof v === "string" ? [...new Set(v.split(/[\r\n,]+/).map((x) => x.trim()).filter(Boolean))] : [];
+  KEYS = list.length ? list : ENV_KEYS;
+}
 
-const DAILY_LIMIT = Number(process.env.CHAT_DAILY_LIMIT) || 300;
+// Batas harian diatur dari dashboard (Redis "cfg:chat:limit"). Kosong = pakai env, lalu 300.
+const ENV_DAILY_LIMIT = Number(process.env.CHAT_DAILY_LIMIT) || 300;
+let DAILY_LIMIT = ENV_DAILY_LIMIT;
 
 // ---------------- Pembatas (in-memory, per instance server) ----------------
 const hits = new Map(); // ip -> daftar timestamp request
@@ -88,8 +104,11 @@ function rollDay() {
 }
 async function dailyLimitReached() {
   rollDay();
-  const v = await kv(["GET", "day:" + dayKey]);
+  const r = await kvPipe([["GET", "day:" + dayKey], ["GET", "cfg:chat:limit"]]);
+  const v = r ? r[0] : undefined;
   if (v !== undefined) dayCount = Number(v) || 0; // KV menjawab (null = belum ada hitungan hari ini)
+  const cfgLimit = r ? Number(r[1]) : 0;
+  DAILY_LIMIT = Number.isInteger(cfgLimit) && cfgLimit > 0 ? cfgLimit : ENV_DAILY_LIMIT;
   return dayCount >= DAILY_LIMIT;
 }
 async function countSuccess() {
@@ -817,7 +836,7 @@ async function callGemini(history, lang, knownName) {
           S().attemptFail++;
           statsDirty = true;
           if (res.status === 403) {
-            await systemAlert("key403|" + KEYS.indexOf(key), `GEMINI_API_KEYS urutan ke-${KEYS.indexOf(key) + 1} ditolak Google (403). Key mungkin dicabut/tidak valid. Cek di Google AI Studio.`, 6 * 3_600_000);
+            await systemAlert("key403|" + KEYS.indexOf(key), `Key Gemini urutan ke-${KEYS.indexOf(key) + 1} ditolak Google (403). Key mungkin dicabut/tidak valid. Cek di Google AI Studio.`, 6 * 3_600_000);
           }
           continue; // key/model ini gagal (kuota, model tidak ada, dll): coba kombinasi berikutnya
         }
@@ -1873,6 +1892,7 @@ module.exports = async (req, res) => {
     }
   }
 
+  await loadKeys();
   if (KEYS.length === 0) return res.status(503).json({ error: "error" });
 
   const body = req.body || {};
@@ -1885,7 +1905,7 @@ module.exports = async (req, res) => {
       .split(",")[0].trim() || "unknown";
   if (await rateLimited(ip)) return res.status(429).json({ error: "rate" });
   if (await dailyLimitReached()) {
-    await systemAlert("dailymax", `Batas harian chat (${DAILY_LIMIT}) tercapai. Chatbot menolak pengunjung sampai besok. Naikkan CHAT_DAILY_LIMIT di Vercel kalau perlu.`, 6 * 3_600_000);
+    await systemAlert("dailymax", `Batas harian chat (${DAILY_LIMIT}) tercapai. Chatbot menolak pengunjung sampai besok. Naikkan batasnya di halaman Pengaturan Chatbot kalau perlu.`, 6 * 3_600_000);
     return res.status(429).json({ error: "busy" });
   }
 
@@ -2035,7 +2055,7 @@ module.exports = async (req, res) => {
     await systemAlert(
       quota ? "quota" : "error",
       quota
-        ? "Semua key/model Gemini kena batas kuota (429). Chatbot tidak bisa menjawab. Cek Google AI Studio atau tambah key di GEMINI_API_KEYS."
+        ? "Semua key/model Gemini kena batas kuota (429). Chatbot tidak bisa menjawab. Cek Google AI Studio atau tambah key di halaman Pengaturan Chatbot."
         : "Chatbot gagal menjawab semua percobaan: " + msg.slice(0, 450)
     );
     return res.status(500).json({ error: quota ? "busy" : "error" });

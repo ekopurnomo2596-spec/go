@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
-import { DEFAULT_PROMPT, getChatKey, getModels, getPrompt, maskChatToken } from "@/lib/chatai";
+import { DEFAULT_PROMPT, MAX_CHAT_KEYS, getChatKey, getChatKeys, getModels, getPrompt, maskChatToken } from "@/lib/chatai";
 import { ChatKeyForm } from "./chat-key-form";
+import { ChatKeysForm } from "./chat-keys-form";
 import { ChatToggle } from "./chat-toggle";
 import { EmbedSnippet } from "./embed-snippet";
 import { HideForm } from "./hide-form";
@@ -20,6 +21,7 @@ export default async function ModelAiPage() {
   const chatOn = await getChatEnabled();
   const hideRules = await getChatHide();
   const limit = await getChatLimit();
+  const chatKeys = await getChatKeys();
 
   return (
     <main className="wrap">
@@ -87,11 +89,18 @@ export default async function ModelAiPage() {
 
       <div className="panel">
         <h2>
-          Token Gemini <small>terpisah dari token AI go di halaman Token</small>
+          Key Gemini chatbot <small>{chatKeys.length ? `${chatKeys.length} key dipakai chatbot` : "kosong, memakai environment"}</small>
+        </h2>
+        <ChatKeysForm masked={chatKeys.map(maskChatToken)} max={MAX_CHAT_KEYS} />
+      </div>
+
+      <div className="panel">
+        <h2>
+          Token untuk tes <small>terpisah dari key chatbot dan token AI di halaman Token</small>
         </h2>
         <p className="ma-hint" style={{ margin: "0 0 14px" }}>
-          Hanya dipakai untuk tombol <strong>Tes</strong> di bawah dan daftar saran model. Chatbot sendiri memakai
-          <code>GEMINI_API_KEYS</code> di environment Vercel portal — token di sini tidak menggantikannya.
+          Hanya dipakai untuk tombol <strong>Tes</strong> di bawah dan daftar saran model. Chatbot memakai key di
+          panel Key Gemini chatbot.
         </p>
         <ChatKeyForm masked={key ? maskChatToken(key) : null} testModel={models[0] ?? "gemini-2.5-flash"} />
       </div>

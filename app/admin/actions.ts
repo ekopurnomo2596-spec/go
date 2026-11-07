@@ -12,6 +12,9 @@ import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, t
 import {
   deleteChatKey,
   getChatKey,
+  getChatKeys,
+  setChatKeys,
+  MAX_CHAT_KEYS,
   listGoogleModels,
   parseModelList,
   resetModels,
@@ -380,6 +383,30 @@ export async function deleteChatKeyAction(): Promise<Flash> {
   await deleteChatKey();
   revalidatePath("/admin/model-ai");
   return ok("Token dihapus.");
+}
+
+/** Tambah key Gemini untuk chatbot. Boleh banyak sekaligus, satu per baris. */
+export async function addChatKeysAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const incoming = String(formData.get("keys") ?? "").split(/[\r\n,]+/).map((x) => x.trim()).filter(Boolean);
+  if (!incoming.length) return err("Tempel minimal satu key.");
+  if (!incoming.every(validChatToken)) return err("Ada key yang tidak valid. Tempel key utuh tanpa spasi, satu per baris.");
+  const list = [...new Set([...(await getChatKeys()), ...incoming])];
+  if (list.length > MAX_CHAT_KEYS) return err(`Maksimal ${MAX_CHAT_KEYS} key.`);
+  await setChatKeys(list);
+  revalidatePath("/admin/model-ai");
+  return ok(`${list.length} key tersimpan. Chatbot memakainya dalam ±30 detik.`);
+}
+
+export async function removeChatKeyAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const i = Number(str(formData, "index"));
+  const list = await getChatKeys();
+  if (!Number.isInteger(i) || i < 0 || i >= list.length) return err("Key tidak ditemukan.");
+  list.splice(i, 1);
+  await setChatKeys(list);
+  revalidatePath("/admin/model-ai");
+  return ok(list.length ? "Key dihapus." : "Semua key dihapus. Chatbot kembali memakai key dari environment kalau ada.");
 }
 
 /** Tes satu nama model. Pakai token yang baru diketik kalau ada, kalau tidak pakai yang tersimpan. */

@@ -11,7 +11,7 @@ import { DEFAULT_COMPANY, DEFAULT_PRICE_FROM, DEFAULT_SYSTEM, DEFAULT_WELCOME_BO
  *
  * Token Gemini di sini SENGAJA terpisah dari token AI milik go sendiri (lib/ai.ts, dipakai
  * fitur Tindakan/saran). Token di sini hanya dipakai untuk tombol "Tes" & daftar saran model;
- * chatbot yang sebenarnya tetap jalan pakai GEMINI_API_KEYS di environment Vercel portal.
+ * chatbot yang sebenarnya memakai daftar key di bagian "key chatbot" bawah ini (Redis "cfg:chat:keys").
  */
 
 const MODELS_KEY = "cfg:models";
@@ -44,6 +44,21 @@ export async function setChatKey(k: string) {
 
 export async function deleteChatKey() {
   await db().del(TOKEN_KEY);
+}
+
+// ---------- key Gemini untuk chatbot (dibaca pages/api/chat.js, cache 30 detik) ----------
+
+const CHAT_KEYS_KEY = "cfg:chat:keys";
+export const MAX_CHAT_KEYS = 10;
+
+export async function getChatKeys(): Promise<string[]> {
+  const v = await db().get<string>(CHAT_KEYS_KEY);
+  return typeof v === "string" ? [...new Set(v.split(/[\r\n,]+/).map((x) => x.trim()).filter(Boolean))] : [];
+}
+
+export async function setChatKeys(list: string[]) {
+  if (list.length) await db().set(CHAT_KEYS_KEY, list.join("\n"));
+  else await db().del(CHAT_KEYS_KEY);
 }
 
 // ---------- daftar model ----------
