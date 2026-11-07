@@ -28,7 +28,8 @@ import {
   validatePrompt,
 } from "@/lib/chatai";
 import type { Flash } from "@/lib/flash";
-import { MAX_CHAT_LIMIT, cleanHideRules, clearWebConvs, deleteWebConv, setChatEnabled, setChatHide, setChatLimit, validWebId } from "@/lib/webchat";
+import { MAX_CHAT_LIMIT, cleanHideRules, clearWebConvs, deleteWebConv, setChatEnabled, setChatHide, setChatLimit, setChatStyle, validWebId } from "@/lib/webchat";
+import { cleanStyle } from "@/lib/chatstyle";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
 import { INFO_LANGS, MAX_TEXT, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
 import { RemoteError, getSvcUsage, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
@@ -470,6 +471,14 @@ export async function saveChatHideAction(formData: FormData): Promise<Flash> {
   await setChatHide(rules);
   revalidatePath("/admin/model-ai");
   return ok(rules.length ? `${rules.length} aturan disimpan.` : "Semua aturan dihapus, widget tampil di semua halaman.");
+}
+
+/** Tampilan widget (bentuk, animasi, warna). Dibaca widget lewat api/chat.js?cfg=1 (±15 detik). */
+export async function saveChatStyleAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  await setChatStyle(cleanStyle(String(formData.get("style") ?? "")));
+  revalidatePath("/admin/model-ai");
+  return ok("Tampilan widget disimpan. Muncul di website dalam ±15 detik.");
 }
 
 /** Batas pesan chat per hari. Kosong = hapus pengaturan, portal pakai bawaannya. Dibaca api/chat.js portal (±15 detik). */

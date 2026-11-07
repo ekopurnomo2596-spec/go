@@ -466,17 +466,37 @@ const CID_RE = /^[a-f0-9]{16}$/;
 
 // Pengaturan untuk widget.js di subdomain: saklar chat + daftar halaman yang disembunyikan (dashboard go, Pengaturan Chatbot).
 // Redis "cfg:chat:hide" = satu aturan per baris. Di-cache 15 detik per instance.
-let hideCache = { at: 0, list: [] };
+let hideCache = { at: 0, list: [], style: null };
+// Tampilan widget (Redis "cfg:chat:style", JSON). Daftar nilai sah HARUS sama dengan lib/chatstyle.ts dan public/widget.js.
+const STYLE_OPTS = {
+  launcher: ["pill", "circle", "square"], pos: ["right", "left"], enter: ["none", "fade", "pop", "slide", "bounce"],
+  panel: ["sharp", "soft", "round"], open: ["none", "fade", "slide", "pop"], bubble: ["round", "soft", "square", "tail"],
+  msg: ["none", "fade", "slide", "pop"],
+};
+function cleanStyle(raw) {
+  let o = raw;
+  if (typeof raw === "string") { try { o = JSON.parse(raw); } catch { o = null; } }
+  if (!o || typeof o !== "object") return null;
+  const out = {};
+  for (const k of Object.keys(STYLE_OPTS)) if (STYLE_OPTS[k].includes(o[k])) out[k] = o[k];
+  if (typeof o.accent === "string" && /^#[0-9a-fA-F]{6}$/.test(o.accent)) out.accent = o.accent.toLowerCase();
+  if (o.pulse === false) out.pulse = false;
+  return Object.keys(out).length ? out : null;
+}
 async function handleCfg(req, res) {
   res.setHeader("Cache-Control", "public, max-age=15");
   const on = await chatEnabled();
   if (Date.now() - hideCache.at >= 15_000) {
-    const v = await kv(["GET", "cfg:chat:hide"]);
+    const [v, st] = await Promise.all([kv(["GET", "cfg:chat:hide"]), kv(["GET", "cfg:chat:style"])]);
     if (v !== undefined) {
-      hideCache = { at: Date.now(), list: typeof v === "string" ? v.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 100) : [] };
+      hideCache = {
+        at: Date.now(),
+        list: typeof v === "string" ? v.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 100) : [],
+        style: st === undefined ? hideCache.style : cleanStyle(st),
+      };
     }
   }
-  return res.status(200).json({ on, hide: hideCache.list });
+  return res.status(200).json({ on, hide: hideCache.list, style: hideCache.style });
 }
 
 // Origin yang boleh memakai chat dari situs lain: emahairshop.com dan semua subdomainnya (https saja).
@@ -532,7 +552,7 @@ export default async function handler(req, res) {
     // Pengaturan widget tidak boleh bikin widget error: kalau gagal, balas nilai bawaan (chat menyala, tidak ada yang disembunyikan).
     try { return await handleCfg(req, res); } catch (e) {
       console.error("[api/chat] cfg gagal:", e);
-      return res.status(200).json({ on: true, hide: [] });
+      return res.status(200).json({ on: true, hide: [], style: null });
     }
   }
   if (req.method === "GET" && qs.get("hist")) {

@@ -1,7 +1,7 @@
 /*! EMAHAIRSHOP chat widget \u2014 tempel di situs mana pun:
    <script src="https://go.emahairshop.com/widget.js" defer></script>
    Opsi (atribut di tag script): data-lang="id|en|it|es|fr|de|ru"  data-theme="light|dark"  data-hide="/order,/checkout,/cart*"
-   Backend + semua pengaturan (prompt, model, saklar, halaman tersembunyi) ada di dashboard go. Style diisolasi (Shadow DOM). */
+   Backend + semua pengaturan (prompt, model, saklar, halaman tersembunyi, tampilan) ada di dashboard go. Style diisolasi (Shadow DOM). */
 (function(){
 if(window.__EMA_WIDGET||document.getElementById("echat-btn"))return; // sudah ada / halaman portal: jangan dobel
 window.__EMA_WIDGET=1;
@@ -60,7 +60,7 @@ button,input{font-family:inherit}
 #echat-input:focus{outline:none;border-color:var(--lineh)}
 #echat-send{border:0;border-radius:50%;width:40px;height:40px;padding:0;flex:none;display:inline-flex;align-items:center;justify-content:center;background:var(--btn);color:var(--btnt);cursor:pointer}
 #echat-send svg{width:20px;height:20px;display:block}
-#echat-send:disabled{opacity:.5;cursor:default}
+#echat-send{transition:opacity .15s}#echat-send:disabled{opacity:.3;cursor:default}
 #echat-hi{position:fixed;bottom:calc(92px + env(safe-area-inset-bottom,0px));inset-inline-end:16px;z-index:29;max-width:min(240px,calc(100vw - 32px));display:flex;align-items:center;gap:6px;padding:10px 8px 10px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--text);font-size:13.5px;line-height:1.4;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer;opacity:0;transform:translateY(8px);transition:opacity .35s,transform .35s}
 #echat-hi.show{opacity:1;transform:none}
 #echat-hi.hide{display:none}
@@ -75,7 +75,45 @@ button,input{font-family:inherit}
 .echat-qs{display:flex;flex-wrap:wrap;gap:8px;align-self:flex-start}
 .echat-qb{min-height:36px;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;font-weight:600;background:var(--card);color:var(--text);cursor:pointer;text-align:start}
 .echat-qb:hover{border-color:var(--lineh)}
-@media (max-width:640px){#echat-close{width:44px;height:44px;margin-block:-6px;margin-inline-end:-10px}#echat-input{min-height:44px}#echat-send{width:44px;height:44px}.echat-qb{min-height:44px}}`;
+@media (max-width:640px){#echat-close{width:44px;height:44px;margin-block:-6px;margin-inline-end:-10px}#echat-input{min-height:44px}#echat-send{width:44px;height:44px}.echat-qb{min-height:44px}}
+@keyframes echatFade{from{opacity:0}to{opacity:1}}
+@keyframes echatUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes echatPop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
+@keyframes echatBounce{0%{opacity:0;transform:translateY(40px)}55%{opacity:1;transform:translateY(-10px)}78%{transform:translateY(4px)}100%{transform:none}}
+@keyframes echatMsgUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes echatMsgPop{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}
+:host([data-launcher=circle]) #echat-btn,:host([data-launcher=square]) #echat-btn{padding:0;width:48px;justify-content:center}
+:host([data-launcher=circle]) #echat-btn-label,:host([data-launcher=square]) #echat-btn-label{display:none}
+:host([data-launcher=circle]) #echat-btn>svg,:host([data-launcher=square]) #echat-btn>svg{display:block}
+:host([data-launcher=circle]) #echat-btn{border-radius:50%}
+:host([data-launcher=square]) #echat-btn{border-radius:16px}
+:host([data-pos=left]) #echat-btn,:host([data-pos=left]) #echat-hi{inset-inline-end:auto;inset-inline-start:16px}
+@media (min-width:640px){:host([data-pos=left]) #echat-panel{inset-inline-end:auto;inset-inline-start:16px}}
+:host([data-enter=fade]) #echat-btn.in{animation:echatFade .5s ease-out both}
+:host([data-enter=pop]) #echat-btn.in{animation:echatPop .45s cubic-bezier(.34,1.56,.64,1) both}
+:host([data-enter=slide]) #echat-btn.in{animation:echatUp .5s cubic-bezier(.2,.8,.2,1) both}
+:host([data-enter=bounce]) #echat-btn.in{animation:echatBounce .8s ease-out both}
+:host([data-panel=soft]) #echat-panel{border-radius:14px}
+:host([data-panel=round]) #echat-panel{border-radius:24px}
+:host([data-open=fade]) #echat-panel{animation:echatFade .22s ease-out}
+:host([data-open=slide]) #echat-panel{animation:echatUp .3s cubic-bezier(.2,.8,.2,1)}
+:host([data-open=pop]) #echat-panel{transform-origin:bottom right;animation:echatPop .28s cubic-bezier(.34,1.56,.64,1)}
+:host([data-open=pop][data-pos=left]) #echat-panel{transform-origin:bottom left}
+:host([data-bubble=soft]) .echat-msg{border-radius:10px}
+:host([data-bubble=soft]) #echat-input,:host([data-bubble=soft]) .echat-qb{border-radius:12px}
+:host([data-bubble=soft]) #echat-send{border-radius:12px}
+:host([data-bubble=square]) .echat-msg{border-radius:3px}
+:host([data-bubble=square]) #echat-input,:host([data-bubble=square]) .echat-qb{border-radius:6px}
+:host([data-bubble=square]) #echat-send{border-radius:6px}
+:host([data-bubble=tail]) .echat-intro,:host([data-bubble=tail]) .echat-a{border-radius:16px 16px 16px 4px}
+:host([data-bubble=tail]) .echat-u{border-radius:16px 16px 4px 16px}
+:host([data-msg=fade]) .echat-new{animation:echatFade .25s ease-out}
+:host([data-msg=slide]) .echat-new{animation:echatMsgUp .28s ease-out}
+:host([data-msg=pop]) .echat-new{animation:echatMsgPop .26s cubic-bezier(.34,1.56,.64,1)}
+:host([data-msg=pop]) .echat-u.echat-new{transform-origin:bottom right}
+:host([data-msg=pop]) .echat-a.echat-new{transform-origin:bottom left}
+:host([data-pulse=off]) #echat-btn.pulse{animation:none}
+@media (prefers-reduced-motion:reduce){#echat-btn.in,#echat-panel,.echat-new{animation:none!important}}`;
 var HTML=`<button type="button" id="echat-btn" aria-label="Chat">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 <span id="echat-btn-label">AI Assistant</span>
@@ -144,7 +182,16 @@ body=$("echat-body"),form=$("echat-form"),
 input=$("echat-input"),closeBtn=$("echat-close"),
 sendBtn=$("echat-send"),badge=$("echat-badge"),
 announce=$("echat-announce");
-var msgs=[],loading=false,labelsReady=false,unread=0;
+APPLY=function(){
+var S=STYLE||{},ks=["launcher","pos","enter","panel","open","bubble","msg"];
+ks.forEach(function(k){if(S[k])host.setAttribute("data-"+k,S[k]);else host.removeAttribute("data-"+k)});
+if(S.pulse===false)host.setAttribute("data-pulse","off");else host.removeAttribute("data-pulse");
+if(S.accent){host.style.setProperty("--btn",S.accent);host.style.setProperty("--btnt",accentText(S.accent))}
+else{host.style.removeProperty("--btn");host.style.removeProperty("--btnt")}
+if(S.enter&&S.enter!=="none"&&!enterDone){enterDone=true;btn.classList.add("in");btn.addEventListener("animationend",function(){btn.classList.remove("in")},{once:true})}
+};
+APPLY();
+var msgs=[],loading=false,labelsReady=false,unread=0,renderedN=-1;
 function sayAria(text){if(announce)announce.textContent=String(text==null?"":text)}
 // Badge angka di tombol chat: jumlah balasan yang belum dibaca selama panel tertutup.
 function updateBadge(){
@@ -215,18 +262,19 @@ var m=line.match(/^\s*(?:[^:\n]{1,30}:\s*)?(https?:\/\/\S*[^\s.,;:!?)\]])\s*$/);
 if(m){var ic=icFor(m[1]);if(ic)return '<span class="echat-lk"><svg viewBox="0 0 24 24" fill="none" stroke="'+ic[0]+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ic[1]+'</svg>'+aLink(m[1])+'</span>'}
 return esc(line).replace(/(https?:\/\/[^\s<]*[^\s<.,;:!?)\]])/g,function(u){return '<a class="echat-ln" href="'+u+'" title="'+u+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">'+u+'</a>'})}).join("\n")}
 function render(){
-var t=et(),html='<p class="echat-msg echat-intro">'+esc(t.intro)+'</p>';
+var fresh0=renderedN,t=et(),html='<p class="echat-msg echat-intro">'+esc(t.intro)+'</p>';
 if(!msgs.length&&!loading)html+='<div class="echat-qs">'+qs().map(function(q,i){return '<button type="button" class="echat-qb" data-q="'+i+'">'+esc(q)+'</button>'}).join("")+'</div>';
 msgs.forEach(function(m,i){
-html+='<p class="echat-msg '+(m.role==="user"?"echat-u":"echat-a")+'">'+(m.role==="user"?esc(m.content):linkify(m.content))+'</p>';
+html+='<p class="echat-msg '+(m.role==="user"?"echat-u":"echat-a")+(fresh0>=0&&i>=fresh0&&i>=msgs.length-2?" echat-new":"")+'">'+(m.role==="user"?esc(m.content):linkify(m.content))+'</p>';
 if(m.role==="user"&&!loading&&i===msgs.length-2&&msgs[i+1].err)html+='<button type="button" class="echat-retry" id="echat-retry">\u21BB '+esc(rt())+'</button>';
 if(m.wa)html+='<a class="echat-wa" href="'+m.wa+'" target="_blank" rel="noopener">'+esc(t.wa)+'</a>';
 });
 if(loading)html+='<p id="echat-think" role="status" aria-label="'+esc(t.think)+'"><span class="echat-dots" aria-hidden="true"><span></span><span></span><span></span></span></p>';
 body.innerHTML=html;
 body.scrollTop=body.scrollHeight;if(typeof updateDown==='function')updateDown();
-if(sendBtn)sendBtn.disabled=loading;
+renderedN=msgs.length;syncSend();
 }
+function syncSend(){if(sendBtn)sendBtn.disabled=loading||!input.value.trim()}
 function labels(){
 var t=et();
 $("echat-btn-label").textContent=t.open;
@@ -340,11 +388,12 @@ else{if(tries<2){retryAuto=true;return}fail("error")}
 if(retryAuto){retryAuto=false;setTimeout(function(){ask(text,tries+1,um)},1500);return}
 pend--;if(pend<=0){pend=0;loading=false}render();saveHistory()});
 }
+input.addEventListener("input",syncSend);
 form.addEventListener("submit",function(e){
 e.preventDefault();
 var text=input.value.trim().slice(0,300);
 if(!text||loading)return;
-input.value="";
+input.value="";syncSend();
 // Kalau jawaban sebelumnya error lalu pengunjung mengetik hal baru, buang pesan error lamanya.
 var lm=msgs[msgs.length-1];
 if(lm&&lm.err){msgs.pop();var pu=msgs[msgs.length-1];if(pu&&pu.role==="user")pu.skip=true}
@@ -375,12 +424,19 @@ ask(lu.content);
 // Ikut ganti bahasa kalau situs punya pemilih bahasa sendiri (window.LG, mis. portal).
 setInterval(function(){var l=window.LG;if(l&&l!==LG&&LANGS.indexOf(l)>=0){LG=l;labels();if(!panel.classList.contains("hide")){loadHistory();render()}}},800);
 }
+var STYLE=null,APPLY=null,enterDone=false;
+// Daftar nilai sah HARUS sama dengan lib/chatstyle.ts dan api/chat.js (STYLE_OPTS).
+var SOPT={launcher:["pill","circle","square"],pos:["right","left"],enter:["none","fade","pop","slide","bounce"],panel:["sharp","soft","round"],open:["none","fade","slide","pop"],bubble:["round","soft","square","tail"],msg:["none","fade","slide","pop"]};
+function cleanS(o){if(!o||typeof o!=="object")return null;var r={};Object.keys(SOPT).forEach(function(k){if(SOPT[k].indexOf(o[k])>=0)r[k]=o[k]});
+if(typeof o.accent==="string"&&/^#[0-9a-f]{6}$/i.test(o.accent))r.accent=o.accent.toLowerCase();if(o.pulse===false)r.pulse=false;return r}
+function accentText(h){var n=parseInt(h.slice(1),16),c=[(n>>16)&255,(n>>8)&255,n&255].map(function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]>.4?"#111":"#fff"}
 var RULES=((SC&&SC.getAttribute("data-hide"))||"").split(",").map(function(x){return x.trim()}).filter(Boolean);
 var started=false,off=false;
 function go(){if(started||off)return;started=true;if(document.body)init();else document.addEventListener("DOMContentLoaded",init)}
 // Ambil pengaturan dari server (saklar chat + daftar halaman yang disembunyikan); gagal/lambat = tetap tampil.
 try{fetch(API+"/api/chat?cfg=1",{cache:"no-store"}).then(function(r){return r.json()}).then(function(c){
 if(c&&c.on===false){off=true;return}
+if(c&&c.style){STYLE=cleanS(c.style);if(APPLY)APPLY()}
 if(c&&Array.isArray(c.hide))RULES=RULES.concat(c.hide.filter(function(x){return typeof x==="string"&&x}));
 go()}).catch(go)}catch(e){go()}
 setTimeout(go,3000);

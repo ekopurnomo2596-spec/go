@@ -7,7 +7,8 @@ import { EmbedSnippet } from "./embed-snippet";
 import { HideForm } from "./hide-form";
 import { ModelsForm } from "./models-form";
 import { PromptForm } from "./prompt-form";
-import { getChatEnabled, getChatHide, getChatLimit } from "@/lib/webchat";
+import { getChatEnabled, getChatHide, getChatLimit, getChatStyle } from "@/lib/webchat";
+import { StyleForm } from "./style-form";
 import { LimitForm } from "./limit-form";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export default async function ModelAiPage() {
   const chatOn = await getChatEnabled();
   const hideRules = await getChatHide();
   const limit = await getChatLimit();
+  const style = await getChatStyle();
   const chatKeys = await getChatKeys();
 
   return (
@@ -85,6 +87,13 @@ export default async function ModelAiPage() {
           Sembunyikan widget di halaman <small>mis. order, checkout, keranjang</small>
         </h2>
         <HideForm initial={hideRules} />
+      </div>
+
+      <div className="panel">
+        <h2>
+          Tampilan widget <small>bentuk, animasi, warna</small>
+        </h2>
+        <StyleForm initial={style} />
       </div>
 
       <div className="panel">

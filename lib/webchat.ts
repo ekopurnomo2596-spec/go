@@ -1,5 +1,6 @@
 import { db } from "./redis";
 import type { ChatRow, Msg } from "./remote";
+import { cleanStyle, isDefaultStyle, type ChatStyle } from "./chatstyle";
 
 /**
  * Chatbot di website emahairshop.com (dijalankan project "portal", api/chat.js).
@@ -8,6 +9,7 @@ import type { ChatRow, Msg } from "./remote";
  * - cfg:chat:on           "1" / "0". Kosong dianggap menyala (perilaku lama). Dibaca middleware.js dan api/chat.js portal.
  * - cfg:chat:limit        batas pesan chat per hari (angka). Kosong = portal pakai bawaannya. Dibaca api/chat.js portal.
  * - cfg:chat:hide         daftar halaman yang menyembunyikan widget.js (satu aturan per baris). Dibaca api/chat.js portal (?cfg=1).
+ * - cfg:chat:style        JSON tampilan widget (bentuk tombol/gelembung, animasi, warna). Kosong = tampilan bawaan. Dibaca api/chat.js (?cfg=1).
  * - web:conv:idx          sorted set id chat (16 hex), skor = waktu pesan terakhir
  * - web:conv:meta:{id}    hash { title, last }
  * - web:conv:msgs:{id}    list pesan { t, r: "user"|"bot", n, x }   (ditulis portal, kedaluwarsa 30 hari)
@@ -16,6 +18,7 @@ import type { ChatRow, Msg } from "./remote";
 const ON_KEY = "cfg:chat:on";
 const HIDE_KEY = "cfg:chat:hide";
 const LIMIT_KEY = "cfg:chat:limit";
+const STYLE_KEY = "cfg:chat:style";
 export const MAX_CHAT_LIMIT = 1_000_000;
 const IDX = "web:conv:idx";
 
@@ -64,6 +67,16 @@ export async function getChatHide(): Promise<string[]> {
 export async function setChatHide(rules: string[]) {
   if (rules.length) await db().set(HIDE_KEY, rules.join("\n"));
   else await db().del(HIDE_KEY);
+}
+
+export async function getChatStyle(): Promise<ChatStyle> {
+  return cleanStyle(await db().get<unknown>(STYLE_KEY));
+}
+
+/** Sama dengan bawaan = hapus key, supaya widget tidak membawa pengaturan yang tidak perlu. */
+export async function setChatStyle(s: ChatStyle) {
+  if (isDefaultStyle(s)) await db().del(STYLE_KEY);
+  else await db().set(STYLE_KEY, JSON.stringify(s));
 }
 
 export async function listWebConvs(n = 100): Promise<ChatRow[]> {
