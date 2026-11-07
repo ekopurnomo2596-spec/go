@@ -40,7 +40,10 @@ export default async function ModelAiPage() {
         .pr-vars label, .pr-field { display: flex; flex-direction: column; gap: 6px; font-size: .82rem; }
         .pr-field { margin-bottom: 14px; }
         .pr-field small { color: var(--muted); margin-left: 6px; }
-        .pr-field textarea { width: 100%; font-family: ui-monospace, Menlo, monospace; font-size: .78rem; line-height: 1.5; resize: vertical; min-height: 160px; }
+        .wrap input:not([type]), .wrap textarea { width: 100%; padding: 10px 12px; font: inherit; font-size: .9rem; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; transition: border-color .15s; outline: none; }
+        .wrap input:not([type]):focus, .wrap textarea:focus { border-color: var(--gold); }
+        .pr-field textarea { font-family: ui-monospace, Menlo, monospace; font-size: .78rem; line-height: 1.55; resize: vertical; min-height: 160px; }
+        .pr-vars label span, .pr-field > span { color: var(--muted); }
         .ma-sugg button { padding: 4px 10px; font-size: .76rem; border-radius: 999px; }
       `}</style>
       <div className="top">
