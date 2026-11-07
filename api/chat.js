@@ -585,8 +585,15 @@ export default async function handler(req, res) {
     // oleh pengecekan kecil terpisah. Nama dikirim balik ke browser dan dikirim lagi di tiap pesan berikutnya.
     const leadNm = ans.lead ? (ans.lead.match(/(?:^|;)\s*nama\s*=\s*([^;]*)/i) || [])[1] : "";
     let learned = ans.name || validName(leadNm) || knownName || "";
-    if (!learned && history.length <= 8 && last.text.length <= 80 && Date.now() - t0 < 16_000) {
-      learned = (await extractName(history)) || "";
+    // Pengecekan cadangan: jalan di awal percakapan (pesan pendek), ATAU kapan pun balasan bot sebelumnya menanyakan nama
+    // dan jawaban pengunjung pendek (1-3 kata), supaya nama tetap tertangkap di percakapan yang sudah panjang.
+    if (!learned && Date.now() - t0 < 16_000) {
+      const prevBot = history.length >= 2 ? history[history.length - 2] : null;
+      const askedName = !!prevBot && prevBot.role === "model" && /\b(nama|name|nome|nombre|nom|namen)\b|\u0438\u043c\u044f/i.test(prevBot.text);
+      const shortReply = last.text.length <= 30 && last.text.split(" ").length <= 3;
+      if ((history.length <= 8 && last.text.length <= 80) || (askedName && shortReply)) {
+        learned = (await extractName(history)) || "";
+      }
     }
     await saveConv(cid, learned, [{ r: "user", x: last.text }, { r: "bot", x: ans.text }]);
     return res.status(200).json({ reply: ans.text, wa: ans.wa, name: learned });
