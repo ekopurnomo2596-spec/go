@@ -18,6 +18,7 @@ button,input{font-family:inherit}
 #echat-btn{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));inset-inline-end:16px;z-index:30;display:flex;align-items:center;gap:8px;height:48px;border:0;border-radius:999px;background:var(--btn);color:var(--btnt);padding:0 18px;font:600 14px/1 inherit;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}
 #echat-btn svg{width:20px;height:20px;flex:none}
 #echat-btn span{white-space:nowrap}
+@media (min-width:641px){#echat-btn>svg{display:none}}
 @media (max-width:640px){#echat-btn-label{display:none}#echat-btn{padding:0;width:48px;justify-content:center}}
 #echat-panel{position:fixed;inset-inline:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;flex-direction:column;height:75vh;height:75dvh;max-height:560px;overflow:hidden;border-radius:0;border:1px solid var(--line);background:var(--card);color:var(--text);box-shadow:0 24px 60px rgba(0,0,0,.25)}
 @media (min-width:640px){#echat-panel{inset-inline:auto;inset-inline-end:16px;bottom:calc(88px + env(safe-area-inset-bottom,0px));width:380px}}
@@ -31,6 +32,7 @@ button,input{font-family:inherit}
 .echat-msg{max-width:88%;padding:9px 13px;border-radius:16px;white-space:pre-wrap;word-break:break-word}
 .echat-intro,.echat-a{background:var(--ico);align-self:flex-start}
 .echat-u{background:var(--btn);color:var(--btnt);align-self:flex-end}
+.echat-msg+.echat-wa{margin-top:-18px}
 .echat-wa{align-self:flex-start;display:inline-block;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;background:#25d366;color:#fff;text-decoration:none}
 #echat-think{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:6px}
 .echat-dots{display:inline-flex;gap:3px}
