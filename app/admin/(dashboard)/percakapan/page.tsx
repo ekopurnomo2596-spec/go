@@ -19,9 +19,13 @@ import {
   type Msg,
   type Src,
 } from "@/lib/remote";
+import { getWebConv, listWebConvs, validWebId } from "@/lib/webchat";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Percakapan" };
+
+type Tab = Src | "web";
+const TABS: { id: Tab; name: string }[] = [...SOURCES, { id: "web", name: "Website" }];
 
 const BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 const num = (n: number) => n.toLocaleString("id-ID");
@@ -33,15 +37,24 @@ function stamp(ts: number): string {
 export default async function PercakapanPage({ searchParams }: { searchParams: Promise<{ s?: string; id?: string }> }) {
   await requireAdmin();
   const sp = await searchParams;
-  const src: Src = isSrc(sp.s) ? sp.s : "wa";
-  const id = sp.id && validChatId(sp.id) ? sp.id : null;
-  const cfg = await getCfg(src);
+  // "web" = chat di website emahairshop.com. Datanya ada di Redis go sendiri (ditulis portal), jadi tidak perlu token sumber.
+  const isWeb = sp.s === "web";
+  const src: Tab = isWeb ? "web" : isSrc(sp.s) ? sp.s : "wa";
+  const id = sp.id && (isWeb ? validWebId(sp.id) : validChatId(sp.id)) ? sp.id : null;
+  const cfg = isWeb ? null : await getCfg(src as Src);
+  const name = isWeb ? "Website" : srcName(src as Src);
 
   let chats: ChatRow[] = [];
   let conv: { title: string; messages: Msg[] } | null = null;
   let usage: SvcUsage | null = null;
   let error = "";
-  if (cfg) {
+  if (isWeb) {
+    try {
+      [chats, conv] = await Promise.all([listWebConvs(100), id ? getWebConv(id) : Promise.resolve(null)]);
+    } catch {
+      error = "Gagal membaca percakapan Website.";
+    }
+  } else if (cfg) {
     try {
       [chats, conv, usage] = await Promise.all([
         listConvs(cfg, 100),
@@ -58,10 +71,12 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
       <div className="top">
         <div>
           <h1>Percakapan</h1>
-          <div className="an-sub">Pesan masuk dan balasan AI. Tersimpan maksimal 30 hari.</div>
+          <div className="an-sub">
+            {isWeb ? "Chat pengunjung di emahairshop.com, balasan AI dan tim. " : "Pesan masuk dan balasan AI. "}Tersimpan maksimal 30 hari.
+          </div>
         </div>
         <nav className="cv-tabs" aria-label="Sumber percakapan">
-          {SOURCES.map((s) => (
+          {TABS.map((s) => (
             <Link key={s.id} href={`/admin/percakapan?s=${s.id}`} aria-current={s.id === src ? "page" : undefined}>
               <RefIcon name={s.name} />
               {s.name}
@@ -70,10 +85,10 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
         </nav>
       </div>
 
-      {!cfg ? (
+      {!isWeb && !cfg ? (
         <section className="panel">
           <p className="empty">
-            Redis {srcName(src)} belum tersambung. <Link href="/admin/token">Isi di halaman Token</Link>.
+            Redis {name} belum tersambung. <Link href="/admin/token">Isi di halaman Token</Link>.
           </p>
         </section>
       ) : error ? (
@@ -90,8 +105,8 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
             <div className="cv-lh">
               <h2>
                 <span className="cn">
-                  <RefIcon name={srcName(src)} />
-                  {srcName(src)}
+                  <RefIcon name={name} />
+                  {name}
                 </span>
                 <small>{chats.length} chat</small>
               </h2>
@@ -100,7 +115,7 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
                   action={clearChatsAction}
                   formClass="cv-clear"
                   btnClass="danger"
-                  confirm={`Hapus SEMUA percakapan ${srcName(src)}? Datanya ikut terhapus dan tidak bisa dikembalikan.`}
+                  confirm={`Hapus SEMUA percakapan ${name}? Datanya ikut terhapus dan tidak bisa dikembalikan.`}
                   label="Hapus semua"
                 >
                   <input type="hidden" name="src" value={src} />
@@ -154,7 +169,7 @@ export default async function PercakapanPage({ searchParams }: { searchParams: P
                   <div className="cv-msgs">
                     {conv.messages.map((m, i) => (
                       <div className={"cv-b " + (m.r === "bot" ? "bot" : "user")} key={i}>
-                        <span className="cv-who">{m.r === "bot" ? "AI" : m.n || "Pengguna"}</span>
+                        <span className="cv-who">{m.r === "bot" ? (isWeb && m.n ? m.n : "AI") : m.n || (isWeb ? "Pengunjung" : "Pengguna")}</span>
                         <p>{m.x}</p>
                         <span className="cv-ts">{m.t ? stamp(m.t) : ""}</span>
                       </div>

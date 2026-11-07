@@ -25,6 +25,7 @@ import {
   validatePrompt,
 } from "@/lib/chatai";
 import type { Flash } from "@/lib/flash";
+import { clearWebConvs, deleteWebConv, setChatEnabled, validWebId } from "@/lib/webchat";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
 import { INFO_LANGS, MAX_TEXT, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
 import { RemoteError, getSvcUsage, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
@@ -426,6 +427,15 @@ export async function resetModelsAction(): Promise<Flash> {
   return ok("Dikembalikan ke bawaan portal.");
 }
 
+/** Nyalakan / matikan chat di website. Portal membacanya lewat middleware (±5 detik) dan api/chat.js (±15 detik). */
+export async function setChatEnabledAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const on = str(formData, "on") === "1";
+  await setChatEnabled(on);
+  revalidatePath("/admin/model-ai");
+  return ok(on ? "Chat di website dinyalakan." : "Chat di website dimatikan.");
+}
+
 export async function savePromptAction(formData: FormData): Promise<Flash> {
   await requireAdmin();
   const data = {
@@ -561,6 +571,13 @@ export async function testRemote(formData: FormData): Promise<Flash> {
 
 export async function deleteChatAction(formData: FormData): Promise<Flash> {
   await requireAdmin();
+  if (str(formData, "src") === "web") {
+    const wid = str(formData, "id");
+    if (!validWebId(wid)) return err("Permintaan tidak valid.");
+    await deleteWebConv(wid);
+    revalidatePath("/admin/percakapan");
+    return ok("Percakapan dihapus.");
+  }
   const f = readRemote(formData);
   const id = str(formData, "id");
   if (!f || !validChatId(id)) return err("Permintaan tidak valid.");
@@ -606,6 +623,11 @@ export async function syncUsageAction(): Promise<Flash> {
 
 export async function clearChatsAction(formData: FormData): Promise<Flash> {
   await requireAdmin();
+  if (str(formData, "src") === "web") {
+    await clearWebConvs();
+    revalidatePath("/admin/percakapan");
+    return ok("Semua percakapan Website dihapus.");
+  }
   const f = readRemote(formData);
   if (!f) return err("Sumber tidak dikenal.");
   const cfg = await getCfg(f.src);
