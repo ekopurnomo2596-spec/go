@@ -29,7 +29,11 @@ button,input{font-family:inherit}
 #echat-head b{font-size:14px}
 #echat-close{width:32px;height:32px;border:0;border-radius:999px;background:transparent;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center}
 #echat-close:hover{background:var(--ico)}
-#echat-body{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;font-size:14px}
+#echat-wrap{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+#echat-down{position:absolute;inset-inline-start:50%;bottom:10px;transform:translateX(-50%);width:40px;height:40px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--text);box-shadow:0 2px 10px rgba(0,0,0,.18);display:none;align-items:center;justify-content:center;cursor:pointer}
+#echat-down.show{display:flex}
+#echat-down svg{width:18px;height:18px;display:block}
+#echat-body{flex:1;min-height:0;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;font-size:14px}
 .echat-msg{margin:0;max-width:88%;padding:9px 13px;border-radius:16px;white-space:pre-wrap;word-break:break-word}
 .echat-intro,.echat-a{background:var(--ico);align-self:flex-start}
 .echat-u{background:var(--btn);color:var(--btnt);align-self:flex-end}
@@ -54,7 +58,8 @@ button,input{font-family:inherit}
 #echat-form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
 #echat-input{flex:1;min-width:0;border:1px solid var(--line);border-radius:999px;padding:9px 14px;font:inherit;background:var(--card);color:var(--text)}
 #echat-input:focus{outline:none;border-color:var(--lineh)}
-#echat-send{border:0;border-radius:999px;padding:9px 16px;font:600 14px/1 inherit;background:var(--btn);color:var(--btnt);cursor:pointer}
+#echat-send{border:0;border-radius:50%;width:40px;height:40px;padding:0;flex:none;display:inline-flex;align-items:center;justify-content:center;background:var(--btn);color:var(--btnt);cursor:pointer}
+#echat-send svg{width:20px;height:20px;display:block}
 #echat-send:disabled{opacity:.5;cursor:default}
 #echat-hi{position:fixed;bottom:calc(92px + env(safe-area-inset-bottom,0px));inset-inline-end:16px;z-index:29;max-width:min(240px,calc(100vw - 32px));display:flex;align-items:center;gap:6px;padding:10px 8px 10px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--text);font-size:13.5px;line-height:1.4;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer;opacity:0;transform:translateY(8px);transition:opacity .35s,transform .35s}
 #echat-hi.show{opacity:1;transform:none}
@@ -70,7 +75,7 @@ button,input{font-family:inherit}
 .echat-qs{display:flex;flex-wrap:wrap;gap:8px;align-self:flex-start}
 .echat-qb{min-height:36px;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;font-weight:600;background:var(--card);color:var(--text);cursor:pointer;text-align:start}
 .echat-qb:hover{border-color:var(--lineh)}
-@media (max-width:640px){#echat-close{width:44px;height:44px;margin-block:-6px;margin-inline-end:-10px}#echat-input,#echat-send{min-height:44px}.echat-qb{min-height:44px}}`;
+@media (max-width:640px){#echat-close{width:44px;height:44px;margin-block:-6px;margin-inline-end:-10px}#echat-input{min-height:44px}#echat-send{width:44px;height:44px}.echat-qb{min-height:44px}}`;
 var HTML=`<button type="button" id="echat-btn" aria-label="Chat">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 <span id="echat-btn-label">AI Assistant</span>
@@ -83,12 +88,12 @@ var HTML=`<button type="button" id="echat-btn" aria-label="Chat">
 <div id="echat-head"><div><b id="echat-title">AI Assistant</b><small id="echat-sub"></small></div><button type="button" id="echat-close" aria-label="Close">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
 </button></div>
-<div id="echat-body" role="log" aria-label="Chat messages"></div>
+<div id="echat-wrap"><div id="echat-body" role="log" aria-label="Chat messages"></div><button type="button" id="echat-down" aria-label="Scroll to latest message" title="Scroll to latest message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button></div>
 <div id="echat-announce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 <p id="echat-note">Answered by AI. For prices, stock and orders, please confirm via WhatsApp.</p>
 <form id="echat-form">
 <input id="echat-input" type="text" maxlength="300" autocomplete="off">
-<button id="echat-send" type="submit">Send</button>
+<button id="echat-send" type="submit" aria-label="Send" title="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
 </form>
 </div>`;
 var ET={
@@ -219,7 +224,7 @@ if(m.wa)html+='<a class="echat-wa" href="'+m.wa+'" target="_blank" rel="noopener
 });
 if(loading)html+='<p id="echat-think" role="status" aria-label="'+esc(t.think)+'"><span class="echat-dots" aria-hidden="true"><span></span><span></span><span></span></span></p>';
 body.innerHTML=html;
-body.scrollTop=body.scrollHeight;
+body.scrollTop=body.scrollHeight;if(typeof updateDown==='function')updateDown();
 if(sendBtn)sendBtn.disabled=loading;
 }
 function labels(){
@@ -232,7 +237,7 @@ $("echat-note").textContent=t.note;
 var hs=hi&&hi.querySelector("span");if(hs)hs.textContent=t.hi;
 closeBtn.setAttribute("aria-label",t.close);
 input.placeholder=t.ph;
-$("echat-send").textContent=t.send;
+$("echat-send").setAttribute("aria-label",t.send);$("echat-send").title=t.send;
 panel.setAttribute("aria-label",t.title);
 }
 function open(){
@@ -242,6 +247,7 @@ syncRemote();
 labels();
 render();
 panel.classList.remove("hide");
+body.scrollTop=body.scrollHeight;updateDown();
 unread=0;updateBadge();
 if(msgs.length||!(window.matchMedia&&matchMedia("(pointer:coarse)").matches))input.focus();
 }
@@ -253,6 +259,20 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape")close()});
 
 labels();
 syncRemote();
+
+// Tombol panah ke bawah: muncul kalau pengunjung menggulir ke atas (jauh dari pesan terbaru), klik = turun ke pesan terbaru.
+var downBtn=$("echat-down");
+function updateDown(){
+if(!downBtn)return;
+var far=body.scrollHeight-body.scrollTop-body.clientHeight>80;
+downBtn.classList.toggle("show",far);
+}
+if(downBtn){
+body.addEventListener("scroll",updateDown,{passive:true});
+downBtn.addEventListener("click",function(){
+try{body.scrollTo({top:body.scrollHeight,behavior:"smooth"})}catch(e){body.scrollTop=body.scrollHeight}
+});
+}
 
 // Gelembung sapaan: muncul sekali per kunjungan (setelah ~6 detik), hilang sendiri, tombol berdenyut 3x lalu berhenti.
 function hiSeen(){try{return sessionStorage.getItem("echat:hi")}catch(e){return null}}
