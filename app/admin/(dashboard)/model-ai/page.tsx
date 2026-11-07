@@ -145,7 +145,7 @@ export default async function ModelAiPage() {
         <p>Pengaturan teknis, biasanya cukup diisi sekali.</p>
       </div>
 
-      <div className="panel">
+      <div className="panel ck-panel">
         <h2>
           Key Gemini chatbot <small>{chatKeys.length ? `${chatKeys.length} key aktif` : "Belum ada key"}</small>
         </h2>
