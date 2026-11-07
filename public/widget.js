@@ -198,14 +198,17 @@ help:["currentColor",'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0
 review:["currentColor",'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'],
 mail:["currentColor",'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>']};
 function icFor(u){var h=u.replace(/^https?:\/\//,"").split(/[\/?#]/)[0];return h==="wa.me"?IC.wa:h==="shop.emahairshop.com"?(/^https?:\/\/shop\.emahairshop\.com\/view-review/i.test(u)?IC.review:IC.shop):h==="track.emahairshop.com"?IC.track:h==="verify.emahairshop.com"?IC.verify:h==="blog.emahairshop.com"?IC.blog:h==="help.emahairshop.com"?IC.help:null}
-function aLink(u){return '<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;word-break:break-all">'+esc(u)+'</a>'}
+// Teks tautan dipotong supaya rapi, mis. "https://shop.emahairshop.com/price...". Alamat lengkap tetap ada di href
+// (klik tetap ke URL penuh) dan di title saat di-hover.
+function lkShort(u){return u.length>34?u.slice(0,34)+"...":u}
+function aLink(u){return '<a href="'+esc(u)+'" title="'+esc(u)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;word-break:break-word">'+esc(lkShort(u))+'</a>'}
 function mLink(e){return '<a href="mailto:'+esc(e)+'" style="color:inherit;text-decoration:underline;word-break:break-all">'+esc(e)+'</a>'}
 function linkify(s){return String(s==null?"":s).split("\n").map(function(line){
 var em=line.match(/^\s*(?:[^:@\n]{1,30}:\s*)?([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\s*$/);
 if(em){var mc=IC.mail;return '<span class="echat-lk"><svg viewBox="0 0 24 24" fill="none" stroke="'+mc[0]+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+mc[1]+'</svg>'+mLink(em[1])+'</span>'}
 var m=line.match(/^\s*(?:[^:\n]{1,30}:\s*)?(https?:\/\/\S*[^\s.,;:!?)\]])\s*$/);
 if(m){var ic=icFor(m[1]);if(ic)return '<span class="echat-lk"><svg viewBox="0 0 24 24" fill="none" stroke="'+ic[0]+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ic[1]+'</svg>'+aLink(m[1])+'</span>'}
-return esc(line).replace(/(https?:\/\/[^\s<]*[^\s<.,;:!?)\]])/g,function(u){return '<a href="'+u+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;word-break:break-all">'+u+'</a>'})}).join("\n")}
+return esc(line).replace(/(https?:\/\/[^\s<]*[^\s<.,;:!?)\]])/g,function(u){return '<a href="'+u+'" title="'+u+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;word-break:break-word">'+lkShort(u)+'</a>'})}).join("\n")}
 function render(){
 var t=et(),html='<p class="echat-msg echat-intro">'+esc(t.intro)+'</p>';
 if(!msgs.length&&!loading)html+='<div class="echat-qs">'+qs().map(function(q,i){return '<button type="button" class="echat-qb" data-q="'+i+'">'+esc(q)+'</button>'}).join("")+'</div>';
