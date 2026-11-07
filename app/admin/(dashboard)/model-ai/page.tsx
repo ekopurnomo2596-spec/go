@@ -51,7 +51,7 @@ export default async function ModelAiPage() {
       <div className="top">
         <div>
           <h1>Model AI</h1>
-          <div className="an-sub">Model dan prompt Gemini yang dipakai chatbot web di emahairshop.com</div>
+          <div className="an-sub">Model dan prompt Gemini yang dipakai chatbot di emahairshop.com dan semua subdomainnya</div>
         </div>
       </div>
 
@@ -81,19 +81,19 @@ export default async function ModelAiPage() {
           Token Gemini <small>terpisah dari token AI go di halaman Token</small>
         </h2>
         <p className="ma-hint" style={{ margin: "0 0 14px" }}>
-          Hanya dipakai untuk tombol <strong>Tes</strong> di bawah dan daftar saran model. Chatbot sendiri tetap
-          jalan pakai token yang sudah di-set di environment Vercel portal — token di sini tidak menggantikannya.
+          Hanya dipakai untuk tombol <strong>Tes</strong> di bawah dan daftar saran model. Chatbot sendiri memakai
+          <code>GEMINI_API_KEYS</code> di environment Vercel portal — token di sini tidak menggantikannya.
         </p>
         <ChatKeyForm masked={key ? maskChatToken(key) : null} testModel={models[0] ?? "gemini-2.5-flash"} />
       </div>
 
       <div className="panel">
         <h2>
-          Daftar model <small>{source === "admin" ? "diatur dari sini" : "bawaan portal, belum pernah diubah"}</small>
+          Daftar model <small>{source === "admin" ? "diatur dari sini" : "bawaan, belum pernah diubah"}</small>
         </h2>
         <p className="ma-hint" style={{ margin: "0 0 14px" }}>
           Dicoba berurutan dari atas; kalau gagal atau kuota habis, chatbot lanjut ke model berikutnya. Perubahan
-          dibaca portal dalam ±30 detik.
+          dibaca chatbot dalam ±30 detik.
         </p>
         <ModelsForm initial={models} hasKey={!!key} />
       </div>
@@ -103,7 +103,7 @@ export default async function ModelAiPage() {
           Prompt chatbot <small>{promptSource === "admin" ? "diatur dari sini" : "belum disimpan dari sini"}</small>
         </h2>
         <p className="ma-hint" style={{ margin: "0 0 14px" }}>
-          Dulu ada di <code>api/chat.js</code> di portal, sekarang diatur dari sini dan dibaca portal dalam ±30 detik.
+          Semua prompt diatur dari sini dan dibaca chatbot dalam ±30 detik.
           {promptSource === "default" && (
             <>
               {" "}

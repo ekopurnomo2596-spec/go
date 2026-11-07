@@ -100,8 +100,8 @@ export function PromptForm({ initial, defaults }: { initial: PromptData; default
         </button>
       </div>
       <div className="ma-hint">
-        Placeholder {"{{COMPANY}}"}, {"{{PRICE_FROM}}"}, {"{{WELCOME_BONUS}}"} diganti otomatis oleh portal. Tanggal, bahasa
-        pengunjung, dan nama pengunjung ditambahkan portal di belakang prompt ini.
+        Placeholder {"{{COMPANY}}"}, {"{{PRICE_FROM}}"}, {"{{WELCOME_BONUS}}"} diganti otomatis oleh chatbot. Tanggal, bahasa
+        pengunjung, dan nama pengunjung ditambahkan chatbot di belakang prompt ini.
       </div>
     </div>
   );

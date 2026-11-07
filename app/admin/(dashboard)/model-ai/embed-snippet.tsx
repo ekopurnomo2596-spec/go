@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { flash } from "@/lib/flash";
 
-const SRC = "https://emahairshop.com/widget.js";
+const SRC = "https://go.emahairshop.com/widget.js";
 const LANGS: [string, string][] = [
   ["", "Otomatis (ikut bahasa situs)"],
   ["id", "Indonesia"],
@@ -76,9 +76,9 @@ export function EmbedSnippet() {
         </button>
       </div>
       <p className="ma-hint">
-        Tempel di sebelum <code>&lt;/body&gt;</code> tiap subdomain (shop, track, verify, dst). Jangan dipasang di
-        portal emahairshop.com — chat bawaannya sudah ada, nanti dobel. Widget otomatis berhenti kalau halaman sudah
-        punya chat. Halaman yang disembunyikan diatur di panel bawah, tanpa mengubah kode ini.
+        Tempel di sebelum <code>&lt;/body&gt;</code> di portal dan tiap subdomain (shop, track, verify, dst). Kodenya sama untuk
+        semua situs. Widget otomatis berhenti kalau halaman sudah punya chat. Menyala/mati dan halaman yang disembunyikan
+        diatur dari panel di halaman ini.
       </p>
     </div>
   );

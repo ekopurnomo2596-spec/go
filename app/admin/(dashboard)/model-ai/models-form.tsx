@@ -164,7 +164,7 @@ export function ModelsForm({ initial, hasKey }: { initial: string[]; hasKey: boo
           disabled={busy}
           aria-busy={resetting}
           onClick={() => {
-            if (!window.confirm("Kembalikan ke daftar bawaan portal? Pengaturan dari sini akan dihapus.")) return;
+            if (!window.confirm("Kembalikan ke daftar bawaan? Pengaturan dari sini akan dihapus.")) return;
             startReset(async () => {
               const r = await run(() => resetModelsAction());
               flash(r);
