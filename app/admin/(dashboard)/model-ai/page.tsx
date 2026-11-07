@@ -62,11 +62,30 @@ export default async function ModelAiPage() {
         .ma-adv > summary { cursor: pointer; font-weight: 600; font-size: .95rem; }
         .ma-adv[open] > summary { margin-bottom: 14px; }
         .ma-sugg button { padding: 4px 10px; font-size: .76rem; border-radius: 999px; }
+
+        /* Gaya seragam semua panel, mengikuti halaman Token */
+        .wrap .panel h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+        .wrap .panel h2 small { margin-left: 0; }
+        .wrap .panel button:not(.st-opt):not(.ct-sw) { min-height: 32px; padding: 0 12px; font-size: 13px; font-weight: 500; line-height: 1.2; border-radius: 8px; box-shadow: none; }
+        .wrap .panel button:not(.ghost):not(.danger):not(.st-opt):not(.ct-sw) { background: #3b6ef0; border: 1px solid #3b6ef0; color: #fff; }
+        .wrap .panel button:not(.ghost):not(.danger):not(.st-opt):not(.ct-sw):hover:not(:disabled) { background: #2f5fd8; border-color: #2f5fd8; }
+        .wrap .panel button.ghost:not(.st-opt) { background: var(--card); border: 1px solid var(--line); color: var(--ink); }
+        .wrap .panel button.ghost:not(.st-opt):hover:not(:disabled) { background: var(--hover); }
+        .wrap .panel button.danger { background: var(--card); border: 1px solid #efc4c4; color: #c93636; }
+        .wrap .panel button.danger:hover:not(:disabled) { background: #fff5f5; }
+        .wrap .panel button:disabled { opacity: .55; cursor: not-allowed; }
+        .wrap .panel .st button.st-opt { min-height: 30px; padding: 0 12px; font-size: 13px; font-weight: 500; }
+        .wrap .panel .st button.st-opt.on { background: #3b6ef0; border-color: #3b6ef0; color: #fff; }
+        .wrap input:not([type]), .wrap textarea { border-radius: 8px; font-size: 14px; }
+        .wrap input:not([type]) { height: 36px; padding: 0 12px; }
+        .wrap input:not([type]):focus, .wrap textarea:focus, .wrap .pf textarea.pf-area:focus { border-color: #3b6ef0; box-shadow: 0 0 0 3px rgba(59, 110, 240, .15); }
+        .wrap .ma-hint { font-size: 12px; line-height: 1.5; }
+        .wrap .ma-foot, .wrap .ma-add { gap: 8px; }
       `}</style>
       <div className="top">
         <div>
           <h1>Pengaturan Chatbot</h1>
-          <div className="an-sub">Atur chatbot di emahairshop.com dan semua subdomainnya: kapan tampil, bagaimana tampilannya, dan apa yang dijawabnya</div>
+          <div className="an-sub">Atur kapan chatbot tampil, bagaimana tampilannya, dan cara menjawabnya di emahairshop.com dan seluruh subdomain.</div>
         </div>
       </div>
 
@@ -133,8 +152,8 @@ export default async function ModelAiPage() {
         </h2>
         {promptSource === "default" && (
           <p className="ma-hint" style={{ margin: "0 0 14px" }}>
-            <strong>Belum pernah disimpan:</strong> editor berisi teks bawaan, tapi chatbot memakai prompt darurat yang
-            sangat pendek sampai kamu klik <strong>Simpan</strong> sekali.
+            <strong>Belum disimpan:</strong> editor memuat teks bawaan, tetapi chatbot memakai prompt darurat singkat
+            sampai kamu klik <strong>Simpan</strong>.
           </p>
         )}
         <PromptForm initial={prompt} defaults={DEFAULT_PROMPT} />

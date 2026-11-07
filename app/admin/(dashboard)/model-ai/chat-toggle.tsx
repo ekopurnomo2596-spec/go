@@ -44,8 +44,8 @@ export function ChatToggle({ initial }: { initial: boolean }) {
         <strong>{on ? "Chat tampil di website" : "Chat disembunyikan"}</strong>
         <div className="ma-hint" style={{ margin: "2px 0 0" }}>
           {on
-            ? "Tombol dan jendela chat muncul di emahairshop.com."
-            : "Tombol dan jendela chat hilang, dan pesan baru ditolak server. Percakapan lama tetap tersimpan."}
+            ? "Tombol dan jendela chat tampil di emahairshop.com."
+            : "Chat disembunyikan dan pesan baru ditolak server. Percakapan lama tetap tersimpan."}
         </div>
       </div>
     </div>

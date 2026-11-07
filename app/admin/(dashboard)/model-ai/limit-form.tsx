@@ -43,7 +43,7 @@ export function LimitForm({ initial }: { initial: number | null }) {
         </button>
       </div>
       <p className="ma-hint">
-        Jumlah pesan chat yang boleh masuk dalam sehari. Perubahan dibaca chatbot langsung di pesan berikutnya, tanpa redeploy.
+        Batas pesan chat per hari. Perubahan berlaku mulai pesan berikutnya.
       </p>
     </div>
   );

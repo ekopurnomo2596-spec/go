@@ -59,8 +59,8 @@ export function ModelsForm({ initial, hasKey }: { initial: string[]; hasKey: boo
     <div>
       {models.length === 0 && (
         <p className="ma-hint" style={{ margin: "0 0 10px" }}>
-          Belum pernah diatur dari sini — chatbot masih pakai daftar bawaan. Tambahkan
-          model di bawah lalu Simpan kalau mau mulai mengatur dari sini.
+          Belum diatur dari sini; chatbot memakai daftar bawaan. Tambahkan model lalu
+          klik Simpan untuk mulai mengatur.
         </p>
       )}
       <ol style={{ listStyle: "none", margin: "0 0 12px", padding: 0 }}>
@@ -172,12 +172,12 @@ export function ModelsForm({ initial, hasKey }: { initial: string[]; hasKey: boo
             });
           }}
         >
-          Kembalikan ke bawaan
+          Setel ulang
           {resetting && <span className="spin" aria-hidden="true" />}
         </button>
       </div>
       <div className="ma-hint">
-        Urutan penting: model paling atas jadi pilihan utama. Nama model hanya huruf, angka, titik, dan minus.
+        Model paling atas menjadi pilihan utama. Nama model hanya boleh berisi huruf, angka, titik, dan minus.
       </div>
     </div>
   );
