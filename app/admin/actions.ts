@@ -9,6 +9,18 @@ import { db } from "@/lib/redis";
 import { getTindakan } from "@/lib/tindakan";
 import { checkAll, clearCheck, markManualOk } from "@/lib/linkcheck";
 import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, translateInfo, validKey } from "@/lib/ai";
+import {
+  deleteChatKey,
+  getChatKey,
+  listGoogleModels,
+  parseModelList,
+  resetModels,
+  setChatKey,
+  setModels,
+  testModel as testChatModel,
+  validChatToken,
+  validModelName,
+} from "@/lib/chatai";
 import type { Flash } from "@/lib/flash";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
 import { INFO_LANGS, MAX_TEXT, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
@@ -344,6 +356,79 @@ export async function testAiKey(formData: FormData): Promise<Flash> {
   } catch (e) {
     return aiErr(e);
   }
+}
+
+// ---------- Model AI chatbot web (portal) ----------
+// Daftar model disimpan di key Redis yang sama dibaca api/chat.js di portal ("cfg:models").
+// Token di sini terpisah dari token AI go di atas (lihat lib/chatai.ts).
+
+export async function saveChatKeyAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const key = str(formData, "key");
+  if (!validChatToken(key)) return err("Token tidak valid. Tempel token utuh tanpa spasi.");
+  await setChatKey(key);
+  revalidatePath("/admin/model-ai");
+  return ok("Token disimpan.");
+}
+
+export async function deleteChatKeyAction(): Promise<Flash> {
+  await requireAdmin();
+  await deleteChatKey();
+  revalidatePath("/admin/model-ai");
+  return ok("Token dihapus.");
+}
+
+/** Tes satu nama model. Pakai token yang baru diketik kalau ada, kalau tidak pakai yang tersimpan. */
+export async function testModelAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const typed = str(formData, "key");
+  const key = typed || (await getChatKey());
+  if (!key) return err("Isi token dulu.");
+  if (!validChatToken(key)) return err("Token tidak valid. Tempel token utuh tanpa spasi.");
+  const model = str(formData, "model");
+  if (!validModelName(model)) return err("Nama model tidak valid.");
+  const t = await testChatModel(model, key);
+  if (t.ok) return ok(`"${model}" berfungsi (${t.ms} md).`);
+  return err(`"${model}" gagal dites: ${t.error || t.status || "tidak ada respons"}.`);
+}
+
+export async function saveModelsAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const uniq = parseModelList(formData.getAll("model").map(String));
+  if (!uniq) return err("Isi 1-8 nama model yang valid (huruf, angka, titik, minus).");
+
+  // Pastikan model pertama benar-benar jalan, supaya salah ketik tidak mematikan chatbot.
+  // Hanya tolak kalau modelnya memang salah (400/404) atau token ditolak (401/403); gangguan
+  // sementara dari Google (429 kuota, 500/503, timeout) tidak menghalangi simpan.
+  let warning: string | undefined;
+  const key = await getChatKey();
+  if (key) {
+    const t = await testChatModel(uniq[0], key);
+    if (!t.ok) {
+      if (t.status && [400, 401, 403, 404].includes(t.status)) {
+        return err(`Model utama "${uniq[0]}" gagal dites: ${t.error || t.status}. Tidak disimpan.`);
+      }
+      warning = ` Tes model utama gagal sementara (${t.error || t.status || "tidak ada respons"}), tapi pengaturan tetap disimpan.`;
+    }
+  }
+  await setModels(uniq);
+  revalidatePath("/admin/model-ai");
+  return ok(`Daftar model disimpan.${warning ?? ""}`);
+}
+
+export async function resetModelsAction(): Promise<Flash> {
+  await requireAdmin();
+  await resetModels();
+  revalidatePath("/admin/model-ai");
+  return ok("Dikembalikan ke bawaan portal.");
+}
+
+/** Saran nama model dari Google, pakai token yang tersimpan. Kosong kalau token belum diisi. */
+export async function suggestModelsAction(): Promise<string[]> {
+  await requireAdmin();
+  const key = await getChatKey();
+  if (!key) return [];
+  return listGoogleModels(key);
 }
 
 export async function askAiAction(formData: FormData): Promise<Flash> {
