@@ -27,7 +27,7 @@ export function EmbedSnippet() {
       await navigator.clipboard.writeText(code);
       flash({ kind: "ok", text: "Kode disalin." });
     } catch {
-      flash({ kind: "err", text: "Gagal menyalin. Salin manual dari kotak di atas." });
+      flash({ kind: "err", text: "Gagal menyalin. Salin manual dari kotak kode." });
     }
   }
 
@@ -76,9 +76,8 @@ export function EmbedSnippet() {
         </button>
       </div>
       <p className="ma-hint">
-        Tempel di sebelum <code>&lt;/body&gt;</code> di portal dan tiap subdomain (shop, track, verify, dst). Kodenya sama untuk
-        semua situs. Widget otomatis berhenti kalau halaman sudah punya chat. Menyala/mati dan halaman yang disembunyikan
-        diatur dari panel di halaman ini.
+        Tempel sebelum <code>&lt;/body&gt;</code> di portal dan setiap subdomain. Kode yang sama berlaku untuk semua
+        situs. Widget tidak ditampilkan jika halaman sudah memiliki chat.
       </p>
     </div>
   );

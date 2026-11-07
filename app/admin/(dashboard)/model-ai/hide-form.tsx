@@ -46,9 +46,9 @@ export function HideForm({ initial }: { initial: string[] }) {
         </button>
       </div>
       <p className="ma-hint">
-        Satu aturan per baris, berlaku di semua subdomain yang memasang widget. <code>/order</code> = halaman itu dan
-        turunannya, <code>/cart*</code> = wildcard, <code>/</code> = beranda saja, <code>shop.emahairshop.com/cart</code>{" "}
-        = hanya di subdomain itu. Perubahan terbaca widget dalam ±15 detik; tidak perlu mengubah kode tempel.
+        Satu aturan per baris, berlaku di semua subdomain. <code>/order</code> = halaman dan turunannya,{" "}
+        <code>/cart*</code> = wildcard, <code>/</code> = beranda saja, <code>shop.emahairshop.com/cart</code> = hanya
+        di subdomain tersebut. Perubahan aktif dalam ±15 detik.
       </p>
     </div>
   );

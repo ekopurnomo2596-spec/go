@@ -25,6 +25,7 @@ export function ChatKeysForm({ masked, max }: { masked: string[]; max: number })
           <div className="ma-row" key={i}>
             <span className="ma-num">{i + 1}</span>
             <span className="ma-name">{m}</span>
+            {i === 0 && <span className="ma-hint" style={{ margin: 0 }}>untuk tes model</span>}
             <button
               type="button"
               className="danger"
@@ -42,7 +43,7 @@ export function ChatKeysForm({ masked, max }: { masked: string[]; max: number })
         ))
       ) : (
         <p className="ma-hint" style={{ margin: "0 0 12px" }}>
-          Belum ada key. Chatbot belum bisa menjawab sampai kamu menambahkan minimal satu key.
+          Belum ada key. Tambahkan minimal satu agar chatbot dapat menjawab.
         </p>
       )}
       <label className="pr-field" style={{ marginTop: 12, marginBottom: 12 }}>
@@ -78,8 +79,8 @@ export function ChatKeysForm({ masked, max }: { masked: string[]; max: number })
         </button>
       </div>
       <p className="ma-hint">
-        Maksimal {max} key. Chatbot memakai semuanya bergantian dan melewati key yang kena kuota. Perubahan terbaca
-        dalam ±30 detik, tanpa redeploy.
+        Maksimal {max} key, dipakai bergantian; key yang kehabisan kuota dilewati. Key pertama juga dipakai untuk tes
+        dan saran model. Perubahan aktif dalam ±30 detik.
       </p>
     </div>
   );

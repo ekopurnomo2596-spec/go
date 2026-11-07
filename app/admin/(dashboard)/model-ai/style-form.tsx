@@ -21,8 +21,8 @@ async function run(fn: () => Promise<Flash>): Promise<Flash> {
 }
 
 const GROUPS: { title: string; keys: StyleKey[] }[] = [
-  { title: "Tombol chat", keys: ["launcher", "pos", "enter"] },
-  { title: "Jendela chat", keys: ["panel", "open"] },
+  { title: "Tombol", keys: ["launcher", "pos", "enter"] },
+  { title: "Jendela", keys: ["panel", "open"] },
   { title: "Pesan", keys: ["bubble", "msg"] },
 ];
 
@@ -144,10 +144,12 @@ export function StyleForm({ initial }: { initial: ChatStyle }) {
         @media (prefers-reduced-motion: reduce) { .st-pv * { animation: none !important } }
         .st-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 22px; align-items: start; }
         @media (max-width: 760px) { .st-layout { grid-template-columns: 1fr; } }
-        .st-group { margin-bottom: 18px; }
-        .st-group > h3 { margin: 0 0 10px; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
-        .st-field { margin-bottom: 12px; font-size: .82rem; }
-        .st-field > span { display: block; margin-bottom: 6px; color: var(--muted); }
+        .st-group { padding: 14px 0 6px; border-top: 1px solid var(--line); }
+        .st-group:first-child { padding-top: 0; border-top: 0; }
+        .st-group > h3 { margin: 0 0 6px; font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+        .st-field { display: grid; grid-template-columns: 140px minmax(0, 1fr); align-items: center; gap: 6px 14px; padding: 7px 0; font-size: .82rem; }
+        .st-field > span { color: var(--muted); }
+        @media (max-width: 560px) { .st-field { grid-template-columns: 1fr; } }
         .st-chips { display: flex; flex-wrap: wrap; gap: 6px; }
         .st button.st-opt { padding: 5px 12px; font-size: .78rem; border-radius: 999px; background: transparent; color: var(--ink); border: 1px solid var(--line); }
         .st button.st-opt.on { background: var(--btn); color: var(--btnt); border-color: var(--btn); }
@@ -188,10 +190,10 @@ export function StyleForm({ initial }: { initial: ChatStyle }) {
                   </div>
                 </div>
               ))}
-              {g.title === "Tombol chat" && (
+              {g.title === "Tombol" && (
                 <>
                   <div className="st-field">
-                    <span>Warna tombol dan pesan pengunjung</span>
+                    <span>Warna aksen</span>
                     <div className="st-color">
                       <input
                         type="color"
@@ -199,16 +201,16 @@ export function StyleForm({ initial }: { initial: ChatStyle }) {
                         aria-label="Warna aksen"
                         onChange={(e) => set("accent", e.target.value.toLowerCase())}
                       />
-                      <code>{s.accent || "bawaan (hitam di tema terang)"}</code>
+                      <code>{s.accent || "Bawaan"}</code>
                       {s.accent && (
                         <button type="button" className="ghost st-opt" onClick={() => set("accent", "")}>
-                          Bawaan
+                          Setel ulang
                         </button>
                       )}
                     </div>
                   </div>
                   <div className="st-field">
-                    <span>Tombol berdenyut saat ada sapaan atau balasan baru</span>
+                    <span>Efek berdenyut</span>
                     <div className="st-chips" role="radiogroup" aria-label="Denyut tombol">
                       {([[true, "Ya"], [false, "Tidak"]] as const).map(([v, label]) => (
                         <button
@@ -245,7 +247,7 @@ export function StyleForm({ initial }: { initial: ChatStyle }) {
               {saving && <span className="spin" aria-hidden="true" />}
             </button>
             <button type="button" className="ghost" onClick={() => setRun((n) => n + 1)}>
-              Putar ulang animasi
+              Putar animasi
             </button>
             <button
               type="button"
@@ -256,13 +258,12 @@ export function StyleForm({ initial }: { initial: ChatStyle }) {
                 setRun((n) => n + 1);
               }}
             >
-              Kembalikan ke bawaan
+              Setel ulang
             </button>
           </div>
           <p className="ma-hint">
-            Pratinjau di kanan hanya perkiraan. Setelah Simpan, widget di website memakai pengaturan ini dalam ±15
-            detik tanpa mengubah kode tempel. Animasi otomatis mati bagi pengunjung yang mengaktifkan “kurangi gerakan”
-            di perangkatnya.
+            Pratinjau hanya perkiraan. Perubahan aktif di website dalam ±15 detik tanpa mengubah kode pemasangan.
+            Animasi dinonaktifkan otomatis bagi pengunjung dengan pengaturan “kurangi gerakan”.
           </p>
         </div>
         <Preview key={run0} s={s} />

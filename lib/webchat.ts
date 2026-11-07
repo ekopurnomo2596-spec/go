@@ -45,11 +45,13 @@ export async function setChatLimit(n: number | null) {
   else await db().set(LIMIT_KEY, String(n));
 }
 
-/** Aturan valid: "/path", "/path*", "/", "sub.emahairshop.com", "sub.emahairshop.com/path". */
+/** Aturan valid: "/path", "/path*", "/", "sub.emahairshop.com", "sub.emahairshop.com/path". URL lengkap (https://...) juga diterima dan dirapikan. */
 export function cleanHideRules(raw: string): string[] {
   const out: string[] = [];
   for (const l of raw.split(/[\r\n,]+/)) {
-    let x = l.trim();
+    // buang awalan http(s):// (termasuk bentuk "/https://" dari simpanan lama), query, hash, dan garis miring penutup
+    let x = l.trim().replace(/^\/?https?:\/\//i, "").replace(/[?#].*$/, "");
+    if (x.length > 1) x = x.replace(/\/+$/, "");
     if (!x) continue;
     if (!/^[A-Za-z0-9/_\-.*~%:]{1,200}$/.test(x)) continue;
     if (!x.startsWith("/") && !/^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+(\/|$)/.test(x)) x = "/" + x;

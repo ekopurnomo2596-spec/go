@@ -6,13 +6,13 @@
  */
 
 export const STYLE_FIELDS = {
-  launcher: { label: "Bentuk tombol chat", options: [["pill", "Pil + teks"], ["circle", "Bulat"], ["square", "Kotak membulat"]] },
-  pos: { label: "Posisi tombol", options: [["right", "Kanan"], ["left", "Kiri"]] },
-  enter: { label: "Animasi tombol saat muncul", options: [["none", "Tanpa"], ["fade", "Memudar"], ["pop", "Membesar"], ["slide", "Naik"], ["bounce", "Memantul"]] },
-  panel: { label: "Sudut jendela chat", options: [["sharp", "Tajam"], ["soft", "Sedikit bulat"], ["round", "Sangat bulat"]] },
-  open: { label: "Animasi jendela dibuka", options: [["none", "Tanpa"], ["fade", "Memudar"], ["slide", "Naik"], ["pop", "Membesar"]] },
-  bubble: { label: "Bentuk gelembung pesan", options: [["round", "Bulat"], ["soft", "Sedikit bulat"], ["square", "Kotak"], ["tail", "Dengan ekor"]] },
-  msg: { label: "Animasi pesan baru", options: [["none", "Tanpa"], ["fade", "Memudar"], ["slide", "Naik"], ["pop", "Membesar"]] },
+  launcher: { label: "Bentuk", options: [["pill", "Pil dengan teks"], ["circle", "Bulat"], ["square", "Kotak membulat"]] },
+  pos: { label: "Posisi", options: [["right", "Kanan"], ["left", "Kiri"]] },
+  enter: { label: "Animasi muncul", options: [["none", "Tanpa"], ["fade", "Memudar"], ["pop", "Membesar"], ["slide", "Naik"], ["bounce", "Memantul"]] },
+  panel: { label: "Sudut", options: [["sharp", "Tajam"], ["soft", "Sedikit bulat"], ["round", "Sangat bulat"]] },
+  open: { label: "Animasi buka", options: [["none", "Tanpa"], ["fade", "Memudar"], ["slide", "Naik"], ["pop", "Membesar"]] },
+  bubble: { label: "Bentuk gelembung", options: [["round", "Bulat"], ["soft", "Sedikit bulat"], ["square", "Kotak"], ["tail", "Dengan ekor"]] },
+  msg: { label: "Animasi pesan", options: [["none", "Tanpa"], ["fade", "Memudar"], ["slide", "Naik"], ["pop", "Membesar"]] },
 } as const;
 
 export type StyleKey = keyof typeof STYLE_FIELDS;

@@ -410,13 +410,18 @@ export async function removeChatKeyAction(formData: FormData): Promise<Flash> {
   return ok(list.length ? "Key dihapus." : "Semua key dihapus. Chatbot tidak bisa menjawab sampai ada key baru.");
 }
 
-/** Tes satu nama model. Pakai token yang baru diketik kalau ada, kalau tidak pakai yang tersimpan. */
+/** Key untuk tes & saran model: key chatbot pertama (token tes lama dipakai hanya sebagai cadangan). */
+async function getTestKey(): Promise<string | null> {
+  return (await getChatKeys())[0] ?? (await getChatKey());
+}
+
+/** Tes satu nama model memakai key chatbot pertama. */
 export async function testModelAction(formData: FormData): Promise<Flash> {
   await requireAdmin();
   const typed = str(formData, "key");
-  const key = typed || (await getChatKey());
-  if (!key) return err("Isi token dulu.");
-  if (!validChatToken(key)) return err("Token tidak valid. Tempel token utuh tanpa spasi.");
+  const key = typed || (await getTestKey());
+  if (!key) return err("Tambahkan key Gemini dulu.");
+  if (!validChatToken(key)) return err("Key tidak valid. Tempel key utuh tanpa spasi.");
   const model = str(formData, "model");
   if (!validModelName(model)) return err("Nama model tidak valid.");
   const t = await testChatModel(model, key);
@@ -433,7 +438,7 @@ export async function saveModelsAction(formData: FormData): Promise<Flash> {
   // Hanya tolak kalau modelnya memang salah (400/404) atau token ditolak (401/403); gangguan
   // sementara dari Google (429 kuota, 500/503, timeout) tidak menghalangi simpan.
   let warning: string | undefined;
-  const key = await getChatKey();
+  const key = await getTestKey();
   if (key) {
     const t = await testChatModel(uniq[0], key);
     if (!t.ok) {
@@ -521,10 +526,10 @@ export async function resetPromptAction(): Promise<Flash> {
   return ok("Prompt tersimpan dihapus. Isi bawaan dimuat di editor; klik Simpan supaya dipakai chatbot.");
 }
 
-/** Saran nama model dari Google, pakai token yang tersimpan. Kosong kalau token belum diisi. */
+/** Saran nama model dari Google, pakai key chatbot pertama. Kosong kalau belum ada key. */
 export async function suggestModelsAction(): Promise<string[]> {
   await requireAdmin();
-  const key = await getChatKey();
+  const key = await getTestKey();
   if (!key) return [];
   return listGoogleModels(key);
 }

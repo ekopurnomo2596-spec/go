@@ -84,7 +84,7 @@ export function ModelsForm({ initial, hasKey }: { initial: string[]; hasKey: boo
               type="button"
               className={"ghost" + (testRow === m ? " is-loading" : "")}
               disabled={busy || !hasKey}
-              title={hasKey ? "Tes model ini" : "Isi token Gemini dulu"}
+              title={hasKey ? "Tes model ini" : "Tambahkan key Gemini dulu"}
               onClick={() => testOne(m)}
             >
               Tes
@@ -130,7 +130,7 @@ export function ModelsForm({ initial, hasKey }: { initial: string[]; hasKey: boo
           </button>
           {sugg && (
             <div className="ma-sugg">
-              {sugg.length === 0 && <span className="ma-hint" style={{ margin: 0 }}>Tidak ada saran (token belum valid atau Google sedang bermasalah).</span>}
+              {sugg.length === 0 && <span className="ma-hint" style={{ margin: 0 }}>Tidak ada saran (key tidak valid atau Google sedang bermasalah).</span>}
               {sugg
                 .filter((s) => !models.includes(s))
                 .map((s) => (
