@@ -45,9 +45,6 @@ button,input{font-family:inherit}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .echat-sent{align-self:flex-end;margin:-4px 6px 0;font-size:11px;color:var(--mute)}
 .echat-retry{align-self:flex-end;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font:inherit;font-size:12px;font-weight:600;background:var(--card);color:var(--text);cursor:pointer}
-.echat-q{margin:6px 8px;font-size:12px;line-height:1.4;text-align:center;opacity:.75}
-.echat-tm{display:block;font-size:11px;font-weight:700;opacity:.65;margin-bottom:2px}
-.echat-tm .echat-ic{vertical-align:-2px;margin-right:2px}
 .echat-retry:hover{border-color:var(--lineh)}
 .echat-retry:disabled{opacity:.5;cursor:default}
 .echat-lk{display:inline-flex;align-items:center;gap:7px;max-width:100%;vertical-align:middle}
@@ -161,10 +158,7 @@ var knownName="";try{knownName=sessionStorage.getItem("echat:name")||""}catch(e)
 var arc=null;try{arc=JSON.parse(sessionStorage.getItem("echat:arc")||"null")}catch(e){}
 var cid="";try{cid=sessionStorage.getItem("echat:cid")||""}catch(e){}
 if(!/^[a-f0-9]{16}$/.test(cid)){var ra=new Uint8Array(8);if(window.crypto&&crypto.getRandomValues)crypto.getRandomValues(ra);else for(var ri=0;ri<8;ri++)ra[ri]=Math.floor(Math.random()*256);cid=Array.prototype.map.call(ra,function(b){return("0"+b.toString(16)).slice(-2)}).join("");try{sessionStorage.setItem("echat:cid",cid)}catch(e){}}
-var toTeam=false,pend=0;// true = pesan sedang diteruskan ke admin (bukan dijawab AI): jangan tampilkan "Mengetik"
-var qline="";var live=false;try{live=sessionStorage.getItem("echat:live")==="1"}catch(e){}
-var lastTeam=0;try{lastTeam=+sessionStorage.getItem("echat:team")||0}catch(e){}
-var lastAct=Date.now();
+var pend=0;
 var hi=$("echat-hi"),hiTimer,hiAuto;
 
 function loadHistory(){
@@ -198,16 +192,14 @@ function render(){
 var t=et(),html='<p class="echat-msg echat-intro">'+esc(t.intro)+'</p>';
 if(!msgs.length&&!loading)html+='<div class="echat-qs">'+qs().map(function(q,i){return '<button type="button" class="echat-qb" data-q="'+i+'">'+esc(q)+'</button>'}).join("")+'</div>';
 msgs.forEach(function(m,i){
-html+='<p class="echat-msg '+(m.role==="user"?"echat-u":"echat-a")+'">'+(m.human?'<b class="echat-tm"><svg class="echat-ic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg> EMAHAIRSHOP Customer Service</b>':'')+(m.role==="user"?esc(m.content):linkify(m.content))+'</p>';
-if(m.role==="user"&&m.sent&&i===msgs.length-1)html+='<span class="echat-sent">'+esc(sd())+'</span>';
+html+='<p class="echat-msg '+(m.role==="user"?"echat-u":"echat-a")+'">'+(m.role==="user"?esc(m.content):linkify(m.content))+'</p>';
 if(m.role==="user"&&!loading&&i===msgs.length-2&&msgs[i+1].err)html+='<button type="button" class="echat-retry" id="echat-retry">\u21BB '+esc(rt())+'</button>';
 if(m.wa)html+='<a class="echat-wa" href="'+m.wa+'" target="_blank" rel="noopener">'+esc(t.wa)+'</a>';
 });
-if(qline&&!loading)html+='<p class="echat-q">\u23F3 '+esc(qline)+'</p>';
-if(loading&&!toTeam)html+='<p id="echat-think" role="status" aria-label="'+esc(t.think)+'"><span class="echat-dots" aria-hidden="true"><span></span><span></span><span></span></span></p>';
+if(loading)html+='<p id="echat-think" role="status" aria-label="'+esc(t.think)+'"><span class="echat-dots" aria-hidden="true"><span></span><span></span><span></span></span></p>';
 body.innerHTML=html;
 body.scrollTop=body.scrollHeight;
-if(sendBtn)sendBtn.disabled=loading&&!toTeam;
+if(sendBtn)sendBtn.disabled=loading;
 }
 function labels(){
 var t=et();
@@ -273,18 +265,15 @@ msgs.forEach(function(m,i){
 if(m.err||m.skip)return;
 var nx=msgs[i+1];
 if(m.role==="user"&&nx&&nx.err)return;
-out.push({role:m.role,content:m.human?"[Team reply] "+m.content:m.content});
+out.push({role:m.role,content:m.content});
 });
 return out.slice(-24);
 }
 // Kirim pertanyaan terakhir (yang sudah ada di msgs) ke server. Dipakai oleh kirim biasa dan tombol "Kirim ulang".
-// Mode admin aktif = pesan tim terakhir bukan penutup dan masih baru (30 menit). Kalau tidak, AI menjawab lagi.
-function humanOn(){for(var i=msgs.length-1;i>=0;i--){var m=msgs[i];if(m.human)return !m.close&&(Date.now()-(m.at||0)<1800000)}return false}
 function ask(text,tries,um){
-tries=tries||0;lastAct=Date.now();
+tries=tries||0;
 if(!um){um=msgs[msgs.length-1];if(!um||um.role!=="user")um=null}
 if(!tries)pend++;
-toTeam=live||humanOn();
 loading=true;
 render();
 saveHistory();
@@ -293,15 +282,12 @@ function fail(kind){var c=kind==="rate"?t.rate:kind==="busy"?t.busy:t.error;msgs
 var retryAuto=false;
 var ac=window.AbortController?new AbortController():null,to=setTimeout(function(){if(ac)ac.abort()},28000);
 fetch(API+"/api/chat",{method:"POST",signal:ac?ac.signal:undefined,headers:{"Content-Type":"application/json"},
-body:JSON.stringify({lang:LG,name:knownName,arc:arc,cid:cid,human:humanOn(),messages:payload()})})
+body:JSON.stringify({lang:LG,name:knownName,arc:arc,cid:cid,messages:payload()})})
 .then(function(r){return r.json().catch(function(){return{}})})
 .then(function(data){
 if(typeof data.name==="string"&&data.name){knownName=data.name;try{sessionStorage.setItem("echat:name",knownName)}catch(e){}}
 if(data.arc&&typeof data.arc==="object"&&typeof data.arc.sig==="string"){arc=data.arc;try{sessionStorage.setItem("echat:arc",JSON.stringify(arc))}catch(e){}}
-if(typeof data.q==="string")qline=data.q;
-if(data.live&&!live){live=true;try{sessionStorage.setItem("echat:live","1")}catch(e){}}
 if(data.error){if(data.error==="error"&&tries<2){retryAuto=true;return}fail(data.error)}
-else if(data.handoff){if(um)um.sent=true}
 else if(data.offtopic){msgs.push({role:"assistant",content:t.offtopic});sayAria(t.offtopic);notifyNewMessage()}
 else if(typeof data.reply==="string"&&data.reply){msgs.push({role:"assistant",content:data.reply,wa:data.wa?waLink(waCtx(text)):undefined});sayAria(data.reply);notifyNewMessage()}
 else{if(tries<2){retryAuto=true;return}fail("error")}
@@ -309,12 +295,12 @@ else{if(tries<2){retryAuto=true;return}fail("error")}
 .catch(function(){if(tries<2){retryAuto=true;return}fail("error")})
 .finally(function(){clearTimeout(to);
 if(retryAuto){retryAuto=false;setTimeout(function(){ask(text,tries+1,um)},1500);return}
-pend--;if(pend<=0){pend=0;loading=false;toTeam=false}render();saveHistory()});
+pend--;if(pend<=0){pend=0;loading=false}render();saveHistory()});
 }
 form.addEventListener("submit",function(e){
 e.preventDefault();
 var text=input.value.trim().slice(0,300);
-if(!text||(loading&&!toTeam))return;
+if(!text||loading)return;
 input.value="";
 // Kalau jawaban sebelumnya error lalu pengunjung mengetik hal baru, buang pesan error lamanya.
 var lm=msgs[msgs.length-1];
@@ -322,26 +308,6 @@ if(lm&&lm.err){msgs.pop();var pu=msgs[msgs.length-1];if(pu&&pu.role==="user")pu.
 msgs.push({role:"user",content:text});
 ask(text);
 });
-// Balasan dari tim (dikirim admin lewat Telegram): diambil berkala selama percakapan sudah ditandai ke admin.
-function pollTeam(){
-if(!live||loading||document.hidden||Date.now()-lastAct>1800000)return;
-fetch(API+"/api/chat?poll="+cid+"&after="+lastTeam,{cache:"no-store"})
-.then(function(r){return r.json()})
-.then(function(d){
-if(!d)return;
-var qc=false;
-if(typeof d.q==="string"&&d.q!==qline){qline=d.q;qc=true}
-var added=false;
-(d.m||[]).forEach(function(x){if(x&&x.id>lastTeam&&typeof x.text==="string"){lastTeam=x.id;msgs.push({role:"assistant",content:x.text,human:true,close:!!x.close,at:Date.now()});added=true;sayAria(x.text);if(x.close){qline="";live=false;try{sessionStorage.setItem("echat:live","0")}catch(e){}}}});
-if(!added&&!qc)return;
-if(added){try{sessionStorage.setItem("echat:team",String(lastTeam))}catch(e){}
-saveHistory();
-notifyNewMessage()}
-if(!panel.classList.contains("hide"))render();
-})
-.catch(function(){});
-}
-setInterval(pollTeam,4000);
 // Tombol pertanyaan cepat: diklik = terkirim seperti diketik; tombolnya hilang karena chat sudah berjalan.
 body.addEventListener("click",function(e){
 var q=e.target.closest&&e.target.closest(".echat-qb");

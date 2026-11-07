@@ -1,4 +1,4 @@
-// Chatbot EMAHAIRSHOP: kirim pesan, polling balasan, ?cfg=1, ambil alih tim lewat Telegram. Dijalankan dari project go (pages/api/chat.js).
+// Chatbot EMAHAIRSHOP: kirim pesan, ?cfg=1. Dijalankan dari project go (pages/api/chat.js).
 // Pelacakan kunjungan dan laporan harian tetap di portal.
 // Isi prompt (Info perusahaan + aturan) diatur dari dashboard go (halaman Pengaturan Chatbot) dan dibaca dari Redis,
 // lihat getSystem() di bawah. Beda dari chat di blog (yang jawab dari artikel), di sini AI juga
@@ -193,7 +193,6 @@ function parseAnswer(raw) {
   const wa = /\[\[WA\]\]/i.test(raw);
   const urgent = /\[\[URGENT\]\]/i.test(raw);
   const fraud = /\[\[FRAUD\]\]/i.test(raw);
-  const human = /\[\[HUMAN\]\]/i.test(raw);
   const leadM = raw.match(/\[\[LEAD:([\s\S]*?)\]\]/i);
   const draftM = raw.match(/\[\[ADMIN_DRAFT:([\s\S]*?)\]\]/i);
   const nameM = raw.match(/\[\[NAME:([\s\S]*?)\]\]/i);
@@ -208,7 +207,7 @@ function parseAnswer(raw) {
     .replace(/^\s{0,3}#{1,6}\s+/gm, "")
     .replace(/^\s*\*\s+/gm, "- ")
     .trim();
-  return { text, offtopic, wa, urgent, fraud, human, lead, draft, name: nameM ? validName(nameM[1]) : "", unknown: unkM ? unkM[1].replace(/\s+/g, " ").trim().slice(0, 100) : "" };
+  return { text, offtopic, wa, urgent, fraud, lead, draft, name: nameM ? validName(nameM[1]) : "", unknown: unkM ? unkM[1].replace(/\s+/g, " ").trim().slice(0, 100) : "" };
 }
 
 // ---------------- Notifikasi admin untuk chat yang ditandai urgent/marah ----------------
@@ -238,8 +237,8 @@ const TELEGRAM_VISIT_CHAT_ID = process.env.TELEGRAM_VISIT_CHAT_ID || TELEGRAM_CH
 const VISIT_NOTIFY_SILENT = process.env.VISIT_NOTIFY_SILENT === "on";
 const visitedMem = new Set(); // cadangan in-memory kalau KV tidak diset: "day|ip"
 
-// Penyimpanan bersama (Upstash Redis / Vercel KV lewat REST) supaya webhook Telegram dan polling pengunjung
-// yang bisa jatuh di instance Vercel BERBEDA tetap melihat data yang sama (balasan admin, chat aktif, antrean).
+// Penyimpanan bersama (Upstash Redis / Vercel KV lewat REST) supaya semua instance Vercel
+// yang bisa jatuh di instance Vercel BERBEDA tetap melihat data yang sama (statistik, cooldown key, dan lainnya).
 // Env: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN (atau KV_REST_API_URL + KV_REST_API_TOKEN).
 // Kalau tidak diset, semuanya jatuh balik ke memori per instance (bisa gagal kalau beda instance).
 const KV_URL = (process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || "").replace(/\/$/, "");
@@ -306,7 +305,7 @@ const ALERT_LEAD_PER_HOUR = Number(process.env.ALERT_LEAD_PER_HOUR) || 20;
 const ALERT_SILENT_OFFHOURS = process.env.ALERT_SILENT_OFFHOURS === "on";
 
 const alertState = new Map(); // "kind|ip" -> { first, count, msgId, pinged }
-const sentLog = { urgent: [], fraud: [], lead: [], human: [] }; // timestamp pesan baru per jenis
+const sentLog = { urgent: [], fraud: [], lead: [] }; // timestamp pesan baru per jenis
 let suppressedTotal = 0;
 
 function globalBudgetOk(kind) {
@@ -426,77 +425,6 @@ function formatLead(raw) {
   return rows.length ? rows.join("\n") : "- (detail belum lengkap)";
 }
 
-// Antrean: pengunjung yang minta bicara admin saat admin masih melayani chat lain.
-const waiting = new Map(); // cadangan memori: cid -> { name, lang, at }
-const WAIT_TTL_MS = 2 * 3_600_000;
-async function waitingList() {
-  return parseWaiting(await kv(["HGETALL", "waiting"]));
-}
-// Pengunjung dianggap sudah pergi (tab ditutup, chat dihapus/tes) kalau tidak polling > 3 menit: tidak dihitung di antrean.
-const WAIT_SEEN_MS = 3 * 60_000;
-const isFresh = (v) => Date.now() - (v.seen || v.at) <= WAIT_SEEN_MS;
-function parseWaiting(h, includeStale) {
-  const now = Date.now();
-  if (h !== undefined) {
-    const pairs = Array.isArray(h) ? h : Object.entries(h || {}).flat();
-    const out = [];
-    for (let i = 0; i + 1 < pairs.length; i += 2) {
-      try {
-        const v = JSON.parse(pairs[i + 1]);
-        if (now - v.at <= WAIT_TTL_MS && (includeStale || isFresh(v))) out.push([pairs[i], v]);
-      } catch {}
-    }
-    return out.sort((a, b) => a[1].at - b[1].at);
-  }
-  for (const [k, v] of waiting) if (now - v.at > WAIT_TTL_MS) waiting.delete(k);
-  return [...waiting.entries()].filter(([, v]) => includeStale || isFresh(v));
-}
-async function waitingAdd(cid, v) {
-  waiting.set(cid, v);
-  await kvPipe([["HSET", "waiting", cid, JSON.stringify(v)], ["EXPIRE", "waiting", 7200]]);
-}
-// Nomor antrean pengunjung ini (0 = tidak ada antrean: admin kosong atau pengunjung ini yang sedang dilayani).
-async function queuePos(cid, name, lang) {
-  const act = await getActive();
-  if (!act || act.cid === cid) return 0;
-  const list = await waitingList();
-  if (!list.some(([k]) => k === cid)) {
-    const v = { name: name || "", lang: lang || "id", at: Date.now(), seen: Date.now() };
-    await waitingAdd(cid, v);
-    list.push([cid, v]);
-  }
-  return list.findIndex(([k]) => k === cid) + 1;
-}
-async function queueNote(cid, name, lang) {
-  const pos = await queuePos(cid, name, lang);
-  if (!pos) return "";
-  const act = await getActive();
-  return `⏳ ANTREAN #${pos}: kamu sedang melayani ${(act && act.name) || "pengunjung lain"}. Tap tombol di bawah kalau sudah siap.`;
-}
-// Estimasi tunggu untuk pengunjung (menit per chat bisa diatur lewat env QUEUE_MIN_PER_CHAT, default 5).
-const QUEUE_MIN_PER_CHAT = Number(process.env.QUEUE_MIN_PER_CHAT) || 5;
-const QUEUE_TEXT = {
-  id: (n, m) => `Saat ini admin sedang melayani pengunjung lain. Anda berada di antrean ke-${n}, estimasi sekitar ${m} menit.`,
-  en: (n, m) => `Our admin is currently helping another visitor. You are #${n} in the queue, estimated wait about ${m} minutes.`,
-  it: (n, m) => `Il nostro admin sta assistendo un altro visitatore. Sei il numero ${n} in coda, attesa stimata di circa ${m} minuti.`,
-  es: (n, m) => `Nuestro administrador está atendiendo a otro visitante. Eres el número ${n} en la cola, espera estimada de unos ${m} minutos.`,
-  fr: (n, m) => `Notre administrateur aide actuellement un autre visiteur. Vous êtes n°${n} dans la file, attente estimée d'environ ${m} minutes.`,
-  de: (n, m) => `Unser Admin betreut gerade einen anderen Besucher. Sie sind Nr. ${n} in der Warteschlange, geschätzte Wartezeit etwa ${m} Minuten.`,
-  ru: (n, m) => `Администратор сейчас помогает другому посетителю. Вы ${n}-й в очереди, ожидание примерно ${m} мин.`,
-};
-function queueLine(langCode, pos) {
-  const f = QUEUE_TEXT[String(langCode || "").slice(0, 2).toLowerCase()] || QUEUE_TEXT.id;
-  return f(pos, pos * QUEUE_MIN_PER_CHAT);
-}
-// Teks status antrean untuk satu pengunjung ("" kalau tidak sedang mengantre). Dihitung ulang tiap polling,
-// jadi angkanya turun sendiri saat admin menutup chat lain.
-function queueStatus(cid, act, list) {
-  if (act && act.cid === cid) return "";
-  const i = list.findIndex(([k]) => k === cid);
-  if (i < 0) return "";
-  const ahead = i + (act ? 1 : 0); // yang dilayani sekarang + yang mengantre di depan
-  return ahead > 0 ? queueLine(list[i][1].lang, ahead) : "";
-}
 // Bahasa pengunjung dari pesan terbarunya (lebih akurat daripada bahasa tampilan situs); cadangan: bahasa situs.
 const LANG_CODE_BY_NAME = { Indonesian: "id", English: "en", Italian: "it", Spanish: "es", French: "fr", German: "de", Russian: "ru" };
 function visitorLang(history, siteLang) {
@@ -509,33 +437,15 @@ function visitorLang(history, siteLang) {
   }
   return String(siteLang || "").slice(0, 2).toLowerCase() || "id";
 }
-async function queueView() {
-  const list = await waitingList();
-  if (!list.length) return { text: "⏳ Antrean kosong.", markup: { inline_keyboard: [] } };
-  const rows = list.map(([cid, v], i) => [
-    { text: `✅ #${i + 1} ${v.name || cid.slice(0, 4)}: ambil alih`, callback_data: `connect:${cid}:${v.lang}` },
-    { text: "✖", callback_data: `drop:${cid}` },
-  ]);
-  rows.push([{ text: "🧹 Bersihkan semua", callback_data: "clearq" }]);
-  return { text: `⏳ Antrean (${list.length}) menunggu admin:`, markup: { inline_keyboard: rows } };
-}
 
 async function buildAlert(kind, count, ctx) {
   const title =
     kind === "fraud" ? "🚨 EMAHAIRSHOP: DUGAAN PENIPUAN / NOMOR TIDAK RESMI"
     : kind === "lead" ? (/(?:^|;)\s*wa\s*=/i.test(ctx.lead || "") ? "📞 EMAHAIRSHOP: MINTA HARGA + TINGGALKAN NOMOR WA (minta dihubungi)" : "🟢 EMAHAIRSHOP: PENGUNJUNG BERNAMA MINTA HARGA")
-    : kind === "human" ? "🙋 EMAHAIRSHOP: PENGUNJUNG MINTA BICARA DENGAN ADMIN"
     : "⚠️ EMAHAIRSHOP AI chat ditandai URGENT";
   const cnt = count > 1 ? ` (${count} pesan dalam sesi ini)` : "";
   const head = `${title}${cnt}\n${ctx.when} · bahasa: ${ctx.lang || "-"}${inOfficeHours() ? "" : "\n🌙 Di luar jam CS (Sen–Sab 08.00–17.00 WIB)"}`;
   const lines = [head];
-  if (ctx.cid) {
-    lines.push(`ID: ${ctx.cid}`);
-  }
-  if (ctx.cid && ctx.wantsHuman) {
-    const q = await queueNote(ctx.cid, ctx.leadName, ctx.langCode);
-    if (q) lines.push(q);
-  }
   if (kind === "lead") lines.push("\nDetail:\n" + formatLead(ctx.lead));
   lines.push("\nPercakapan:\n" + ctx.transcript);
   lines.push("\nBalasan AI: " + ctx.reply.slice(0, 400));
@@ -586,7 +496,7 @@ async function notifyAdmin(kind, ip, ctx) {
     const now = Date.now();
     // Lead: kunci = IP + nama, jadi nama berbeda dari IP/jaringan yang sama (kantor, wifi bersama, HP
     // yang sama dipakai tes) tetap dihitung orang berbeda dan memicu kartu baru yang berbunyi.
-    const key = kind + "|" + ip + (kind === "lead" && ctx.leadName ? "|" + ctx.leadName.toLowerCase() : "") + (kind === "human" && ctx.cid ? "|" + ctx.cid : "");
+    const key = kind + "|" + ip + (kind === "lead" && ctx.leadName ? "|" + ctx.leadName.toLowerCase() : "");
     let st = alertState.get(key);
     if (!st || now - st.first > ALERT_WINDOW_MS) st = { first: now, count: 0, msgId: null, pinged: false };
     st.count++;
@@ -608,14 +518,8 @@ async function notifyAdmin(kind, ip, ctx) {
       sentLog[kind].push(now);
       if (reping) st.pinged = true;
       let delivered = false;
-      // Pengunjung minta bicara admin (baik kartunya jenis "human" maupun kebetulan ditandai urgent/fraud
-      // juga): tambahkan tombol satu-klik, supaya admin tidak perlu mengetik reply manual hanya untuk
-      // menyambungkan diri ke chat pengunjung.
-      const keyboard = ctx.wantsHuman && ctx.cid
-        ? { inline_keyboard: [[{ text: "✅ Saya ambil alih (connect)", callback_data: `connect:${ctx.cid}:${ctx.langCode || "id"}` }]] }
-        : undefined;
       if (telegramEnabled()) {
-        const id = await tgSend(text, silent, keyboard);
+        const id = await tgSend(text, silent);
         if (id) {
           st.msgId = id;
           delivered = true;
@@ -690,32 +594,6 @@ function thinkingFor(model) {
 }
 
 const LANG_NAMES = { en: "English", id: "Indonesian", it: "Italian", es: "Spanish", fr: "French", de: "German", ru: "Russian" };
-// Pesan otomatis dikirim ke pengunjung saat admin tap tombol "Saya ambil alih" di Telegram (tanpa ketik manual).
-const CONNECT_TEXT = {
-  id: "Admin sudah bergabung di chat ini. Ada yang bisa saya bantu lebih lanjut?",
-  en: "An admin has joined this chat. How can I help you further?",
-  it: "Un admin si è unito a questa chat. Come posso aiutarti ulteriormente?",
-  es: "Un administrador se ha unido a este chat. ¿En qué más puedo ayudarte?",
-  fr: "Un administrateur a rejoint cette discussion. Comment puis-je vous aider davantage ?",
-  de: "Ein Admin ist diesem Chat beigetreten. Wie kann ich Ihnen weiterhelfen?",
-  ru: "Администратор присоединился к чату. Чем ещё могу помочь?",
-};
-const CLOSE_TEXT = {
-  id: "Obrolan dengan admin sudah ditutup. Terima kasih sudah menghubungi EMAHAIRSHOP. Kalau ada pertanyaan lagi, silakan tulis di sini.",
-  en: "The chat with our admin has ended. Thank you for contacting EMAHAIRSHOP. If you have more questions, just write here.",
-  it: "La chat con l'admin è terminata. Grazie per aver contattato EMAHAIRSHOP. Per altre domande, scrivi pure qui.",
-  es: "El chat con el administrador ha finalizado. Gracias por contactar a EMAHAIRSHOP. Si tienes más preguntas, escribe aquí.",
-  fr: "La discussion avec l'administrateur est terminée. Merci d'avoir contacté EMAHAIRSHOP. Pour toute autre question, écrivez ici.",
-  de: "Der Chat mit dem Admin wurde beendet. Vielen Dank für Ihre Nachricht an EMAHAIRSHOP. Bei weiteren Fragen schreiben Sie einfach hier.",
-  ru: "Чат с администратором завершён. Спасибо, что обратились в EMAHAIRSHOP. Если появятся вопросы, пишите сюда.",
-};
-function closeText(langCode) {
-  return CLOSE_TEXT[String(langCode || "").slice(0, 2).toLowerCase()] || CLOSE_TEXT.id;
-}
-function connectText(langCode) {
-  return CONNECT_TEXT[String(langCode || "").slice(0, 2).toLowerCase()] || CONNECT_TEXT.id;
-}
-
 // Tanggal & jam saat ini (WIB/GMT+7, zona waktu bisnis EMA HAIR SHOP), dihitung ulang
 // setiap request supaya selalu akurat (bukan dari pengetahuan model yang bisa basi).
 function nowInfo() {
@@ -869,13 +747,6 @@ function extractPhone(text) {
 // Deteksi "minta bicara dengan admin/manusia" langsung dari pesan pengunjung, tidak bergantung pada AI
 // menandai [[HUMAN]] (AI bisa lupa menambahkan marker walau balasannya sudah terdengar benar). Dipakai
 // sebagai jaring pengaman tambahan, bukan pengganti marker AI.
-const HUMAN_WHO_RE = /\badmin|\bcs\b|\btim\b|\bteam\b|manusia|orang asli|real person|real admin|\bhuman\b|\bagent\b|\bstaff\b|\bstaf\b/i;
-const HUMAN_TALK_RE = /\b(bicara|ngomong|ngobrol|chat|hubungi|hubungkan|sambungkan|connect|talk|speak|terhubung)\w*/i;
-function wantsHuman(text) {
-  const t = String(text || "");
-  return HUMAN_WHO_RE.test(t) && HUMAN_TALK_RE.test(t);
-}
-
 // Arsip percakapan ke Telegram: SATU PESAN PER PERCAKAPAN yang terus diedit.
 //  - Pertukaran pertama dikirim sebagai pesan baru (senyap). Tiap pertukaran berikutnya MENGEDIT pesan yang
 //    sama, jadi tidak perlu menunggu tab ditutup atau timer, dan tidak ada yang hilang.
@@ -1095,7 +966,7 @@ const STATS_MARK = "📊 DATA-STATISTIK (jangan dihapus/diedit)";
 const wibDayOffset = (deltaDays) => new Date(Date.now() + 7 * 3_600_000 + (deltaDays || 0) * 86_400_000).toISOString().slice(0, 10);
 const wibDay = () => wibDayOffset(0);
 const wibYesterday = () => wibDayOffset(-1);
-const freshStats = () => ({ day: wibDay(), chats: 0, msgs: 0, pageviews: 0, visitors: 0, vh: {}, visits: [], vc: {}, vr: {}, vd: {}, leads: 0, leadsWa: 0, urgent: 0, fraud: 0, off: 0, human: 0, fail: 0, quota: 0, attemptFail: 0, langs: {}, countries: {}, products: {}, unknown: [], qs: [] });
+const freshStats = () => ({ day: wibDay(), chats: 0, msgs: 0, pageviews: 0, visitors: 0, vh: {}, visits: [], vc: {}, vr: {}, vd: {}, leads: 0, leadsWa: 0, urgent: 0, fraud: 0, off: 0, fail: 0, quota: 0, attemptFail: 0, langs: {}, countries: {}, products: {}, unknown: [], qs: [] });
 let stats = freshStats();
 let statsDirty = false, statsLoaded = false, statsLastSave = 0, statsMsgId = null;
 function S() {
@@ -1124,7 +995,7 @@ function statsText() {
       `📅 ${s.day}`,
       `👀 Pengunjung ${s.visitors} · Kunjungan halaman ${s.pageviews}`,
       `💬 Percakapan ${s.chats} · Pesan ${s.msgs}`,
-      `🟢 Minta harga ${s.leads} (WA ${s.leadsWa}) · ↩️ Dibalas tim ${s.human}`,
+      `🟢 Minta harga ${s.leads} (WA ${s.leadsWa})`,
       `⚠️ Urgent ${s.urgent} · 🚨 Penipuan ${s.fraud} · 🚫 Di luar topik ${s.off}`,
       `🌐 Bahasa: ${top(s.langs)}`,
       `🤖 AI gagal ${s.fail} · kuota habis ${s.quota} · percobaan gagal ${s.attemptFail}`,
@@ -1369,7 +1240,6 @@ async function buildReport() {
   L.push(`CHAT`);
   L.push(`Percakapan: ${s.chats}${vs(s.chats, yv("chats"))}`);
   L.push(`Pesan pengunjung: ${s.msgs}${vs(s.msgs, yv("msgs"))}`);
-  L.push(`Dibalas tim lewat Telegram: ${s.human}`);
   L.push("");
   L.push(`MINAT BELI`);
   L.push(`Kartu minta harga: ${s.leads}${vs(s.leads, yv("leads"))}`);
@@ -1402,157 +1272,7 @@ async function buildReport() {
   return L.join("\n");
 }
 
-// ---------------- Balas pengunjung dari Telegram ----------------
-// Admin membalas (Reply) kartu notifikasi di Telegram; kartu memuat "ID: <cid>" milik browser pengunjung.
-// Webhook Telegram menyimpan balasan di memori, browser pengunjung mengambilnya lewat polling GET ?poll=.
-// Tanpa database, jadi "best effort": kalau server restart sebelum pengunjung mengambilnya, pesan hilang.
-// Karena itu pengunjung yang menerima balasan memicu konfirmasi ✅ ke admin; tanpa ✅ berarti belum terbaca.
-const inbox = new Map(); // cid -> { items: [{id, text, admMsg, notified}], at }
-let inboxSeq = 0;
-async function queueReply(cid, text, admMsg, extra) {
-  const id = Math.max(Date.now(), inboxSeq + 1);
-  inboxSeq = id;
-  const k = "inbox:" + cid;
-  const r = await kvPipe([["RPUSH", k, JSON.stringify({ id, text, admMsg, close: !!(extra && extra.close) })], ["LTRIM", k, -20, -1], ["EXPIRE", k, 7200]]);
-  await saveConv(cid, "", [{ r: "bot", n: "Tim", x: text }]);
-  if (r) return;
-  let b = inbox.get(cid);
-  if (!b) { b = { items: [], at: 0 }; inbox.set(cid, b); }
-  b.items.push({ id, text, admMsg, notified: false, close: !!(extra && extra.close) });
-  b.items = b.items.slice(-20);
-  b.at = Date.now();
-  if (inbox.size > 500) for (const [k2, v] of inbox) if (Date.now() - v.at > 2 * 3_600_000) inbox.delete(k2);
-}
-const pollHits = new Map();
-function pollLimited(ip) {
-  const now = Date.now();
-  const list = (pollHits.get(ip) || []).filter((t) => now - t < 60_000);
-  if (list.length >= 30) { pollHits.set(ip, list); return true; }
-  list.push(now);
-  pollHits.set(ip, list);
-  if (pollHits.size > 3000) for (const [k, v] of pollHits) if (!v.some((t) => now - t < 60_000)) pollHits.delete(k);
-  return false;
-}
 const CID_RE = /^[a-f0-9]{16}$/;
-
-// Chat AKTIF: setelah admin tap "Saya ambil alih" atau Reply sebuah kartu, pesan berikutnya cukup diketik
-// biasa (tanpa Reply) dan otomatis masuk ke pengunjung itu. Reply ke kartu pengunjung lain = pindah chat aktif.
-// Disimpan di memori (best effort); kosong lagi kalau server restart atau 2 jam tanpa aktivitas.
-const ACTIVE_TTL_MS = 30 * 60_000; // chat aktif otomatis lepas kalau 30 menit tanpa aktivitas
-let activeChat = { cid: "", name: "", at: 0 }; // cadangan memori kalau KV tidak tersedia
-async function setActive(cid, name, lang) {
-  waiting.delete(cid);
-  activeChat = { cid, name: name || "", lang: lang || "", at: Date.now() };
-  await kvPipe([["SET", "active", JSON.stringify(activeChat), "EX", ACTIVE_TTL_MS / 1000], ["HDEL", "waiting", cid]]);
-}
-async function clearActive() {
-  activeChat = { cid: "", name: "", at: 0 };
-  await kv(["DEL", "active"]);
-}
-async function getActive() {
-  return parseActive(await kv(["GET", "active"]));
-}
-function parseActive(r) {
-  if (typeof r === "string") {
-    try { const o = JSON.parse(r); if (o && o.cid) { activeChat = o; return o; } } catch {}
-  } else if (r === null) {
-    activeChat = { cid: "", name: "", at: 0 };
-    return null;
-  }
-  if (activeChat.cid && Date.now() - activeChat.at > ACTIVE_TTL_MS) activeChat = { cid: "", name: "", at: 0 };
-  return activeChat.cid ? activeChat : null;
-}
-// Penanda "sudah terbaca" berupa reaksi di pesan admin (tidak menambah pesan di chat). Kalau reaksi gagal, kirim ✅ lama.
-async function tgReadMark(admMsg) {
-  const r = await tgRequest("setMessageReaction", { chat_id: TELEGRAM_CHAT_ID, message_id: admMsg, reaction: [{ type: "emoji", emoji: "👌" }] });
-  if (r && r.ok) return;
-  await tgRequest("sendMessage", { chat_id: TELEGRAM_CHAT_ID, text: "✅ Terbaca di chat pengunjung", reply_parameters: { message_id: admMsg, allow_sending_without_reply: true }, disable_notification: true });
-}
-
-async function langOf(cid, hint) {
-  if (hint) return hint;
-  const r = await kv(["GET", "lang:" + cid]);
-  return typeof r === "string" && r ? r : "id";
-}
-// Tutup obrolan: kirim pesan penutup ke pengunjung (browser keluar dari mode admin, AI aktif lagi),
-// lepas dari chat aktif dan antrean.
-// Catat ID kartu Telegram milik satu pengunjung, supaya saat obrolan ditutup SEMUA tombol kartunya ikut hilang
-// (bukan hanya kartu yang kebetulan diketuk).
-async function rememberCard(cid, msgId) {
-  if (!msgId) return;
-  await kvPipe([["RPUSH", "cards:" + cid, String(msgId)], ["LTRIM", "cards:" + cid, -30, -1], ["EXPIRE", "cards:" + cid, 86400]]);
-}
-async function stripCards(cid, exceptId) {
-  const ids = await kv(["LRANGE", "cards:" + cid, 0, -1]);
-  if (Array.isArray(ids)) {
-    for (const id of ids) {
-      if (String(id) === String(exceptId)) continue;
-      await tgRequest("editMessageReplyMarkup", { chat_id: TELEGRAM_CHAT_ID, message_id: Number(id), reply_markup: { inline_keyboard: [] } });
-    }
-  }
-  await kv(["DEL", "cards:" + cid]);
-}
-async function closeChat(cid, langHint, exceptMsgId) {
-  const lang = await langOf(cid, langHint);
-  await queueReply(cid, closeText(lang), 0, { close: true });
-  const act = await getActive();
-  if (act && act.cid === cid) await clearActive();
-  waiting.delete(cid);
-  await kv(["HDEL", "waiting", cid]);
-  try { await stripCards(cid, exceptMsgId); } catch {}
-}
-
-async function handlePoll(req, res, qs) {
-  res.setHeader("Cache-Control", "no-store");
-  const cid = qs.get("poll") || "";
-  const after = Number(qs.get("after")) || 0;
-  if (!CID_RE.test(cid)) return res.status(400).json({});
-  const ip = String(req.headers["x-real-ip"] || req.headers["x-vercel-forwarded-for"] || req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
-  if (pollLimited(ip)) return res.status(429).json({});
-  const out = [];
-  let lr, act, wlist;
-  const pr = await kvPipe([["LRANGE", "inbox:" + cid, 0, -1], ["GET", "active"], ["HGETALL", "waiting"]]);
-  if (pr) {
-    lr = pr[0];
-    act = parseActive(pr[1]);
-    const all = parseWaiting(pr[2], true);
-    const me = all.find(([k]) => k === cid);
-    if (me) {
-      me[1].seen = Date.now(); // tanda "masih di sini"
-      await kv(["HSET", "waiting", cid, JSON.stringify(me[1])]);
-    }
-    wlist = all.filter(([, v]) => isFresh(v));
-  } else {
-    act = await getActive();
-    const mem = waiting.get(cid);
-    if (mem) mem.seen = Date.now();
-    wlist = await waitingList();
-  }
-  if (Array.isArray(lr)) {
-    for (const raw of lr) {
-      let it;
-      try { it = JSON.parse(raw); } catch { continue; }
-      if (!it || !(it.id > after)) continue;
-      out.push({ id: it.id, text: it.text, close: !!it.close });
-      // Tanda terbaca sekali saja per balasan, walau beberapa tab/instance polling bersamaan.
-      if (telegramEnabled() && it.admMsg && (await kv(["SET", "ack:" + cid + ":" + it.id, "1", "NX", "EX", 7200])) === "OK") {
-        await tgReadMark(it.admMsg);
-      }
-    }
-  }
-  const b = inbox.get(cid);
-  if (b) {
-    b.items = b.items.filter((i) => i.id > after);
-    for (const i of b.items) {
-      out.push({ id: i.id, text: i.text, close: !!i.close });
-      if (i.notified) continue;
-      i.notified = true;
-      if (telegramEnabled() && i.admMsg) await tgReadMark(i.admMsg);
-    }
-  }
-  out.sort((a, b2) => a.id - b2.id);
-  return res.status(200).json({ m: out, q: queueStatus(cid, act, wlist) });
-}
 
 // Hapus SEMUA daftar perintah bot (tombol "Menu" di Telegram hanya muncul kalau bot punya perintah).
 // deleteMyCommands tanpa scope hanya menghapus scope default; perintah yang pernah didaftarkan di scope lain
@@ -1598,7 +1318,7 @@ async function handleTelegram(req, res) {
   if (!secret || req.headers["x-telegram-bot-api-secret-token"] !== secret) return res.status(401).json({ ok: false });
   try {
     const cb = (req.body || {}).callback_query;
-    // Tombol "📊 Statistik" / "⏳ Antrean" bisa muncul di notif pengunjung, yang mungkin dikirim ke
+    // Tombol "📊 Statistik" bisa muncul di notif pengunjung, yang mungkin dikirim ke
     // TELEGRAM_VISIT_CHAT_ID (beda dari TELEGRAM_CHAT_ID) -> terima dari kedua chat itu.
     const fromOurChat = cb && cb.message && [String(TELEGRAM_CHAT_ID), String(TELEGRAM_VISIT_CHAT_ID)].includes(String(cb.message.chat.id));
     if (fromOurChat && cb.data === "stats") {
@@ -1618,102 +1338,11 @@ async function handleTelegram(req, res) {
       }
       return res.status(200).json({ ok: true });
     }
-    if (fromOurChat && cb.data === "queue") {
-      const qv = await queueView();
-      await tgRequest("sendMessage", { chat_id: cb.message.chat.id, text: qv.text, reply_markup: qv.markup.inline_keyboard.length ? qv.markup : undefined, disable_notification: true });
-      await tgRequest("answerCallbackQuery", { callback_query_id: cb.id });
-      return res.status(200).json({ ok: true });
-    }
-    if (cb && cb.message && String(cb.message.chat.id) === String(TELEGRAM_CHAT_ID) && typeof cb.data === "string" && cb.data.startsWith("connect:")) {
-      const [, cbCid, cbLang] = cb.data.split(":");
-      if (CID_RE.test(cbCid || "")) {
-        let wName = "";
-        try { const wl = (await waitingList()).find(([k]) => k === cbCid); wName = (wl && wl[1] && wl[1].name) || ""; } catch {}
-        await queueReply(cbCid, connectText(cbLang), cb.message.message_id);
-        await setActive(cbCid, wName, cbLang);
-        await loadStats();
-        S().human++;
-        statsDirty = true;
-        await saveStats(true);
-        // Ganti teks kartu + buang tombolnya, supaya tidak ter-tap dua kali dan jelas sudah ditangani.
-        if ((cb.message.text || "").includes("⏳ Antrean")) {
-          const qv = await queueView();
-          await tgRequest("editMessageText", { chat_id: cb.message.chat.id, message_id: cb.message.message_id, text: qv.text, reply_markup: qv.markup });
-          // Ambil alih dari daftar antrean: kartu antrean tidak punya tombol tutup, jadi kirim kartu sendiri untuk obrolan ini.
-          const card = await tgRequest("sendMessage", {
-            chat_id: cb.message.chat.id,
-            text: `✅ Terhubung dengan ${wName || "pengunjung"}. Ketik langsung di sini untuk membalas.\nID: ${cbCid}`,
-            reply_markup: { inline_keyboard: [[{ text: "🔚 Tutup obrolan", callback_data: `close:${cbCid}:${cbLang || "id"}` }]] },
-            disable_notification: true,
-          });
-          await rememberCard(cbCid, card && card.result && card.result.message_id);
-        } else {
-          const already = (cb.message.text || "").slice(0, 3900) + "\n\n✅ Diambil alih. Ketik pesan langsung di sini untuk membalas.";
-          await tgRequest("editMessageText", { chat_id: cb.message.chat.id, message_id: cb.message.message_id, text: already, reply_markup: { inline_keyboard: [[{ text: "🔚 Tutup obrolan", callback_data: `close:${cbCid}:${cbLang || "id"}` }]] } });
-          await rememberCard(cbCid, cb.message.message_id);
-        }
-        await tgRequest("answerCallbackQuery", { callback_query_id: cb.id, text: "Tersambung ✅ — pesan otomatis terkirim ke pengunjung." });
-      } else {
-        await tgRequest("answerCallbackQuery", { callback_query_id: cb.id, text: "Gagal: ID pengunjung tidak valid." });
-      }
-      return res.status(200).json({ ok: true });
-    }
-    if (cb && cb.message && String(cb.message.chat.id) === String(TELEGRAM_CHAT_ID) && (cb.data === "clearq" || cb.data === "clearq_yes" || cb.data === "clearq_no")) {
-      const edit = (text, markup) => tgRequest("editMessageText", { chat_id: cb.message.chat.id, message_id: cb.message.message_id, text, reply_markup: markup });
-      if (cb.data === "clearq") {
-        const n = (await waitingList()).length;
-        await edit(`⏳ Antrean: yakin bersihkan ${n} orang dari antrean? Mereka tidak ikut ditutup, hanya dihapus dari daftar.`, { inline_keyboard: [[{ text: "Ya, bersihkan", callback_data: "clearq_yes" }, { text: "Batal", callback_data: "clearq_no" }]] });
-        await tgRequest("answerCallbackQuery", { callback_query_id: cb.id });
-      } else {
-        if (cb.data === "clearq_yes") {
-          waiting.clear();
-          await kv(["DEL", "waiting"]);
-        }
-        const qv = await queueView();
-        await edit(qv.text, qv.markup);
-        await tgRequest("answerCallbackQuery", { callback_query_id: cb.id, text: cb.data === "clearq_yes" ? "Antrean dibersihkan." : "Dibatalkan." });
-      }
-      return res.status(200).json({ ok: true });
-    }
-    if (cb && cb.message && String(cb.message.chat.id) === String(TELEGRAM_CHAT_ID) && typeof cb.data === "string" && cb.data.startsWith("drop:")) {
-      const dCid = cb.data.split(":")[1] || "";
-      if (CID_RE.test(dCid)) {
-        waiting.delete(dCid);
-        await kv(["HDEL", "waiting", dCid]);
-      }
-      const qv = await queueView();
-      await tgRequest("editMessageText", { chat_id: cb.message.chat.id, message_id: cb.message.message_id, text: qv.text, reply_markup: qv.markup });
-      await tgRequest("answerCallbackQuery", { callback_query_id: cb.id, text: "Dihapus dari antrean." });
-      return res.status(200).json({ ok: true });
-    }
-    if (cb && cb.message && String(cb.message.chat.id) === String(TELEGRAM_CHAT_ID) && typeof cb.data === "string" && cb.data.startsWith("close:")) {
-      const [, xCid, xLang] = cb.data.split(":");
-      if (CID_RE.test(xCid || "")) {
-        await closeChat(xCid, xLang, cb.message.message_id);
-        const done = (cb.message.text || "").slice(0, 3900) + "\n\n🔚 Obrolan ditutup";
-        await tgRequest("editMessageText", { chat_id: cb.message.chat.id, message_id: cb.message.message_id, text: done, reply_markup: { inline_keyboard: [] } });
-        await tgRequest("answerCallbackQuery", { callback_query_id: cb.id, text: "Obrolan ditutup 🔚 — pesan penutup terkirim ke pengunjung." });
-      } else {
-        await tgRequest("answerCallbackQuery", { callback_query_id: cb.id, text: "Gagal: ID pengunjung tidak valid." });
-      }
-      return res.status(200).json({ ok: true });
-    }
-    if (cb && cb.message && String(cb.message.chat.id) === String(TELEGRAM_CHAT_ID) && typeof cb.data === "string" && cb.data.startsWith("active:")) {
-      const aCid = cb.data.split(":")[1] || "";
-      if (CID_RE.test(aCid)) {
-        const nm = ((cb.message.text || "").match(/^💬 ([^:\n]+?)(?: 🎯)?:/) || [])[1] || "";
-        await setActive(aCid, nm, cb.data.split(":")[2] || "");
-        await tgRequest("answerCallbackQuery", { callback_query_id: cb.id, text: `🎯 Sekarang membalas ${nm || "pengunjung ini"}. Ketik langsung.` });
-      } else {
-        await tgRequest("answerCallbackQuery", { callback_query_id: cb.id, text: "Gagal: ID pengunjung tidak valid." });
-      }
-      return res.status(200).json({ ok: true });
-    }
     const m = (req.body || {}).message;
     // Keyboard tombol permanen di bawah kolom ketik: tombol hanya mengirim teksnya, jadi diubah ke perintah
     // yang sudah ada. Harus dicek SEBELUM cabang "teks biasa = balasan ke pengunjung", kalau tidak,
     // teks tombol ikut terkirim ke pengunjung yang sedang tersambung. Reply ke pesan tidak dianggap tombol.
-    const BTN = { statistik: "/statistik", kemarin: "/kemarin", antrean: "/antrean", laporan: "/laporan" };
+    const BTN = { statistik: "/statistik", kemarin: "/kemarin", laporan: "/laporan" };
     const btnText = (mm) => {
       const t = mm.text.trim();
       if (mm.reply_to_message) return t;
@@ -1744,55 +1373,6 @@ async function handleTelegram(req, res) {
       if (/^\/laporan\b/i.test(text)) {
         await loadStats();
         await tgSend(await buildReport(), true);
-      } else if (/^\/antrean\b/i.test(text)) {
-        const qv = await queueView();
-        await tgRequest("sendMessage", { chat_id: TELEGRAM_CHAT_ID, text: qv.text, reply_markup: qv.markup, disable_notification: true });
-      } else if (/^\/bersihkan\b/i.test(text)) {
-        waiting.clear();
-        await clearActive();
-        await kv(["DEL", "waiting"]);
-        await tgRequest("sendMessage", { chat_id: TELEGRAM_CHAT_ID, text: "🧹 Antrean dan chat aktif dibersihkan.", disable_notification: true });
-      } else if (/^\/tutup\b/i.test(text)) {
-        const cur = await getActive();
-        if (!cur) {
-          await tgRequest("sendMessage", { chat_id: TELEGRAM_CHAT_ID, text: "Tidak ada chat aktif untuk ditutup.", disable_notification: true });
-        } else {
-          await closeChat(cur.cid, cur.lang);
-          const qv = await queueView();
-          await tgRequest("sendMessage", { chat_id: TELEGRAM_CHAT_ID, text: `🔚 Obrolan dengan ${cur.name || "pengunjung"} ditutup.\n` + qv.text, reply_markup: qv.markup.inline_keyboard.length ? qv.markup : undefined, disable_notification: true });
-        }
-      } else if (/^\/selesai\b/i.test(text)) {
-        await clearActive();
-        const qv = await queueView();
-        await tgRequest("sendMessage", { chat_id: TELEGRAM_CHAT_ID, text: "Chat aktif dilepas.\n" + qv.text, reply_markup: qv.markup.inline_keyboard.length ? qv.markup : undefined, disable_notification: true });
-      } else if (text && !text.startsWith("/")) {
-        let cid = "";
-        let name = "";
-        let switched = false;
-        if (m.reply_to_message) {
-          const rt = String(m.reply_to_message.text || "");
-          const cm = rt.match(/\bID: ([a-f0-9]{16})\b/);
-          if (cm) {
-            cid = cm[1];
-            name = (rt.match(/^💬 ([^:\n]+?)(?: 🎯)?:/) || [])[1] || "";
-            const cur = await getActive();
-            switched = !!(cur && cur.cid !== cid);
-            await setActive(cid, name || (cur && cur.cid === cid ? cur.name : ""), cur && cur.cid === cid ? cur.lang : "");
-          }
-        } else {
-          const cur = await getActive();
-          if (cur) { cid = cur.cid; name = cur.name; await setActive(cid, name, cur.lang); }
-        }
-        if (!cid) {
-          await tgRequest("sendMessage", { chat_id: TELEGRAM_CHAT_ID, text: m.reply_to_message ? "Pesan itu tidak terkait pengunjung. Reply pesan yang memuat baris ID." : "Belum ada chat aktif. Tap tombol \"Saya ambil alih\" atau Reply sebuah pesan pengunjung dulu, setelah itu cukup ketik langsung.", reply_parameters: { message_id: m.message_id }, disable_notification: true });
-        } else {
-          await queueReply(cid, text.slice(0, 1000), m.message_id);
-          if (switched) await tgRequest("sendMessage", { chat_id: TELEGRAM_CHAT_ID, text: `🎯 Pindah ke chat ${name || "pengunjung lain"}. Pesan berikutnya masuk ke sini.`, disable_notification: true });
-          await loadStats();
-          S().human++;
-          statsDirty = true;
-          await saveStats(true);
-        }
       }
     }
   } catch (e) {
@@ -1806,21 +1386,6 @@ function bump(obj, key) {
 }
 
 const failTimes = [];
-
-// Teruskan pesan pengunjung ke admin (berbunyi). Tombol: balas/pindah ke chat ini, dan tutup obrolan.
-async function forwardVisitorMsg(cid, name, lang, text) {
-  let act = await getActive();
-  if (!act) { await setActive(cid, name || "", lang); act = { cid, name: name || "", lang }; }
-  const isAct = act.cid === cid;
-  if (isAct) await setActive(cid, act.name || name || "", act.lang || lang);
-  const fwd = { chat_id: TELEGRAM_CHAT_ID, text: `💬 ${name || "Pengunjung"}${isAct ? " 🎯" : ""}: ${String(text).slice(0, 600)}\nID: ${cid}`.slice(0, 3900) };
-  const row = [];
-  if (!isAct) row.push({ text: `🎯 Balas ${name || "pengunjung ini"}`, callback_data: `active:${cid}:${lang || "id"}` });
-  row.push({ text: "🔚 Tutup", callback_data: `close:${cid}:${lang || "id"}` });
-  fwd.reply_markup = { inline_keyboard: [row] };
-  const sent = await tgRequest("sendMessage", fwd);
-  await rememberCard(cid, sent && sent.result && sent.result.message_id);
-}
 
 // Pengaturan untuk widget.js di subdomain: saklar chat + daftar halaman yang disembunyikan (dashboard go, Pengaturan Chatbot).
 // Redis "cfg:chat:hide" = satu aturan per baris. Di-cache 15 detik per instance.
@@ -1867,7 +1432,6 @@ module.exports = async (req, res) => {
   }
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method === "GET" && qs.get("cfg")) return handleCfg(req, res);
-  if (req.method === "GET" && qs.get("poll")) return handlePoll(req, res, qs);
   if (req.method !== "POST") return res.status(405).json({ error: "error" });
   if (!(await chatEnabled())) return res.status(404).json({ error: "off" });
 
@@ -1904,19 +1468,6 @@ module.exports = async (req, res) => {
     const knownName = validName(body.name);
     const cid = typeof body.cid === "string" && CID_RE.test(body.cid) ? body.cid : "";
     await loadStats();
-    // Sudah tersambung dengan admin: AI diam, pesan pengunjung langsung diteruskan ke admin.
-    if (cid && telegramEnabled()) {
-      const act0 = await getActive();
-      if (body.human === true || (act0 && act0.cid === cid)) {
-        const vl = visitorLang(history, lang);
-        await kv(["SET", "lang:" + cid, vl, "EX", 86400]);
-        await forwardVisitorMsg(cid, knownName, vl, last.text);
-        const arcH = await archiveExchange(ip, lang, last.text, "(diteruskan ke admin)", knownName, body.arc);
-        await saveConv(cid, knownName, [{ r: "user", x: last.text }]);
-        await saveStats();
-        return res.status(200).json({ handoff: true, live: true, arc: arcH, name: knownName || "", q: "" });
-      }
-    }
     const raw = await callGemini(history, lang, knownName);
     const ans = parseAnswer(raw);
     await countSuccess();
@@ -1980,14 +1531,6 @@ module.exports = async (req, res) => {
     if (leadStr && !(phone && priceConvo) && Date.now() - t0 < 18_000) {
       if ((await hasPriceIntent(history)) === false) leadStr = "";
     }
-    // Jaring pengaman: anggap "human" juga kalau pesan pengunjung sendiri jelas-jelas minta bicara admin,
-    // walau AI lupa menandai [[HUMAN]] di balasannya.
-    const humanFlag = ans.human || wantsHuman(last.text);
-    // Pengunjung sedang disambungkan ke admin lewat chat ini: jangan arahkan ke WhatsApp (cadangan kalau AI lupa aturan).
-    if (humanFlag && cid && telegramEnabled()) {
-      ans.wa = false;
-      ans.text = ans.text.replace(/\[[^\]]*\]\(https?:\/\/wa\.me\/[^)]*\)/gi, "").replace(/https?:\/\/wa\.me\/\S*/gi, "").replace(/\n{3,}/g, "\n\n").trim();
-    }
     const ctx = {
       lastUserText: last.text,
       reply: ans.text,
@@ -1999,19 +1542,10 @@ module.exports = async (req, res) => {
       when: nowInfo(),
       transcript: buildTranscript(history),
       cid,
-      wantsHuman: humanFlag,
     };
-    if (cid && (ans.fraud || ans.urgent || humanFlag || leadStr)) await kv(["SET", "lang:" + cid, ctx.langCode, "EX", 86400]);
     if (ans.fraud) await notifyAdmin("fraud", ip, ctx);
     else if (ans.urgent) await notifyAdmin("urgent", ip, ctx);
-    else if (humanFlag) await notifyAdmin("human", ip, ctx);
     if (leadStr) await notifyAdmin("lead", ip, ctx);
-    // Admin masih melayani chat lain: kirim status antrean ke pengunjung (ditampilkan terpisah dan di-update lewat polling).
-    let qStr = "";
-    if (humanFlag && cid && telegramEnabled()) {
-      const qp = await queuePos(cid, leadName || knownName, ctx.langCode);
-      if (qp > 0) qStr = queueLine(ctx.langCode, qp);
-    }
     // Memori nama yang tidak bergantung pada AI: kalau nama belum diketahui (dari penanda [[NAME]], dari
     // lead, atau dari browser) dan percakapan masih awal, pesan pendek pengunjung diperiksa oleh
     // pengecekan kecil terpisah. Nama dikirim balik ke browser dan dikirim lagi di tiap pesan berikutnya,
@@ -2023,8 +1557,7 @@ module.exports = async (req, res) => {
     const arc = await archiveExchange(ip, lang, last.text, ans.text, learned, body.arc);
     await saveConv(cid, learned, [{ r: "user", x: last.text }, { r: "bot", x: ans.text }]);
     await saveStats();
-    const live = !!(cid && (ans.fraud || ans.urgent || humanFlag || leadStr || body.human === true));
-    return res.status(200).json({ reply: ans.text, wa: ans.wa, name: learned, arc, live, q: qStr });
+    return res.status(200).json({ reply: ans.text, wa: ans.wa, name: learned, arc });
   } catch (e) {
     console.error("[api/chat] gagal:", e);
     const msg = e instanceof Error ? e.message : "";
