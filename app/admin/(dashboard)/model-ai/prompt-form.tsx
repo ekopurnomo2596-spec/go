@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { flash, type Flash } from "@/lib/flash";
 import { resetPromptAction, savePromptAction } from "../../actions";
 import { MAX_PROMPT_CHARS, type PromptData } from "@/lib/chatai";
@@ -20,17 +20,22 @@ const VARS = [
 
 const count = (text: string, tag: string) => text.split(tag).length - 1;
 
-export function PromptForm({ initial, defaults }: { initial: PromptData; defaults: PromptData }) {
+export function PromptForm({ initial, defaults, saved }: { initial: PromptData; defaults: PromptData; saved: boolean }) {
   const [d, setD] = useState<PromptData>(initial);
   const [showFinal, setShowFinal] = useState(false);
   const [saving, startSave] = useTransition();
   const [resetting, startReset] = useTransition();
+  const [editing, setEditing] = useState(!saved);
   const area = useRef<HTMLTextAreaElement>(null);
   const busy = saving || resetting;
   const dirty = JSON.stringify(d) !== JSON.stringify(initial);
   const legacy = d.prompt.includes("{{COMPANY}}");
   const tooLong = d.prompt.length > MAX_PROMPT_CHARS;
   const blocked = legacy || tooLong || !d.prompt.trim();
+
+  useEffect(() => {
+    if (!saved) setEditing(true);
+  }, [saved]);
 
   const insert = (tag: string) => {
     const el = area.current;
@@ -71,8 +76,31 @@ export function PromptForm({ initial, defaults }: { initial: PromptData; default
         .pf summary { cursor: pointer; padding: 10px 14px; font-size: .84rem; font-weight: 600; }
         .pf details pre { margin: 0; padding: 12px 14px; max-height: 380px; overflow: auto; border-top: 1px solid var(--line); font-size: .74rem; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); }
         .pf-dirty { font-size: .78rem; color: var(--muted); align-self: center; }
+        .pf-locked-vars { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0 0 14px; font-size: .82rem; }
+        .pf-locked-vars span { color: var(--muted); }
+        .pf-locked-vars strong { color: var(--ink); }
+        .pf-locked-area { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-family: ui-monospace, Menlo, monospace; font-size: .78rem; line-height: 1.6; color: var(--ink); }
       `}</style>
 
+      {saved && !editing ? (
+        <>
+          <div className="pf-locked-vars">
+            {VARS.map((v) => (
+              <span key={v.key}>
+                {v.label}: <strong>{d[v.key] || "—"}</strong>
+              </span>
+            ))}
+          </div>
+          <div className="pf-locked-area">{d.prompt}</div>
+          <div className="ma-foot">
+            <button type="button" onClick={() => setEditing(true)}>
+              Edit
+            </button>
+          </div>
+          <p className="ma-hint">Prompt tersimpan dan terkunci. Klik Edit untuk mengubah.</p>
+        </>
+      ) : (
+        <>
       <p className="pf-step">
         <i>1</i>Angka yang sering berubah
       </p>
@@ -160,12 +188,29 @@ export function PromptForm({ initial, defaults }: { initial: PromptData; default
             fd.set("prompt", d.prompt);
             fd.set("priceFrom", d.priceFrom);
             fd.set("welcomeBonus", d.welcomeBonus);
-            startSave(async () => flash(await run(() => savePromptAction(fd))));
+            startSave(async () => {
+              const r = await run(() => savePromptAction(fd));
+              flash(r);
+              if (r.kind === "ok") setEditing(false);
+            });
           }}
         >
           Simpan
           {saving && <span className="spin" aria-hidden="true" />}
         </button>
+        {saved && (
+          <button
+            type="button"
+            className="ghost"
+            disabled={busy}
+            onClick={() => {
+              setD(initial);
+              setEditing(false);
+            }}
+          >
+            Batal
+          </button>
+        )}
         <button
           type="button"
           className={"ghost" + (resetting ? " is-loading" : "")}
@@ -188,6 +233,8 @@ export function PromptForm({ initial, defaults }: { initial: PromptData; default
         Chatbot menambahkan sendiri tanggal hari ini, bahasa pengunjung, dan nama pengunjung di belakang teks ini. Perubahan
         dibaca chatbot dalam ±30 detik.
       </p>
+      </>
+      )}
     </div>
   );
 }

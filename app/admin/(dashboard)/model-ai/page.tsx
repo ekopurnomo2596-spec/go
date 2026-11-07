@@ -156,7 +156,7 @@ export default async function ModelAiPage() {
             sampai kamu klik <strong>Simpan</strong>.
           </p>
         )}
-        <PromptForm initial={prompt} defaults={DEFAULT_PROMPT} />
+        <PromptForm initial={prompt} defaults={DEFAULT_PROMPT} saved={promptSource === "admin"} />
       </div>
 
       <div className="ma-sec" id="teknis">
