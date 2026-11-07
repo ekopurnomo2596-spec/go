@@ -5,7 +5,8 @@
 (function(){
 if(window.__EMA_WIDGET||document.getElementById("echat-btn"))return; // sudah ada / halaman portal: jangan dobel
 window.__EMA_WIDGET=1;
-var SC=document.currentScript,API="https://emahairshop.com"; // backend chat tetap di portal; widget.js sendiri disajikan dari go
+var SC=document.currentScript,API="https://go.emahairshop.com"; // backend chat dan widget.js sama-sama di go
+try{if(SC&&SC.src)API=new URL(SC.src).origin}catch(e){}
 if(SC&&/^https:\/\/[a-z0-9.-]+$/i.test(SC.getAttribute("data-api")||""))API=SC.getAttribute("data-api");
 var LANGS=["en","id","it","es","fr","de","ru"];
 var LG=(SC&&SC.getAttribute("data-lang"))||window.LG||document.documentElement.lang||navigator.language||"en";
