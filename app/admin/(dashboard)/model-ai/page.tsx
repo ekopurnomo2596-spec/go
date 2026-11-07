@@ -9,7 +9,7 @@ import { PromptForm } from "./prompt-form";
 import { getChatEnabled, getChatHide } from "@/lib/webchat";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Model AI" };
+export const metadata = { title: "Pengaturan Chatbot" };
 
 export default async function ModelAiPage() {
   await requireAdmin();
@@ -50,7 +50,7 @@ export default async function ModelAiPage() {
       `}</style>
       <div className="top">
         <div>
-          <h1>Model AI</h1>
+          <h1>Pengaturan Chatbot</h1>
           <div className="an-sub">Model dan prompt Gemini yang dipakai chatbot di emahairshop.com dan semua subdomainnya</div>
         </div>
       </div>

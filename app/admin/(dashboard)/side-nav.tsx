@@ -48,7 +48,7 @@ export function SideNav() {
       </Link>
       <Link href="/admin/model-ai" onClick={closeMenu} className={"snavLink" + (onModelAi ? " active" : "")}>
         <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 1 3 3v2h1a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3h1V5a3 3 0 0 1 3-3zM9 12v3M15 12v3M4 10h2M4 15h2M18 10h2M18 15h2" /></svg>
-        Model AI
+        Pengaturan Chatbot
       </Link>
       <Link href="/admin/statistik" onClick={closeMenu} className={"snavLink" + (onStats ? " active" : "")}>
         <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>

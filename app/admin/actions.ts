@@ -362,7 +362,7 @@ export async function testAiKey(formData: FormData): Promise<Flash> {
   }
 }
 
-// ---------- Model AI chatbot web (portal) ----------
+// ---------- Pengaturan Chatbot web (portal) ----------
 // Daftar model disimpan di key Redis yang sama dibaca api/chat.js di portal ("cfg:models").
 // Token di sini terpisah dari token AI go di atas (lihat lib/chatai.ts).
 

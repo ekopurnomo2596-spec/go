@@ -1,6 +1,6 @@
 /**
  * Isi bawaan prompt chatbot web (emahairshop.com). Dulu hardcode di api/chat.js (portal), sekarang
- * dipindah ke sini. Dipakai halaman Model AI sebagai isi awal editor, dan tombol "Kembalikan ke bawaan".
+ * dipindah ke sini. Dipakai halaman Pengaturan Chatbot sebagai isi awal editor, dan tombol "Kembalikan ke bawaan".
  *
  * Placeholder yang diganti api/chat.js di portal saat dipakai:
  *   {{COMPANY}}       -> isi Info perusahaan

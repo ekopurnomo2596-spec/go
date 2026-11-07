@@ -129,7 +129,7 @@ export async function listGoogleModels(key: string): Promise<string[]> {
 // ---------- prompt chatbot ----------
 // Prompt dulu hardcode di api/chat.js (portal). Sekarang disimpan di Redis dan dibaca portal
 // (cache 30 detik) dari key yang sama dengan di bawah ini. Kalau kosong, portal pakai prompt darurat
-// yang sangat pendek, jadi simpan sekali dari halaman Model AI setelah pemasangan.
+// yang sangat pendek, jadi simpan sekali dari halaman Pengaturan Chatbot setelah pemasangan.
 
 const PROMPT_SYSTEM_KEY = "cfg:prompt:system";
 const PROMPT_COMPANY_KEY = "cfg:prompt:company";
