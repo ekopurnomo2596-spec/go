@@ -59,7 +59,7 @@ export function ModelsForm({ initial, hasKey }: { initial: string[]; hasKey: boo
     <div>
       {models.length === 0 && (
         <p className="ma-hint" style={{ margin: "0 0 10px" }}>
-          Belum pernah diatur dari sini — chatbot masih pakai daftar bawaan di environment portal. Tambahkan
+          Belum pernah diatur dari sini — chatbot masih pakai daftar bawaan. Tambahkan
           model di bawah lalu Simpan kalau mau mulai mengatur dari sini.
         </p>
       )}

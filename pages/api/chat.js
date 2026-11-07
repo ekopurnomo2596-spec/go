@@ -5,20 +5,14 @@
 // boleh menjawab konsultasi umum hair extension dari pengetahuan sendiri.
 //
 // Env vars yang perlu diset di dashboard Vercel project ini:
-//   GEMINI_API_KEYS   - cadangan. Key Gemini sekarang diatur dari dashboard go (Pengaturan Chatbot, Redis "cfg:chat:keys").
-//                       Env ini hanya dipakai kalau belum ada key di dashboard. Dipisah koma: "key1,key2,key3"
-//   GEMINI_MODELS     - opsional. Model Gemini, dipisah koma, dicoba berurutan. Bisa ditimpa dari halaman /admin
-//                       (perlu KV + ADMIN_PASSWORD, lihat api/admin.js).
-//                       Default: "gemini-3.5-flash,gemini-3.1-flash-lite,gemini-2.5-flash"
-//                       (cek nama model yang masih aktif di Google AI Studio sebelum deploy)
+// Key Gemini, daftar model, dan batas harian diatur dari dashboard go (halaman Pengaturan Chatbot, disimpan di Redis),
+// bukan dari environment Vercel. Env lain yang masih dipakai ada di bawah.
 //   ALERT_WINDOW_MIN / ALERT_REPING_AT / ALERT_GLOBAL_PER_HOUR / ALERT_FRAUD_PER_HOUR - opsional,
 //                       pengatur anti-banjir notifikasi Telegram (default 20 menit / 5 / 10 / 10).
 //   ALERT_LEAD_PER_HOUR / ALERT_SILENT_OFFHOURS - opsional. Batas kartu lead per jam (default 20);
 //                       "on" = alert URGENT biasa senyap di luar jam CS (FRAUD & LEAD tetap berbunyi).
 //   TELEGRAM_LOG_CHAT_ID - opsional. Chat/grup/channel Telegram terpisah untuk ARSIP: semua percakapan
 //                       (pertanyaan + jawaban) dikirim ke sana secara senyap. Kosong = tidak ada arsip.
-//   CHAT_DAILY_LIMIT  - cadangan. Batas harian sekarang diatur dari dashboard go (Redis "cfg:chat:limit").
-//                       Env ini hanya dipakai kalau dashboard belum diisi. Default 300.
 //   AI_CHAT           - opsional. Set "off" untuk mematikan endpoint ini.
 //   TELEGRAM_VISIT_CHAT_ID - opsional. Notif "pengunjung baru buka website" (page view, 1x per IP/hari).
 //                       Kosong = pakai TELEGRAM_CHAT_ID yang sama dengan notif chat.
@@ -34,24 +28,22 @@
 //    penghitung ini ke Vercel KV / database supaya akurat lintas server.
 
 const DEFAULT_MODELS = "gemini-3.5-flash,gemini-3.1-flash-lite,gemini-2.5-flash";
-const ENV_MODELS = (process.env.GEMINI_MODELS || DEFAULT_MODELS)
+const DEFAULT_MODEL_LIST = DEFAULT_MODELS
   .split(",").map((s) => s.trim()).filter(Boolean);
 // Daftar model aktif: bisa diubah lewat halaman /admin (disimpan di KV, kunci "cfg:models").
-// Kalau KV kosong/mati, pakai GEMINI_MODELS dari env. Di-cache 30 detik per instance supaya hemat panggilan KV.
-let modelsCache = { at: 0, list: ENV_MODELS };
+// Kalau KV kosong/mati, pakai daftar bawaan di atas. Di-cache 30 detik per instance supaya hemat panggilan KV.
+let modelsCache = { at: 0, list: DEFAULT_MODEL_LIST };
 async function getModels() {
   if (Date.now() - modelsCache.at < 30_000) return modelsCache.list;
   const v = await kv(["GET", "cfg:models"]);
   const list = typeof v === "string" ? v.split(",").map((s) => s.trim()).filter((s) => /^[a-z0-9._-]{3,60}$/i.test(s)) : [];
-  modelsCache = { at: Date.now(), list: list.length ? list : ENV_MODELS };
+  modelsCache = { at: Date.now(), list: list.length ? list : DEFAULT_MODEL_LIST };
   return modelsCache.list;
 }
 
-const ENV_KEYS = (process.env.GEMINI_API_KEYS || "")
-  .split(",").map((s) => s.trim()).filter(Boolean);
-// Key Gemini diatur dari dashboard (Redis "cfg:chat:keys", satu key per baris). Kalau kosong, pakai env.
+// Key Gemini diatur dari dashboard (Redis "cfg:chat:keys", satu key per baris). Kosong = chatbot belum bisa menjawab.
 // Di-cache 30 detik per instance. KEYS diganti isinya, jadi semua kode di bawah tetap membaca KEYS seperti biasa.
-let KEYS = ENV_KEYS;
+let KEYS = [];
 let keysAt = 0;
 async function loadKeys() {
   if (Date.now() - keysAt < 30_000) return;
@@ -59,12 +51,12 @@ async function loadKeys() {
   if (v === undefined) return; // KV gagal, pertahankan daftar yang sedang dipakai
   keysAt = Date.now();
   const list = typeof v === "string" ? [...new Set(v.split(/[\r\n,]+/).map((x) => x.trim()).filter(Boolean))] : [];
-  KEYS = list.length ? list : ENV_KEYS;
+  KEYS = list;
 }
 
-// Batas harian diatur dari dashboard (Redis "cfg:chat:limit"). Kosong = pakai env, lalu 300.
-const ENV_DAILY_LIMIT = Number(process.env.CHAT_DAILY_LIMIT) || 300;
-let DAILY_LIMIT = ENV_DAILY_LIMIT;
+// Batas harian diatur dari dashboard (Redis "cfg:chat:limit"). Belum diatur = 300.
+const DEFAULT_DAILY_LIMIT = 300;
+let DAILY_LIMIT = DEFAULT_DAILY_LIMIT;
 
 // ---------------- Pembatas (in-memory, per instance server) ----------------
 const hits = new Map(); // ip -> daftar timestamp request
@@ -108,7 +100,7 @@ async function dailyLimitReached() {
   const v = r ? r[0] : undefined;
   if (v !== undefined) dayCount = Number(v) || 0; // KV menjawab (null = belum ada hitungan hari ini)
   const cfgLimit = r ? Number(r[1]) : 0;
-  DAILY_LIMIT = Number.isInteger(cfgLimit) && cfgLimit > 0 ? cfgLimit : ENV_DAILY_LIMIT;
+  DAILY_LIMIT = Number.isInteger(cfgLimit) && cfgLimit > 0 ? cfgLimit : DEFAULT_DAILY_LIMIT;
   return dayCount >= DAILY_LIMIT;
 }
 async function countSuccess() {

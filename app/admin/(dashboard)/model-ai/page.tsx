@@ -68,7 +68,7 @@ export default async function ModelAiPage() {
 
       <div className="panel">
         <h2>
-          Batas chat per hari <small>{limit ? "diatur dari sini" : "memakai bawaan portal"}</small>
+          Batas chat per hari <small>{limit ? "diatur dari sini" : "belum diatur, memakai 300"}</small>
         </h2>
         <LimitForm initial={limit} />
       </div>
@@ -89,7 +89,7 @@ export default async function ModelAiPage() {
 
       <div className="panel">
         <h2>
-          Key Gemini chatbot <small>{chatKeys.length ? `${chatKeys.length} key dipakai chatbot` : "kosong, memakai environment"}</small>
+          Key Gemini chatbot <small>{chatKeys.length ? `${chatKeys.length} key dipakai chatbot` : "kosong, chatbot belum bisa menjawab"}</small>
         </h2>
         <ChatKeysForm masked={chatKeys.map(maskChatToken)} max={MAX_CHAT_KEYS} />
       </div>

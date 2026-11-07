@@ -24,7 +24,7 @@ export function LimitForm({ initial }: { initial: number | null }) {
         <input
           inputMode="numeric"
           value={text}
-          placeholder="Kosongkan untuk memakai bawaan portal"
+          placeholder="Kosongkan untuk memakai 300"
           onChange={(e) => setText(e.target.value)}
         />
         <button
@@ -43,8 +43,7 @@ export function LimitForm({ initial }: { initial: number | null }) {
         </button>
       </div>
       <p className="ma-hint">
-        Jumlah pesan chat yang boleh masuk dalam sehari. Perubahan dibaca chatbot dalam ±15 detik, tanpa redeploy dan
-        tanpa mengubah environment Vercel.
+        Jumlah pesan chat yang boleh masuk dalam sehari. Perubahan dibaca chatbot langsung di pesan berikutnya, tanpa redeploy.
       </p>
     </div>
   );

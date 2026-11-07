@@ -406,7 +406,7 @@ export async function removeChatKeyAction(formData: FormData): Promise<Flash> {
   list.splice(i, 1);
   await setChatKeys(list);
   revalidatePath("/admin/model-ai");
-  return ok(list.length ? "Key dihapus." : "Semua key dihapus. Chatbot kembali memakai key dari environment kalau ada.");
+  return ok(list.length ? "Key dihapus." : "Semua key dihapus. Chatbot tidak bisa menjawab sampai ada key baru.");
 }
 
 /** Tes satu nama model. Pakai token yang baru diketik kalau ada, kalau tidak pakai yang tersimpan. */
@@ -451,7 +451,7 @@ export async function resetModelsAction(): Promise<Flash> {
   await requireAdmin();
   await resetModels();
   revalidatePath("/admin/model-ai");
-  return ok("Dikembalikan ke bawaan portal.");
+  return ok("Dikembalikan ke daftar model bawaan.");
 }
 
 /** Nyalakan / matikan chat di website. Portal membacanya lewat middleware (±5 detik) dan api/chat.js (±15 detik). */
@@ -479,7 +479,7 @@ export async function saveChatLimitAction(formData: FormData): Promise<Flash> {
   if (!raw) {
     await setChatLimit(null);
     revalidatePath("/admin/model-ai");
-    return ok("Pengaturan dihapus. Portal memakai batas bawaannya.");
+    return ok("Pengaturan dihapus. Chatbot memakai batas bawaan 300 per hari.");
   }
   const n = Number(raw);
   if (!/^\d+$/.test(raw) || !Number.isInteger(n) || n < 1 || n > MAX_CHAT_LIMIT) {

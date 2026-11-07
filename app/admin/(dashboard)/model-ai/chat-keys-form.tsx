@@ -42,7 +42,7 @@ export function ChatKeysForm({ masked, max }: { masked: string[]; max: number })
         ))
       ) : (
         <p className="ma-hint" style={{ margin: "0 0 12px" }}>
-          Belum ada key di sini. Selama kosong, chatbot memakai key dari environment kalau ada.
+          Belum ada key. Chatbot belum bisa menjawab sampai kamu menambahkan minimal satu key.
         </p>
       )}
       <label className="pr-field" style={{ marginTop: 12, marginBottom: 12 }}>

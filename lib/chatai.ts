@@ -84,7 +84,7 @@ export async function setModels(list: string[]) {
   await db().set(MODELS_KEY, list.join(","));
 }
 
-/** Hapus pengaturan di sini; portal kembali pakai default dari environment-nya sendiri. */
+/** Hapus pengaturan di sini; chatbot kembali memakai daftar model bawaan. */
 export async function resetModels() {
   await db().del(MODELS_KEY);
 }
