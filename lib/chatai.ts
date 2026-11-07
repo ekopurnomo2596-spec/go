@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { db } from "./redis";
 import { DEFAULT_PRICE_FROM, DEFAULT_PROMPT_TEXT, DEFAULT_WELCOME_BONUS } from "./chatprompt-default";
 
@@ -67,8 +66,21 @@ export async function setChatKeys(list: string[]) {
 const CHAT_KEY_NAMES = "cfg:chat:keynames";
 export const MAX_KEY_NAME = 40;
 
+// Hash murni JS (bukan node:crypto) karena file ini ikut dibundel ke komponen client. Hanya dipakai sebagai ID nama,
+// bukan untuk keamanan, dan hasilnya tidak pernah dikirim ke browser.
 export function chatKeyId(k: string): string {
-  return createHash("sha256").update(k).digest("hex").slice(0, 12);
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  let h3 = 0x9e3779b9;
+  for (let i = 0; i < k.length; i++) {
+    const c = k.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 2654435761);
+    h2 = Math.imul(h2 ^ c, 1597334677);
+    h3 = Math.imul(h3 ^ c, 2246822519);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h3 ^ (h3 >>> 13), 3266489909);
+  return [h1, h2].map((n) => (n >>> 0).toString(16).padStart(8, "0")).join("").slice(0, 12);
 }
 
 export async function getChatKeyNames(): Promise<Record<string, string>> {
