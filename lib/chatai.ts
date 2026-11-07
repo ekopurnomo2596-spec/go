@@ -149,18 +149,21 @@ export async function listGoogleModels(key: string): Promise<string[]> {
 const PROMPT_SYSTEM_KEY = "cfg:prompt:system";
 const PROMPT_COMPANY_KEY = "cfg:prompt:company";
 const PROMPT_VARS_KEY = "cfg:prompt:vars";
-export const MAX_PROMPT_CHARS = 60_000;
+export const MAX_PROMPT_CHARS = 100_000;
 
+/**
+ * Satu prompt saja. Dulu dipisah jadi "Info perusahaan" + "Prompt utama" yang disambung lewat {{COMPANY}};
+ * sekarang digabung. Data lama tetap terbaca: kalau key company masih ada dan prompt lama memuat {{COMPANY}},
+ * keduanya digabung saat dibaca, dan key company dihapus saat Simpan berikutnya.
+ */
 export type PromptData = {
-  system: string;
-  company: string;
+  prompt: string;
   priceFrom: string;
   welcomeBonus: string;
 };
 
 export const DEFAULT_PROMPT: PromptData = {
-  system: DEFAULT_SYSTEM,
-  company: DEFAULT_COMPANY,
+  prompt: DEFAULT_SYSTEM.split("{{COMPANY}}").join(DEFAULT_COMPANY),
   priceFrom: DEFAULT_PRICE_FROM,
   welcomeBonus: DEFAULT_WELCOME_BONUS,
 };
@@ -172,7 +175,7 @@ export async function getPrompt(): Promise<{ data: PromptData; source: "admin" |
     db().get<string>(PROMPT_COMPANY_KEY),
     db().get<{ priceFrom?: string; welcomeBonus?: string } | string>(PROMPT_VARS_KEY),
   ]);
-  if (typeof system !== "string" || !system.trim() || typeof company !== "string" || !company.trim()) {
+  if (typeof system !== "string" || !system.trim()) {
     return { data: DEFAULT_PROMPT, source: "default" };
   }
   let v: { priceFrom?: string; welcomeBonus?: string } = {};
@@ -185,10 +188,10 @@ export async function getPrompt(): Promise<{ data: PromptData; source: "admin" |
   } else if (vars && typeof vars === "object") {
     v = vars;
   }
+  const merged = typeof company === "string" && company.trim() ? system.split("{{COMPANY}}").join(company) : system;
   return {
     data: {
-      system,
-      company,
+      prompt: merged,
       priceFrom: v.priceFrom ?? DEFAULT_PRICE_FROM,
       welcomeBonus: v.welcomeBonus ?? DEFAULT_WELCOME_BONUS,
     },
@@ -198,13 +201,10 @@ export async function getPrompt(): Promise<{ data: PromptData; source: "admin" |
 
 /** Mengembalikan pesan error, atau null kalau valid. */
 export function validatePrompt(d: PromptData): string | null {
-  if (!d.system.trim()) return "Prompt utama tidak boleh kosong.";
-  if (!d.company.trim()) return "Info perusahaan tidak boleh kosong.";
-  if (d.system.length > MAX_PROMPT_CHARS || d.company.length > MAX_PROMPT_CHARS) {
-    return `Maksimal ${MAX_PROMPT_CHARS.toLocaleString("id-ID")} karakter per kolom.`;
-  }
-  if (!d.system.includes("{{COMPANY}}")) {
-    return "Prompt utama harus memuat {{COMPANY}} supaya Info perusahaan ikut terkirim ke AI.";
+  if (!d.prompt.trim()) return "Prompt tidak boleh kosong.";
+  if (d.prompt.length > MAX_PROMPT_CHARS) return `Maksimal ${MAX_PROMPT_CHARS.toLocaleString("id-ID")} karakter.`;
+  if (d.prompt.includes("{{COMPANY}}")) {
+    return "{{COMPANY}} sudah tidak dipakai. Tempel info perusahaan langsung di dalam prompt, lalu hapus {{COMPANY}}.";
   }
   if (d.priceFrom.length > 20 || d.welcomeBonus.length > 20) return "Harga mulai / welcome bonus maksimal 20 karakter.";
   return null;
@@ -212,8 +212,8 @@ export function validatePrompt(d: PromptData): string | null {
 
 export async function setPrompt(d: PromptData) {
   await Promise.all([
-    db().set(PROMPT_SYSTEM_KEY, d.system),
-    db().set(PROMPT_COMPANY_KEY, d.company),
+    db().set(PROMPT_SYSTEM_KEY, d.prompt),
+    db().del(PROMPT_COMPANY_KEY), // sudah digabung ke prompt
     db().set(PROMPT_VARS_KEY, JSON.stringify({ priceFrom: d.priceFrom.trim(), welcomeBonus: d.welcomeBonus.trim() })),
   ]);
 }

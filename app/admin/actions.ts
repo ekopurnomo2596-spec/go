@@ -502,8 +502,7 @@ export async function saveChatLimitAction(formData: FormData): Promise<Flash> {
 export async function savePromptAction(formData: FormData): Promise<Flash> {
   await requireAdmin();
   const data = {
-    system: String(formData.get("system") ?? "").replace(/\r\n/g, "\n"),
-    company: String(formData.get("company") ?? "").replace(/\r\n/g, "\n").trim(),
+    prompt: String(formData.get("prompt") ?? "").replace(/\r\n/g, "\n").trim(),
     priceFrom: str(formData, "priceFrom"),
     welcomeBonus: str(formData, "welcomeBonus"),
   };
@@ -511,7 +510,7 @@ export async function savePromptAction(formData: FormData): Promise<Flash> {
   if (bad) return err(bad);
   await setPrompt(data);
   revalidatePath("/admin/model-ai");
-  return ok("Prompt disimpan. Portal membacanya dalam ±30 detik.");
+  return ok("Prompt disimpan. Chatbot memakainya dalam ±30 detik.");
 }
 
 /** Hapus prompt tersimpan dan kembalikan isi bawaan. Setelah ini portal memakai prompt darurat sampai Simpan lagi. */

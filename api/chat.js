@@ -141,9 +141,9 @@ async function markFail(model, key, status, errText) {
 }
 
 // ---------------- Prompt chatbot ----------------
-// Isi prompt (Info perusahaan + aturan) TIDAK lagi ditulis di file ini. Diatur dari dashboard go di
-// halaman Pengaturan Chatbot dan disimpan di Redis: "cfg:prompt:system", "cfg:prompt:company", "cfg:prompt:vars".
-// Placeholder di dalamnya: {{COMPANY}}, {{PRICE_FROM}}, {{WELCOME_BONUS}}. Di-cache 30 detik per instance.
+// Isi prompt TIDAK ditulis di file ini. Diatur dari dashboard go di halaman Pengaturan Chatbot dan disimpan di Redis:
+// "cfg:prompt:system" (satu prompt utuh) dan "cfg:prompt:vars". "cfg:prompt:company" hanya sisa format lama (opsional):
+// kalau ada, {{COMPANY}} di prompt diganti isinya. Placeholder: {{PRICE_FROM}}, {{WELCOME_BONUS}}. Di-cache 30 detik per instance.
 // Tidak ada prompt cadangan di sini: kalau Redis kosong/mati dan belum ada cache, chat membalas error dan admin diberi alert.
 let promptCache = { at: 0, text: "", ok: false };
 async function getSystem() {
@@ -151,13 +151,13 @@ async function getSystem() {
   const r = await kvPipe([["GET", "cfg:prompt:system"], ["GET", "cfg:prompt:company"], ["GET", "cfg:prompt:vars"]]);
   const system = r && typeof r[0] === "string" ? r[0] : "";
   const company = r && typeof r[1] === "string" ? r[1] : "";
-  if (system.trim() && company.trim()) {
+  if (system.trim()) {
     let vars = {};
     try { vars = JSON.parse(r[2] || "{}") || {}; } catch (e) { /* pakai kosong */ }
     const fill = (t) => t
       .replace(/\{\{PRICE_FROM\}\}/g, () => vars.priceFrom || "")
       .replace(/\{\{WELCOME_BONUS\}\}/g, () => vars.welcomeBonus || "");
-    // company diisi dulu karena ia sendiri memuat {{PRICE_FROM}}; split/join supaya "$" di teks tidak ditafsirkan
+    // format lama: company diisi dulu karena ia sendiri memuat {{PRICE_FROM}}; split/join supaya "$" di teks tidak ditafsirkan
     const text = fill(system.split("{{COMPANY}}").join(fill(company)));
     promptCache = { at: Date.now(), text, ok: true };
     return text;

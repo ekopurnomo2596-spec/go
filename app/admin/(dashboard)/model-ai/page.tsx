@@ -52,13 +52,34 @@ export default async function ModelAiPage() {
         .wrap input:not([type]):focus, .wrap textarea:focus { border-color: var(--gold); }
         .pr-field textarea { font-family: ui-monospace, Menlo, monospace; font-size: .78rem; line-height: 1.55; resize: vertical; min-height: 160px; }
         .pr-vars label span, .pr-field > span { color: var(--muted); }
+        .ma-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
+        .ma-nav a { padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; font-size: .82rem; color: var(--ink); text-decoration: none; background: var(--card); }
+        .ma-nav a:hover { border-color: var(--lineh); }
+        .ma-sec { margin: 34px 0 14px; scroll-margin-top: 16px; }
+        .ma-sec:first-of-type { margin-top: 0; }
+        .ma-sec h2 { margin: 0; font-size: 1.1rem; }
+        .ma-sec p { margin: 4px 0 0; color: var(--muted); font-size: .84rem; }
+        .ma-adv > summary { cursor: pointer; font-weight: 600; font-size: .95rem; }
+        .ma-adv[open] > summary { margin-bottom: 14px; }
         .ma-sugg button { padding: 4px 10px; font-size: .76rem; border-radius: 999px; }
       `}</style>
       <div className="top">
         <div>
           <h1>Pengaturan Chatbot</h1>
-          <div className="an-sub">Model dan prompt Gemini yang dipakai chatbot di emahairshop.com dan semua subdomainnya</div>
+          <div className="an-sub">Atur chatbot di emahairshop.com dan semua subdomainnya: kapan tampil, bagaimana tampilannya, dan apa yang dijawabnya</div>
         </div>
+      </div>
+
+      <nav className="ma-nav" aria-label="Lompat ke bagian">
+        <a href="#umum">Umum</a>
+        <a href="#tampilan">Tampilan &amp; pemasangan</a>
+        <a href="#prompt">Isi prompt</a>
+        <a href="#teknis">Model &amp; key AI</a>
+      </nav>
+
+      <div className="ma-sec" id="umum">
+        <h2>Umum</h2>
+        <p>Nyalakan atau matikan chatbot dan batasi pemakaiannya.</p>
       </div>
 
       <div className="panel">
@@ -75,18 +96,9 @@ export default async function ModelAiPage() {
         <LimitForm initial={limit} />
       </div>
 
-      <div className="panel">
-        <h2>
-          Pasang di subdomain <small>satu baris, tinggal tempel</small>
-        </h2>
-        <EmbedSnippet />
-      </div>
-
-      <div className="panel">
-        <h2>
-          Sembunyikan widget di halaman <small>mis. order, checkout, keranjang</small>
-        </h2>
-        <HideForm initial={hideRules} />
+      <div className="ma-sec" id="tampilan">
+        <h2>Tampilan &amp; pemasangan</h2>
+        <p>Bentuk dan warna widget, halaman yang tidak boleh menampilkannya, dan kode untuk memasangnya di subdomain.</p>
       </div>
 
       <div className="panel">
@@ -98,20 +110,46 @@ export default async function ModelAiPage() {
 
       <div className="panel">
         <h2>
-          Key Gemini chatbot <small>{chatKeys.length ? `${chatKeys.length} key dipakai chatbot` : "kosong, chatbot belum bisa menjawab"}</small>
+          Sembunyikan widget di halaman <small>mis. order, checkout, keranjang</small>
         </h2>
-        <ChatKeysForm masked={chatKeys.map(maskChatToken)} max={MAX_CHAT_KEYS} />
+        <HideForm initial={hideRules} />
       </div>
 
       <div className="panel">
         <h2>
-          Token untuk tes <small>terpisah dari key chatbot dan token AI di halaman Token</small>
+          Pasang di subdomain <small>satu baris, tinggal tempel</small>
         </h2>
-        <p className="ma-hint" style={{ margin: "0 0 14px" }}>
-          Hanya dipakai untuk tombol <strong>Tes</strong> di bawah dan daftar saran model. Chatbot memakai key di
-          panel Key Gemini chatbot.
-        </p>
-        <ChatKeyForm masked={key ? maskChatToken(key) : null} testModel={models[0] ?? "gemini-2.5-flash"} />
+        <EmbedSnippet />
+      </div>
+
+      <div className="ma-sec" id="prompt">
+        <h2>Isi prompt</h2>
+        <p>Yang menentukan apa dan bagaimana chatbot menjawab.</p>
+      </div>
+
+      <div className="panel">
+        <h2>
+          Prompt chatbot <small>{promptSource === "admin" ? "diatur dari sini" : "belum disimpan dari sini"}</small>
+        </h2>
+        {promptSource === "default" && (
+          <p className="ma-hint" style={{ margin: "0 0 14px" }}>
+            <strong>Belum pernah disimpan:</strong> editor berisi teks bawaan, tapi chatbot memakai prompt darurat yang
+            sangat pendek sampai kamu klik <strong>Simpan</strong> sekali.
+          </p>
+        )}
+        <PromptForm initial={prompt} defaults={DEFAULT_PROMPT} />
+      </div>
+
+      <div className="ma-sec" id="teknis">
+        <h2>Model &amp; key AI</h2>
+        <p>Pengaturan teknis. Biasanya cukup diisi sekali.</p>
+      </div>
+
+      <div className="panel">
+        <h2>
+          Key Gemini chatbot <small>{chatKeys.length ? `${chatKeys.length} key dipakai chatbot` : "kosong, chatbot belum bisa menjawab"}</small>
+        </h2>
+        <ChatKeysForm masked={chatKeys.map(maskChatToken)} max={MAX_CHAT_KEYS} />
       </div>
 
       <div className="panel">
@@ -126,20 +164,14 @@ export default async function ModelAiPage() {
       </div>
 
       <div className="panel">
-        <h2>
-          Prompt chatbot <small>{promptSource === "admin" ? "diatur dari sini" : "belum disimpan dari sini"}</small>
-        </h2>
-        <p className="ma-hint" style={{ margin: "0 0 14px" }}>
-          Semua prompt diatur dari sini dan dibaca chatbot dalam ±30 detik.
-          {promptSource === "default" && (
-            <>
-              {" "}
-              <strong>Belum pernah disimpan:</strong> editor berisi teks bawaan, tapi chatbot memakai prompt darurat
-              yang sangat pendek sampai kamu klik <strong>Simpan</strong> sekali.
-            </>
-          )}
-        </p>
-        <PromptForm initial={prompt} defaults={DEFAULT_PROMPT} />
+        <details className="ma-adv">
+          <summary>Lanjutan: token untuk tes</summary>
+          <p className="ma-hint" style={{ margin: "0 0 14px" }}>
+            Terpisah dari key chatbot dan token AI di halaman Token. Hanya dipakai untuk tombol <strong>Tes</strong> di
+            panel Daftar model dan daftar saran model. Chatbot sendiri memakai key di panel Key Gemini chatbot.
+          </p>
+          <ChatKeyForm masked={key ? maskChatToken(key) : null} testModel={models[0] ?? "gemini-2.5-flash"} />
+        </details>
       </div>
     </main>
   );
