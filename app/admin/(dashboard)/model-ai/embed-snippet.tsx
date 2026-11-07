@@ -33,10 +33,10 @@ export function EmbedSnippet() {
 
   return (
     <div>
-      <div className="pr-vars">
+      <div className="pr-vars" style={{ marginBottom: 12 }}>
         <label>
           Bahasa
-          <select value={lang} onChange={(e) => setLang(e.target.value)}>
+          <select className="an-src" style={{ width: "100%" }} value={lang} onChange={(e) => setLang(e.target.value)}>
             {LANGS.map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
@@ -46,7 +46,7 @@ export function EmbedSnippet() {
         </label>
         <label>
           Tema
-          <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+          <select className="an-src" style={{ width: "100%" }} value={theme} onChange={(e) => setTheme(e.target.value)}>
             <option value="light">Terang</option>
             <option value="dark">Gelap</option>
           </select>
@@ -56,10 +56,15 @@ export function EmbedSnippet() {
         style={{
           margin: 0,
           padding: "12px 14px",
+          background: "var(--bg)",
+          color: "var(--ink)",
           border: "1px solid var(--line)",
-          borderRadius: 8,
-          overflowX: "auto",
-          fontSize: ".8rem",
+          borderRadius: 10,
+          fontFamily: "ui-monospace, Menlo, monospace",
+          fontSize: ".78rem",
+          lineHeight: 1.5,
+          whiteSpace: "pre-wrap",
+          overflowWrap: "anywhere",
           userSelect: "all",
         }}
       >
