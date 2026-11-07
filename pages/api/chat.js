@@ -13,7 +13,6 @@
 //                       "on" = alert URGENT biasa senyap di luar jam CS (FRAUD & LEAD tetap berbunyi).
 //   TELEGRAM_LOG_CHAT_ID - opsional. Chat/grup/channel Telegram terpisah untuk ARSIP: semua percakapan
 //                       (pertanyaan + jawaban) dikirim ke sana secara senyap. Kosong = tidak ada arsip.
-//   AI_CHAT           - opsional. Set "off" untuk mematikan endpoint ini.
 //   TELEGRAM_VISIT_CHAT_ID - opsional. Notif "pengunjung baru buka website" (page view, 1x per IP/hari).
 //                       Kosong = pakai TELEGRAM_CHAT_ID yang sama dengan notif chat.
 //   VISIT_NOTIFY_SILENT - opsional "on" = notif pengunjung tanpa bunyi. VISIT_TRACK "off" = matikan sama sekali.
@@ -1828,7 +1827,7 @@ async function forwardVisitorMsg(cid, name, lang, text) {
 let hideCache = { at: 0, list: [] };
 async function handleCfg(req, res) {
   res.setHeader("Cache-Control", "public, max-age=15");
-  const on = process.env.AI_CHAT !== "off" && (await chatEnabled());
+  const on = await chatEnabled();
   if (Date.now() - hideCache.at >= 15_000) {
     const v = await kv(["GET", "cfg:chat:hide"]);
     if (v !== undefined) {
@@ -1870,7 +1869,6 @@ module.exports = async (req, res) => {
   if (req.method === "GET" && qs.get("cfg")) return handleCfg(req, res);
   if (req.method === "GET" && qs.get("poll")) return handlePoll(req, res, qs);
   if (req.method !== "POST") return res.status(405).json({ error: "error" });
-  if (process.env.AI_CHAT === "off") return res.status(404).json({ error: "off" });
   if (!(await chatEnabled())) return res.status(404).json({ error: "off" });
 
   // Tolak permintaan dari situs lain (bukan dari halaman ini sendiri).
