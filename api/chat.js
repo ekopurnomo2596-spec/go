@@ -493,6 +493,27 @@ function isWidgetOrigin(origin) {
   } catch { return false; }
 }
 
+// Riwayat percakapan untuk widget di subdomain lain (shop, verify, portal, dst) yang memakai cid yang sama lewat cookie.
+// Dibaca dari Redis yang sama dengan yang ditulis saveConv(). Hanya teks pesan dan nama yang dikembalikan.
+async function handleHist(req, res, cid) {
+  res.setHeader("Cache-Control", "no-store");
+  if (!CID_RE.test(cid)) return res.status(400).json({ msgs: [], name: "" });
+  const r = await kvPipe([["LRANGE", "web:conv:msgs:" + cid, -24, -1], ["HGET", "web:conv:meta:" + cid, "title"]]);
+  const rows = r && Array.isArray(r[0]) ? r[0] : [];
+  const msgs = [];
+  for (const raw of rows) {
+    try {
+      const m = JSON.parse(raw);
+      const text = String((m && m.x) || "").slice(0, 2000);
+      if (!text || text.startsWith("(di luar topik")) continue;
+      msgs.push({ role: m.r === "user" ? "user" : "assistant", content: text });
+    } catch { /* lewati baris rusak */ }
+  }
+  const title = r && typeof r[1] === "string" ? r[1] : "";
+  const name = title.startsWith("Pengunjung #") ? "" : validName(title.split(" · #")[0]);
+  return res.status(200).json({ msgs, name });
+}
+
 export default async function handler(req, res) {
   const t0 = Date.now();
   let qs;
@@ -512,6 +533,12 @@ export default async function handler(req, res) {
     try { return await handleCfg(req, res); } catch (e) {
       console.error("[api/chat] cfg gagal:", e);
       return res.status(200).json({ on: true, hide: [] });
+    }
+  }
+  if (req.method === "GET" && qs.get("hist")) {
+    try { return await handleHist(req, res, String(qs.get("hist"))); } catch (e) {
+      console.error("[api/chat] hist gagal:", e);
+      return res.status(200).json({ msgs: [], name: "" });
     }
   }
   if (req.method !== "POST") return res.status(405).json({ error: "error" });
