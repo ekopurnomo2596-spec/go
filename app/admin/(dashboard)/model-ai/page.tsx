@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/auth";
-import { DEFAULT_PROMPT, MAX_CHAT_KEYS, getChatKey, getChatKeys, getModels, getPrompt, maskChatToken } from "@/lib/chatai";
+import { DEFAULT_PROMPT, MAX_CHAT_KEYS, MAX_KEY_NAME, chatKeyId, getChatKey, getChatKeyNames, getChatKeys, getModels, getPrompt, maskChatToken } from "@/lib/chatai";
 import { ChatKeysForm } from "./chat-keys-form";
 import { ChatToggle } from "./chat-toggle";
 import { EmbedSnippet } from "./embed-snippet";
@@ -22,6 +22,7 @@ export default async function ModelAiPage() {
   const limit = await getChatLimit();
   const style = await getChatStyle();
   const chatKeys = await getChatKeys();
+  const keyNames = await getChatKeyNames();
   const hasTestKey = chatKeys.length > 0 || !!(await getChatKey());
 
   return (
@@ -148,7 +149,11 @@ export default async function ModelAiPage() {
         <h2>
           Key Gemini chatbot <small>{chatKeys.length ? `${chatKeys.length} key aktif` : "Belum ada key"}</small>
         </h2>
-        <ChatKeysForm masked={chatKeys.map(maskChatToken)} max={MAX_CHAT_KEYS} />
+        <ChatKeysForm
+          items={chatKeys.map((k) => ({ mask: maskChatToken(k), name: keyNames[chatKeyId(k)] ?? "" }))}
+          max={MAX_CHAT_KEYS}
+          maxName={MAX_KEY_NAME}
+        />
       </div>
 
       <div className="panel">

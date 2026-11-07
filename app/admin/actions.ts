@@ -14,7 +14,11 @@ import {
   getChatKey,
   getChatKeys,
   setChatKeys,
+  chatKeyId,
+  getChatKeyNames,
+  setChatKeyNames,
   MAX_CHAT_KEYS,
+  MAX_KEY_NAME,
   listGoogleModels,
   parseModelList,
   resetModels,
@@ -395,8 +399,32 @@ export async function addChatKeysAction(formData: FormData): Promise<Flash> {
   const list = [...new Set([...(await getChatKeys()), ...incoming])];
   if (list.length > MAX_CHAT_KEYS) return err(`Maksimal ${MAX_CHAT_KEYS} key.`);
   await setChatKeys(list);
+  // Nama (opsional) hanya dipakai kalau yang ditambahkan tepat satu key.
+  const name = str(formData, "name").replace(/\s+/g, " ").slice(0, MAX_KEY_NAME);
+  if (name && incoming.length === 1) {
+    const names = await getChatKeyNames();
+    names[chatKeyId(incoming[0])] = name;
+    await setChatKeyNames(names);
+  }
   revalidatePath("/admin/model-ai");
   return ok(`${list.length} key tersimpan. Chatbot memakainya dalam ±30 detik.`);
+}
+
+/** Ganti nama key. Nama kosong = kembali ke nama otomatis ("Key 1", "Key 2", ...). */
+export async function renameChatKeyAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const i = Number(str(formData, "index"));
+  const list = await getChatKeys();
+  if (!Number.isInteger(i) || i < 0 || i >= list.length) return err("Key tidak ditemukan.");
+  const name = str(formData, "name").replace(/\s+/g, " ");
+  if (name.length > MAX_KEY_NAME) return err(`Nama maksimal ${MAX_KEY_NAME} karakter.`);
+  const names = await getChatKeyNames();
+  const id = chatKeyId(list[i]);
+  if (name) names[id] = name;
+  else delete names[id];
+  await setChatKeyNames(names);
+  revalidatePath("/admin/model-ai");
+  return ok(name ? "Nama key disimpan." : "Nama key dihapus.");
 }
 
 export async function removeChatKeyAction(formData: FormData): Promise<Flash> {
@@ -404,8 +432,13 @@ export async function removeChatKeyAction(formData: FormData): Promise<Flash> {
   const i = Number(str(formData, "index"));
   const list = await getChatKeys();
   if (!Number.isInteger(i) || i < 0 || i >= list.length) return err("Key tidak ditemukan.");
-  list.splice(i, 1);
+  const [gone] = list.splice(i, 1);
   await setChatKeys(list);
+  const names = await getChatKeyNames();
+  if (names[chatKeyId(gone)]) {
+    delete names[chatKeyId(gone)];
+    await setChatKeyNames(names);
+  }
   revalidatePath("/admin/model-ai");
   return ok(list.length ? "Key dihapus." : "Semua key dihapus. Chatbot tidak bisa menjawab sampai ada key baru.");
 }

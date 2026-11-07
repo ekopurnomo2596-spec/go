@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { db } from "./redis";
 import { DEFAULT_PRICE_FROM, DEFAULT_PROMPT_TEXT, DEFAULT_WELCOME_BONUS } from "./chatprompt-default";
 
@@ -59,6 +60,39 @@ export async function getChatKeys(): Promise<string[]> {
 export async function setChatKeys(list: string[]) {
   if (list.length) await db().set(CHAT_KEYS_KEY, list.join("\n"));
   else await db().del(CHAT_KEYS_KEY);
+}
+
+// Nama key disimpan terpisah dari daftar key (portal membaca daftar key apa adanya, jadi formatnya tidak boleh berubah).
+// Kuncinya potongan hash key, bukan key-nya, supaya nama tetap menempel ke key yang sama walau urutan berubah.
+const CHAT_KEY_NAMES = "cfg:chat:keynames";
+export const MAX_KEY_NAME = 40;
+
+export function chatKeyId(k: string): string {
+  return createHash("sha256").update(k).digest("hex").slice(0, 12);
+}
+
+export async function getChatKeyNames(): Promise<Record<string, string>> {
+  const v = await db().get<unknown>(CHAT_KEY_NAMES);
+  let o: unknown = v;
+  if (typeof v === "string") {
+    try {
+      o = JSON.parse(v);
+    } catch {
+      o = null;
+    }
+  }
+  const out: Record<string, string> = {};
+  if (o && typeof o === "object") {
+    for (const [id, n] of Object.entries(o as Record<string, unknown>)) {
+      if (/^[a-f0-9]{12}$/.test(id) && typeof n === "string" && n.trim()) out[id] = n.trim().slice(0, MAX_KEY_NAME);
+    }
+  }
+  return out;
+}
+
+export async function setChatKeyNames(m: Record<string, string>) {
+  if (Object.keys(m).length) await db().set(CHAT_KEY_NAMES, JSON.stringify(m));
+  else await db().del(CHAT_KEY_NAMES);
 }
 
 // ---------- daftar model ----------
