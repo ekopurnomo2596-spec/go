@@ -156,8 +156,15 @@ btn.classList.remove("pulse");void btn.offsetWidth;btn.classList.add("pulse");
 }
 var knownName="";try{knownName=sessionStorage.getItem("echat:name")||""}catch(e){}
 var arc=null;try{arc=JSON.parse(sessionStorage.getItem("echat:arc")||"null")}catch(e){}
-var cid="";try{cid=sessionStorage.getItem("echat:cid")||""}catch(e){}
+// ID percakapan disimpan di cookie untuk seluruh emahairshop.com (semua subdomain), supaya chat bersambung
+// saat pengunjung pindah dari shop ke portal dan seterusnya. Situs lain memakai cookie host saja.
+var CK_DOM=/(^|\.)emahairshop\.com$/i.test(location.hostname)?";domain=.emahairshop.com":"";
+function ckGet(n){try{var m=document.cookie.match(new RegExp("(?:^|; )"+n+"=([^;]*)"));return m?decodeURIComponent(m[1]):""}catch(e){return ""}}
+function ckSet(n,v){try{document.cookie=n+"="+encodeURIComponent(v)+";path=/;max-age=2592000;SameSite=Lax"+(location.protocol==="https:"?";Secure":"")+CK_DOM}catch(e){}}
+var cid=ckGet("echat_cid");
+if(!/^[a-f0-9]{16}$/.test(cid)){cid="";try{cid=sessionStorage.getItem("echat:cid")||""}catch(e){}}
 if(!/^[a-f0-9]{16}$/.test(cid)){var ra=new Uint8Array(8);if(window.crypto&&crypto.getRandomValues)crypto.getRandomValues(ra);else for(var ri=0;ri<8;ri++)ra[ri]=Math.floor(Math.random()*256);cid=Array.prototype.map.call(ra,function(b){return("0"+b.toString(16)).slice(-2)}).join("");try{sessionStorage.setItem("echat:cid",cid)}catch(e){}}
+ckSet("echat_cid",cid);
 var pend=0;
 var hi=$("echat-hi"),hiTimer,hiAuto;
 
@@ -168,6 +175,17 @@ msgs=msgs.filter(function(m){return m&&typeof m.content==="string"&&m.content});
 }
 function saveHistory(){
 try{sessionStorage.setItem("echat:hist",JSON.stringify(msgs.slice(-20)))}catch(e){}
+}
+// Ambil riwayat dari server (percakapan yang sama dari subdomain lain). Dipakai kalau riwayat server lebih panjang
+// dari yang ada di halaman ini. Tidak menimpa saat pengunjung sedang bertanya di halaman ini. Gagal = diam saja.
+function syncRemote(){
+try{fetch(API+"/api/chat?hist="+cid,{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){
+if(!d||!Array.isArray(d.msgs)||pend>0||loading)return;
+var remote=d.msgs.filter(function(m){return m&&typeof m.content==="string"&&m.content&&(m.role==="user"||m.role==="assistant")});
+loadHistory();
+if(remote.length>msgs.length){msgs=remote;saveHistory();if(!panel.classList.contains("hide"))render()}
+if(!knownName&&typeof d.name==="string"&&d.name){knownName=d.name;try{sessionStorage.setItem("echat:name",knownName)}catch(e){}}
+}).catch(function(){})}catch(e){}
 }
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 var IC={
@@ -217,6 +235,7 @@ panel.setAttribute("aria-label",t.title);
 function open(){
 hideHi();
 loadHistory();
+syncRemote();
 labels();
 render();
 panel.classList.remove("hide");
@@ -230,6 +249,7 @@ closeBtn.addEventListener("click",close);
 document.addEventListener("keydown",function(e){if(e.key==="Escape")close()});
 
 labels();
+syncRemote();
 
 // Gelembung sapaan: muncul sekali per kunjungan (setelah ~6 detik), hilang sendiri, tombol berdenyut 3x lalu berhenti.
 function hiSeen(){try{return sessionStorage.getItem("echat:hi")}catch(e){return null}}
