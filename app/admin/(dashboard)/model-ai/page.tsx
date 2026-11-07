@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth";
 import { DEFAULT_PROMPT, getChatKey, getModels, getPrompt, maskChatToken } from "@/lib/chatai";
 import { ChatKeyForm } from "./chat-key-form";
 import { ChatToggle } from "./chat-toggle";
+import { EmbedSnippet } from "./embed-snippet";
 import { ModelsForm } from "./models-form";
 import { PromptForm } from "./prompt-form";
 import { getChatEnabled } from "@/lib/webchat";
@@ -54,6 +55,13 @@ export default async function ModelAiPage() {
           Tampilkan chat di website <small>emahairshop.com</small>
         </h2>
         <ChatToggle initial={chatOn} />
+      </div>
+
+      <div className="panel">
+        <h2>
+          Pasang di subdomain <small>satu baris, tinggal tempel</small>
+        </h2>
+        <EmbedSnippet />
       </div>
 
       <div className="panel">
