@@ -3,9 +3,10 @@ import { DEFAULT_PROMPT, getChatKey, getModels, getPrompt, maskChatToken } from 
 import { ChatKeyForm } from "./chat-key-form";
 import { ChatToggle } from "./chat-toggle";
 import { EmbedSnippet } from "./embed-snippet";
+import { HideForm } from "./hide-form";
 import { ModelsForm } from "./models-form";
 import { PromptForm } from "./prompt-form";
-import { getChatEnabled } from "@/lib/webchat";
+import { getChatEnabled, getChatHide } from "@/lib/webchat";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Model AI" };
@@ -16,6 +17,7 @@ export default async function ModelAiPage() {
   const { models, source } = await getModels();
   const { data: prompt, source: promptSource } = await getPrompt();
   const chatOn = await getChatEnabled();
+  const hideRules = await getChatHide();
 
   return (
     <main className="wrap">
@@ -65,6 +67,13 @@ export default async function ModelAiPage() {
           Pasang di subdomain <small>satu baris, tinggal tempel</small>
         </h2>
         <EmbedSnippet />
+      </div>
+
+      <div className="panel">
+        <h2>
+          Sembunyikan widget di halaman <small>mis. order, checkout, keranjang</small>
+        </h2>
+        <HideForm initial={hideRules} />
       </div>
 
       <div className="panel">

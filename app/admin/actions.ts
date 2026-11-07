@@ -25,7 +25,7 @@ import {
   validatePrompt,
 } from "@/lib/chatai";
 import type { Flash } from "@/lib/flash";
-import { clearWebConvs, deleteWebConv, setChatEnabled, validWebId } from "@/lib/webchat";
+import { cleanHideRules, clearWebConvs, deleteWebConv, setChatEnabled, setChatHide, validWebId } from "@/lib/webchat";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
 import { INFO_LANGS, MAX_TEXT, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
 import { RemoteError, getSvcUsage, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
@@ -434,6 +434,15 @@ export async function setChatEnabledAction(formData: FormData): Promise<Flash> {
   await setChatEnabled(on);
   revalidatePath("/admin/model-ai");
   return ok(on ? "Chat di website dinyalakan." : "Chat di website dimatikan.");
+}
+
+/** Halaman yang menyembunyikan widget.js di subdomain. Widget membacanya lewat api/chat.js portal (±15 detik). */
+export async function saveChatHideAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const rules = cleanHideRules(String(formData.get("rules") ?? ""));
+  await setChatHide(rules);
+  revalidatePath("/admin/model-ai");
+  return ok(rules.length ? `${rules.length} aturan disimpan.` : "Semua aturan dihapus, widget tampil di semua halaman.");
 }
 
 export async function savePromptAction(formData: FormData): Promise<Flash> {

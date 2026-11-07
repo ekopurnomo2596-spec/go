@@ -78,7 +78,7 @@ export function EmbedSnippet() {
       <p className="ma-hint">
         Tempel di sebelum <code>&lt;/body&gt;</code> tiap subdomain (shop, track, verify, dst). Jangan dipasang di
         portal emahairshop.com — chat bawaannya sudah ada, nanti dobel. Widget otomatis berhenti kalau halaman sudah
-        punya chat. Menyala/mati ikut saklar di atas.
+        punya chat. Halaman yang disembunyikan diatur di panel bawah, tanpa mengubah kode ini.
       </p>
     </div>
   );

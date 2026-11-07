@@ -6,12 +6,14 @@ import type { ChatRow, Msg } from "./remote";
  * Portal dan go memakai Redis yang SAMA, jadi di sini langsung baca/tulis key yang sama.
  *
  * - cfg:chat:on           "1" / "0". Kosong dianggap menyala (perilaku lama). Dibaca middleware.js dan api/chat.js portal.
+ * - cfg:chat:hide         daftar halaman yang menyembunyikan widget.js (satu aturan per baris). Dibaca api/chat.js portal (?cfg=1).
  * - web:conv:idx          sorted set id chat (16 hex), skor = waktu pesan terakhir
  * - web:conv:meta:{id}    hash { title, last }
  * - web:conv:msgs:{id}    list pesan { t, r: "user"|"bot", n, x }   (ditulis portal, kedaluwarsa 30 hari)
  */
 
 const ON_KEY = "cfg:chat:on";
+const HIDE_KEY = "cfg:chat:hide";
 const IDX = "web:conv:idx";
 
 export const validWebId = (id: string) => /^[a-f0-9]{16}$/.test(id);
@@ -23,6 +25,30 @@ export async function getChatEnabled(): Promise<boolean> {
 
 export async function setChatEnabled(on: boolean) {
   await db().set(ON_KEY, on ? "1" : "0");
+}
+
+/** Aturan valid: "/path", "/path*", "/", "sub.emahairshop.com", "sub.emahairshop.com/path". */
+export function cleanHideRules(raw: string): string[] {
+  const out: string[] = [];
+  for (const l of raw.split(/[\r\n,]+/)) {
+    let x = l.trim();
+    if (!x) continue;
+    if (!/^[A-Za-z0-9/_\-.*~%:]{1,200}$/.test(x)) continue;
+    if (!x.startsWith("/") && !/^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+(\/|$)/.test(x)) x = "/" + x;
+    if (!out.includes(x)) out.push(x);
+    if (out.length >= 100) break;
+  }
+  return out;
+}
+
+export async function getChatHide(): Promise<string[]> {
+  const v = await db().get<string>(HIDE_KEY);
+  return typeof v === "string" ? cleanHideRules(v) : [];
+}
+
+export async function setChatHide(rules: string[]) {
+  if (rules.length) await db().set(HIDE_KEY, rules.join("\n"));
+  else await db().del(HIDE_KEY);
 }
 
 export async function listWebConvs(n = 100): Promise<ChatRow[]> {
