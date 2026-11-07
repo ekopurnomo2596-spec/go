@@ -6,6 +6,7 @@ import type { ChatRow, Msg } from "./remote";
  * Portal dan go memakai Redis yang SAMA, jadi di sini langsung baca/tulis key yang sama.
  *
  * - cfg:chat:on           "1" / "0". Kosong dianggap menyala (perilaku lama). Dibaca middleware.js dan api/chat.js portal.
+ * - cfg:chat:limit        batas pesan chat per hari (angka). Kosong = portal pakai bawaannya. Dibaca api/chat.js portal.
  * - cfg:chat:hide         daftar halaman yang menyembunyikan widget.js (satu aturan per baris). Dibaca api/chat.js portal (?cfg=1).
  * - web:conv:idx          sorted set id chat (16 hex), skor = waktu pesan terakhir
  * - web:conv:meta:{id}    hash { title, last }
@@ -14,6 +15,8 @@ import type { ChatRow, Msg } from "./remote";
 
 const ON_KEY = "cfg:chat:on";
 const HIDE_KEY = "cfg:chat:hide";
+const LIMIT_KEY = "cfg:chat:limit";
+export const MAX_CHAT_LIMIT = 1_000_000;
 const IDX = "web:conv:idx";
 
 export const validWebId = (id: string) => /^[a-f0-9]{16}$/.test(id);
@@ -25,6 +28,18 @@ export async function getChatEnabled(): Promise<boolean> {
 
 export async function setChatEnabled(on: boolean) {
   await db().set(ON_KEY, on ? "1" : "0");
+}
+
+/** Batas pesan per hari yang tersimpan, atau null kalau belum diatur dari dashboard. */
+export async function getChatLimit(): Promise<number | null> {
+  const v = await db().get<string | number>(LIMIT_KEY);
+  const n = Number(v);
+  return v !== null && v !== "" && Number.isInteger(n) && n > 0 ? n : null;
+}
+
+export async function setChatLimit(n: number | null) {
+  if (n === null) await db().del(LIMIT_KEY);
+  else await db().set(LIMIT_KEY, String(n));
 }
 
 /** Aturan valid: "/path", "/path*", "/", "sub.emahairshop.com", "sub.emahairshop.com/path". */

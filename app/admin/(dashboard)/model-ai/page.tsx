@@ -6,7 +6,8 @@ import { EmbedSnippet } from "./embed-snippet";
 import { HideForm } from "./hide-form";
 import { ModelsForm } from "./models-form";
 import { PromptForm } from "./prompt-form";
-import { getChatEnabled, getChatHide } from "@/lib/webchat";
+import { getChatEnabled, getChatHide, getChatLimit } from "@/lib/webchat";
+import { LimitForm } from "./limit-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Pengaturan Chatbot" };
@@ -18,6 +19,7 @@ export default async function ModelAiPage() {
   const { data: prompt, source: promptSource } = await getPrompt();
   const chatOn = await getChatEnabled();
   const hideRules = await getChatHide();
+  const limit = await getChatLimit();
 
   return (
     <main className="wrap">
@@ -60,6 +62,13 @@ export default async function ModelAiPage() {
           Tampilkan chat di website <small>emahairshop.com</small>
         </h2>
         <ChatToggle initial={chatOn} />
+      </div>
+
+      <div className="panel">
+        <h2>
+          Batas chat per hari <small>{limit ? "diatur dari sini" : "memakai bawaan portal"}</small>
+        </h2>
+        <LimitForm initial={limit} />
       </div>
 
       <div className="panel">

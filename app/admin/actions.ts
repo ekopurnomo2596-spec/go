@@ -25,7 +25,7 @@ import {
   validatePrompt,
 } from "@/lib/chatai";
 import type { Flash } from "@/lib/flash";
-import { cleanHideRules, clearWebConvs, deleteWebConv, setChatEnabled, setChatHide, validWebId } from "@/lib/webchat";
+import { MAX_CHAT_LIMIT, cleanHideRules, clearWebConvs, deleteWebConv, setChatEnabled, setChatHide, setChatLimit, validWebId } from "@/lib/webchat";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
 import { INFO_LANGS, MAX_TEXT, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
 import { RemoteError, getSvcUsage, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
@@ -443,6 +443,24 @@ export async function saveChatHideAction(formData: FormData): Promise<Flash> {
   await setChatHide(rules);
   revalidatePath("/admin/model-ai");
   return ok(rules.length ? `${rules.length} aturan disimpan.` : "Semua aturan dihapus, widget tampil di semua halaman.");
+}
+
+/** Batas pesan chat per hari. Kosong = hapus pengaturan, portal pakai bawaannya. Dibaca api/chat.js portal (±15 detik). */
+export async function saveChatLimitAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const raw = str(formData, "limit").replace(/[.\s]/g, "");
+  if (!raw) {
+    await setChatLimit(null);
+    revalidatePath("/admin/model-ai");
+    return ok("Pengaturan dihapus. Portal memakai batas bawaannya.");
+  }
+  const n = Number(raw);
+  if (!/^\d+$/.test(raw) || !Number.isInteger(n) || n < 1 || n > MAX_CHAT_LIMIT) {
+    return err(`Isi angka bulat antara 1 dan ${MAX_CHAT_LIMIT.toLocaleString("id-ID")}.`);
+  }
+  await setChatLimit(n);
+  revalidatePath("/admin/model-ai");
+  return ok(`Batas ${n.toLocaleString("id-ID")} pesan per hari disimpan.`);
 }
 
 export async function savePromptAction(formData: FormData): Promise<Flash> {
