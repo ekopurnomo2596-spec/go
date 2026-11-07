@@ -29,6 +29,16 @@ button,input{font-family:inherit}
 #echat-head b{font-size:14px}
 #echat-close{width:32px;height:32px;border:0;border-radius:999px;background:transparent;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center}
 #echat-close:hover{background:var(--ico)}
+#echat-hbtns{display:flex;align-items:center;gap:2px}
+#echat-end{width:32px;height:32px;border:0;border-radius:999px;background:transparent;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center}
+#echat-end svg{width:18px;height:18px}
+#echat-end:hover:not(:disabled){background:var(--ico)}
+#echat-end:disabled{opacity:.35;cursor:default}
+#echat-endbar{display:none;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:13px;line-height:1.4}
+#echat-endbar.on{display:flex}
+#echat-endbar span{flex:1;min-width:0}
+#echat-endbar button{flex:none;font:inherit;font-size:12px;font-weight:600;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--text);cursor:pointer}
+#echat-endbar button.y{background:var(--btn);color:var(--btnt);border-color:var(--btn)}
 #echat-wrap{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
 #echat-down{position:absolute;inset-inline-start:50%;bottom:10px;transform:translateX(-50%);width:40px;height:40px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--text);box-shadow:0 2px 10px rgba(0,0,0,.18);display:none;align-items:center;justify-content:center;cursor:pointer}
 #echat-down.show{display:flex}
@@ -75,7 +85,7 @@ button,input{font-family:inherit}
 .echat-qs{display:flex;flex-wrap:wrap;gap:8px;align-self:flex-start}
 .echat-qb{min-height:36px;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;font-weight:600;background:var(--card);color:var(--text);cursor:pointer;text-align:start}
 .echat-qb:hover{border-color:var(--lineh)}
-@media (max-width:640px){#echat-close{width:44px;height:44px;margin-block:-6px;margin-inline-end:-10px}#echat-input{min-height:44px}#echat-send{width:44px;height:44px}.echat-qb{min-height:44px}}
+@media (max-width:640px){#echat-close,#echat-end{width:44px;height:44px;margin-block:-6px}#echat-close{margin-inline-end:-10px}#echat-endbar button{min-height:36px}#echat-input{min-height:44px}#echat-send{width:44px;height:44px}.echat-qb{min-height:44px}}
 @keyframes echatFade{from{opacity:0}to{opacity:1}}
 @keyframes echatUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
 @keyframes echatPop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
@@ -123,9 +133,10 @@ var HTML=`<button type="button" id="echat-btn" aria-label="Chat">
 <div id="echat-hi" class="hide" role="status"><span>Hello, how can I help you?</span><button type="button" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
 
 <div id="echat-panel" class="hide" role="dialog" aria-label="Chat">
-<div id="echat-head"><div><b id="echat-title">AI Assistant</b><small id="echat-sub"></small></div><button type="button" id="echat-close" aria-label="Close">
+<div id="echat-head"><div><b id="echat-title">AI Assistant</b><small id="echat-sub"></small></div><div id="echat-hbtns"><button type="button" id="echat-end" aria-label="End conversation" title="End conversation" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button><button type="button" id="echat-close" aria-label="Close">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-</button></div>
+</button></div></div>
+<div id="echat-endbar" role="group"><span id="echat-endq"></span><button type="button" id="echat-endn"></button><button type="button" id="echat-endy" class="y"></button></div>
 <div id="echat-wrap"><div id="echat-body" role="log" aria-label="Chat messages"></div><button type="button" id="echat-down" aria-label="Scroll to latest message" title="Scroll to latest message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button></div>
 <div id="echat-announce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 <p id="echat-note">Answered by AI. For prices, stock and orders, please confirm via WhatsApp.</p>
@@ -135,13 +146,13 @@ var HTML=`<button type="button" id="echat-btn" aria-label="Chat">
 </form>
 </div>`;
 var ET={
-en:{open:"AI Assistant",title:"AI Assistant",sub:"Fast answers, 24/7",intro:"Hello, I'm EMAHAIRSHOP's AI assistant. How can I help you?",hi:"Hello, how can I help you?",note:"Answered by AI. For prices, stock and orders, please confirm via WhatsApp.",ph:"Type your question\u2026",send:"Send",close:"Close",wa:"Ask on WhatsApp",rate:"Too many questions in a short time. Please try again in a minute.",busy:"The assistant is busy right now. Please try again shortly.",error:"Something went wrong. Please try again.",offtopic:"Sorry, that's outside what I can help with here. Ask me about EMAHAIRSHOP or hair extensions instead.",think:"Thinking"},
-id:{open:"Asisten AI",title:"Asisten AI",sub:"Respons cepat, 24 jam",intro:"Halo, saya asisten AI EMAHAIRSHOP. Ada yang bisa saya bantu?",hi:"Halo, ada yang bisa dibantu?",note:"Dijawab oleh AI. Untuk harga, stok, dan pesanan, mohon konfirmasi via WhatsApp.",ph:"Tulis pertanyaanmu\u2026",send:"Kirim",close:"Tutup",wa:"Tanya lewat WhatsApp",rate:"Terlalu banyak pertanyaan dalam waktu singkat. Coba lagi sebentar lagi.",busy:"Asisten sedang sibuk. Coba lagi sebentar lagi.",error:"Terjadi kesalahan. Coba lagi.",offtopic:"Maaf, itu di luar hal yang bisa saya bantu di sini. Coba tanya soal EMAHAIRSHOP atau hair extension ya.",think:"Mengetik"},
-it:{open:"Assistente AI",title:"Assistente AI",sub:"Risposte rapide, 24/7",intro:"Buongiorno, sono l'assistente AI di EMAHAIRSHOP. Come posso aiutarla?",hi:"Buongiorno, posso aiutarla?",note:"Risposte generate da AI. Per prezzi, disponibilit\u00e0 e ordini, confermi via WhatsApp.",ph:"Scrivi la tua domanda\u2026",send:"Invia",close:"Chiudi",wa:"Chiedi su WhatsApp",rate:"Troppe domande in poco tempo. Riprova tra un minuto.",busy:"L'assistente \u00e8 occupato. Riprova tra poco.",error:"Qualcosa \u00e8 andato storto. Riprova.",offtopic:"Mi dispiace, questo esula da ci\u00f2 che posso aiutarti qui. Chiedimi di EMAHAIRSHOP o delle extension per capelli.",think:"Sto scrivendo"},
-es:{open:"Asistente IA",title:"Asistente IA",sub:"Respuestas r\u00e1pidas, 24/7",intro:"Hola, soy el asistente de IA de EMAHAIRSHOP. \u00bfEn qu\u00e9 puedo ayudarle?",hi:"Hola, \u00bfen qu\u00e9 puedo ayudarle?",note:"Respuestas generadas por IA. Para precios, stock y pedidos, confirme por WhatsApp.",ph:"Escribe tu pregunta\u2026",send:"Enviar",close:"Cerrar",wa:"Preguntar por WhatsApp",rate:"Demasiadas preguntas en poco tiempo. Int\u00e9ntalo de nuevo en un minuto.",busy:"El asistente est\u00e1 ocupado. Int\u00e9ntalo de nuevo en breve.",error:"Algo sali\u00f3 mal. Int\u00e9ntalo de nuevo.",offtopic:"Lo siento, eso est\u00e1 fuera de lo que puedo ayudarte aqu\u00ed. Preg\u00fantame sobre EMAHAIRSHOP o extensiones de cabello.",think:"Escribiendo"},
-fr:{open:"Assistant IA",title:"Assistant IA",sub:"R\u00e9ponses rapides, 24/7",intro:"Bonjour, je suis l'assistant IA d'EMAHAIRSHOP. Comment puis-je vous aider ?",hi:"Bonjour, puis-je vous aider ?",note:"R\u00e9ponses g\u00e9n\u00e9r\u00e9es par IA. Pour les prix, le stock et les commandes, confirmez via WhatsApp.",ph:"\u00c9crivez votre question\u2026",send:"Envoyer",close:"Fermer",wa:"Demander sur WhatsApp",rate:"Trop de questions en peu de temps. R\u00e9essayez dans une minute.",busy:"L'assistant est occup\u00e9. R\u00e9essayez dans un instant.",error:"Une erreur est survenue. R\u00e9essayez.",offtopic:"D\u00e9sol\u00e9, cela d\u00e9passe ce que je peux vous aider ici. Posez-moi vos questions sur EMAHAIRSHOP ou les extensions.",think:"En train d'\u00e9crire"},
-de:{open:"KI-Assistent",title:"KI-Assistent",sub:"Schnelle Antworten, 24/7",intro:"Guten Tag, ich bin der KI-Assistent von EMAHAIRSHOP. Wie kann ich Ihnen helfen?",hi:"Guten Tag, kann ich helfen?",note:"Antworten von KI. F\u00fcr Preise, Verf\u00fcgbarkeit und Bestellungen bitte per WhatsApp best\u00e4tigen.",ph:"Frage eingeben\u2026",send:"Senden",close:"Schlie\u00dfen",wa:"Per WhatsApp fragen",rate:"Zu viele Fragen in kurzer Zeit. Bitte versuchen Sie es in einer Minute erneut.",busy:"Der Assistent ist gerade ausgelastet. Bitte versuchen Sie es gleich noch einmal.",error:"Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",offtopic:"Entschuldigung, das liegt au\u00dferhalb dessen, wobei ich hier helfen kann. Fragen Sie mich zu EMAHAIRSHOP oder Haarverl\u00e4ngerungen.",think:"Tippt"},
-ru:{open:"\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442",title:"\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442",sub:"\u0411\u044b\u0441\u0442\u0440\u044b\u0435 \u043e\u0442\u0432\u0435\u0442\u044b, 24/7",intro:"\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u044f \u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442 EMAHAIRSHOP. \u0427\u0435\u043c \u043c\u043e\u0433\u0443 \u043f\u043e\u043c\u043e\u0447\u044c?",hi:"\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0447\u0435\u043c \u043c\u043e\u0433\u0443 \u043f\u043e\u043c\u043e\u0447\u044c?",note:"\u041e\u0442\u0432\u0435\u0442\u044b \u0434\u0430\u0451\u0442 \u0418\u0418. \u0426\u0435\u043d\u044b, \u043d\u0430\u043b\u0438\u0447\u0438\u0435 \u0438 \u0437\u0430\u043a\u0430\u0437\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0439\u0442\u0435 \u0432 WhatsApp.",ph:"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0432\u043e\u043f\u0440\u043e\u0441\u2026",send:"\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c",close:"\u0417\u0430\u043a\u0440\u044b\u0442\u044c",wa:"\u0421\u043f\u0440\u043e\u0441\u0438\u0442\u044c \u0432 WhatsApp",rate:"\u0421\u043b\u0438\u0448\u043a\u043e\u043c \u043c\u043d\u043e\u0433\u043e \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432 \u0437\u0430 \u043a\u043e\u0440\u043e\u0442\u043a\u043e\u0435 \u0432\u0440\u0435\u043c\u044f. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0447\u0435\u0440\u0435\u0437 \u043c\u0438\u043d\u0443\u0442\u0443.",busy:"\u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442 \u0441\u0435\u0439\u0447\u0430\u0441 \u0437\u0430\u043d\u044f\u0442. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0447\u0443\u0442\u044c \u043f\u043e\u0437\u0436\u0435.",error:"\u0427\u0442\u043e-\u0442\u043e \u043f\u043e\u0448\u043b\u043e \u043d\u0435 \u0442\u0430\u043a. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0435\u0449\u0451 \u0440\u0430\u0437.",offtopic:"\u0418\u0437\u0432\u0438\u043d\u0438\u0442\u0435, \u044d\u0442\u043e \u0432\u044b\u0445\u043e\u0434\u0438\u0442 \u0437\u0430 \u0440\u0430\u043c\u043a\u0438 \u0442\u043e\u0433\u043e, \u0441 \u0447\u0435\u043c \u044f \u043c\u043e\u0433\u0443 \u043f\u043e\u043c\u043e\u0447\u044c \u0437\u0434\u0435\u0441\u044c. \u0421\u043f\u0440\u043e\u0441\u0438\u0442\u0435 \u043c\u0435\u043d\u044f \u043e EMAHAIRSHOP \u0438\u043b\u0438 \u043d\u0430\u0440\u0430\u0449\u0438\u0432\u0430\u043d\u0438\u0438 \u0432\u043e\u043b\u043e\u0441.",think:"\u041f\u0435\u0447\u0430\u0442\u0430\u0435\u0442"}
+en:{open:"AI Assistant",title:"AI Assistant",sub:"Fast answers, 24/7",intro:"Hello, I'm EMAHAIRSHOP's AI assistant. How can I help you?",hi:"Hello, how can I help you?",note:"Answered by AI. For prices, stock and orders, please confirm via WhatsApp.",ph:"Type your question\u2026",send:"Send",close:"Close",wa:"Ask on WhatsApp",rate:"Too many questions in a short time. Please try again in a minute.",busy:"The assistant is busy right now. Please try again shortly.",error:"Something went wrong. Please try again.",offtopic:"Sorry, that's outside what I can help with here. Ask me about EMAHAIRSHOP or hair extensions instead.",think:"Thinking",end:"End conversation",endq:"End this conversation and start a new one?",endy:"End",endn:"Cancel"},
+id:{open:"Asisten AI",title:"Asisten AI",sub:"Respons cepat, 24 jam",intro:"Halo, saya asisten AI EMAHAIRSHOP. Ada yang bisa saya bantu?",hi:"Halo, ada yang bisa dibantu?",note:"Dijawab oleh AI. Untuk harga, stok, dan pesanan, mohon konfirmasi via WhatsApp.",ph:"Tulis pertanyaanmu\u2026",send:"Kirim",close:"Tutup",wa:"Tanya lewat WhatsApp",rate:"Terlalu banyak pertanyaan dalam waktu singkat. Coba lagi sebentar lagi.",busy:"Asisten sedang sibuk. Coba lagi sebentar lagi.",error:"Terjadi kesalahan. Coba lagi.",offtopic:"Maaf, itu di luar hal yang bisa saya bantu di sini. Coba tanya soal EMAHAIRSHOP atau hair extension ya.",think:"Mengetik",end:"Akhiri percakapan",endq:"Akhiri percakapan ini dan mulai yang baru?",endy:"Akhiri",endn:"Batal"},
+it:{open:"Assistente AI",title:"Assistente AI",sub:"Risposte rapide, 24/7",intro:"Buongiorno, sono l'assistente AI di EMAHAIRSHOP. Come posso aiutarla?",hi:"Buongiorno, posso aiutarla?",note:"Risposte generate da AI. Per prezzi, disponibilit\u00e0 e ordini, confermi via WhatsApp.",ph:"Scrivi la tua domanda\u2026",send:"Invia",close:"Chiudi",wa:"Chiedi su WhatsApp",rate:"Troppe domande in poco tempo. Riprova tra un minuto.",busy:"L'assistente \u00e8 occupato. Riprova tra poco.",error:"Qualcosa \u00e8 andato storto. Riprova.",offtopic:"Mi dispiace, questo esula da ci\u00f2 che posso aiutarti qui. Chiedimi di EMAHAIRSHOP o delle extension per capelli.",think:"Sto scrivendo",end:"Termina conversazione",endq:"Terminare questa conversazione e iniziarne una nuova?",endy:"Termina",endn:"Annulla"},
+es:{open:"Asistente IA",title:"Asistente IA",sub:"Respuestas r\u00e1pidas, 24/7",intro:"Hola, soy el asistente de IA de EMAHAIRSHOP. \u00bfEn qu\u00e9 puedo ayudarle?",hi:"Hola, \u00bfen qu\u00e9 puedo ayudarle?",note:"Respuestas generadas por IA. Para precios, stock y pedidos, confirme por WhatsApp.",ph:"Escribe tu pregunta\u2026",send:"Enviar",close:"Cerrar",wa:"Preguntar por WhatsApp",rate:"Demasiadas preguntas en poco tiempo. Int\u00e9ntalo de nuevo en un minuto.",busy:"El asistente est\u00e1 ocupado. Int\u00e9ntalo de nuevo en breve.",error:"Algo sali\u00f3 mal. Int\u00e9ntalo de nuevo.",offtopic:"Lo siento, eso est\u00e1 fuera de lo que puedo ayudarte aqu\u00ed. Preg\u00fantame sobre EMAHAIRSHOP o extensiones de cabello.",think:"Escribiendo",end:"Finalizar conversaci\u00f3n",endq:"\u00bfFinalizar esta conversaci\u00f3n y empezar una nueva?",endy:"Finalizar",endn:"Cancelar"},
+fr:{open:"Assistant IA",title:"Assistant IA",sub:"R\u00e9ponses rapides, 24/7",intro:"Bonjour, je suis l'assistant IA d'EMAHAIRSHOP. Comment puis-je vous aider ?",hi:"Bonjour, puis-je vous aider ?",note:"R\u00e9ponses g\u00e9n\u00e9r\u00e9es par IA. Pour les prix, le stock et les commandes, confirmez via WhatsApp.",ph:"\u00c9crivez votre question\u2026",send:"Envoyer",close:"Fermer",wa:"Demander sur WhatsApp",rate:"Trop de questions en peu de temps. R\u00e9essayez dans une minute.",busy:"L'assistant est occup\u00e9. R\u00e9essayez dans un instant.",error:"Une erreur est survenue. R\u00e9essayez.",offtopic:"D\u00e9sol\u00e9, cela d\u00e9passe ce que je peux vous aider ici. Posez-moi vos questions sur EMAHAIRSHOP ou les extensions.",think:"En train d'\u00e9crire",end:"Terminer la conversation",endq:"Terminer cette conversation et en commencer une nouvelle ?",endy:"Terminer",endn:"Annuler"},
+de:{open:"KI-Assistent",title:"KI-Assistent",sub:"Schnelle Antworten, 24/7",intro:"Guten Tag, ich bin der KI-Assistent von EMAHAIRSHOP. Wie kann ich Ihnen helfen?",hi:"Guten Tag, kann ich helfen?",note:"Antworten von KI. F\u00fcr Preise, Verf\u00fcgbarkeit und Bestellungen bitte per WhatsApp best\u00e4tigen.",ph:"Frage eingeben\u2026",send:"Senden",close:"Schlie\u00dfen",wa:"Per WhatsApp fragen",rate:"Zu viele Fragen in kurzer Zeit. Bitte versuchen Sie es in einer Minute erneut.",busy:"Der Assistent ist gerade ausgelastet. Bitte versuchen Sie es gleich noch einmal.",error:"Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",offtopic:"Entschuldigung, das liegt au\u00dferhalb dessen, wobei ich hier helfen kann. Fragen Sie mich zu EMAHAIRSHOP oder Haarverl\u00e4ngerungen.",think:"Tippt",end:"Gespr\u00e4ch beenden",endq:"Dieses Gespr\u00e4ch beenden und ein neues beginnen?",endy:"Beenden",endn:"Abbrechen"},
+ru:{open:"\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442",title:"\u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442",sub:"\u0411\u044b\u0441\u0442\u0440\u044b\u0435 \u043e\u0442\u0432\u0435\u0442\u044b, 24/7",intro:"\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u044f \u0418\u0418-\u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442 EMAHAIRSHOP. \u0427\u0435\u043c \u043c\u043e\u0433\u0443 \u043f\u043e\u043c\u043e\u0447\u044c?",hi:"\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0447\u0435\u043c \u043c\u043e\u0433\u0443 \u043f\u043e\u043c\u043e\u0447\u044c?",note:"\u041e\u0442\u0432\u0435\u0442\u044b \u0434\u0430\u0451\u0442 \u0418\u0418. \u0426\u0435\u043d\u044b, \u043d\u0430\u043b\u0438\u0447\u0438\u0435 \u0438 \u0437\u0430\u043a\u0430\u0437\u044b \u0443\u0442\u043e\u0447\u043d\u044f\u0439\u0442\u0435 \u0432 WhatsApp.",ph:"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0432\u043e\u043f\u0440\u043e\u0441\u2026",send:"\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c",close:"\u0417\u0430\u043a\u0440\u044b\u0442\u044c",wa:"\u0421\u043f\u0440\u043e\u0441\u0438\u0442\u044c \u0432 WhatsApp",rate:"\u0421\u043b\u0438\u0448\u043a\u043e\u043c \u043c\u043d\u043e\u0433\u043e \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432 \u0437\u0430 \u043a\u043e\u0440\u043e\u0442\u043a\u043e\u0435 \u0432\u0440\u0435\u043c\u044f. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0447\u0435\u0440\u0435\u0437 \u043c\u0438\u043d\u0443\u0442\u0443.",busy:"\u0410\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442 \u0441\u0435\u0439\u0447\u0430\u0441 \u0437\u0430\u043d\u044f\u0442. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0447\u0443\u0442\u044c \u043f\u043e\u0437\u0436\u0435.",error:"\u0427\u0442\u043e-\u0442\u043e \u043f\u043e\u0448\u043b\u043e \u043d\u0435 \u0442\u0430\u043a. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0435\u0449\u0451 \u0440\u0430\u0437.",offtopic:"\u0418\u0437\u0432\u0438\u043d\u0438\u0442\u0435, \u044d\u0442\u043e \u0432\u044b\u0445\u043e\u0434\u0438\u0442 \u0437\u0430 \u0440\u0430\u043c\u043a\u0438 \u0442\u043e\u0433\u043e, \u0441 \u0447\u0435\u043c \u044f \u043c\u043e\u0433\u0443 \u043f\u043e\u043c\u043e\u0447\u044c \u0437\u0434\u0435\u0441\u044c. \u0421\u043f\u0440\u043e\u0441\u0438\u0442\u0435 \u043c\u0435\u043d\u044f \u043e EMAHAIRSHOP \u0438\u043b\u0438 \u043d\u0430\u0440\u0430\u0449\u0438\u0432\u0430\u043d\u0438\u0438 \u0432\u043e\u043b\u043e\u0441.",think:"\u041f\u0435\u0447\u0430\u0442\u0430\u0435\u0442",end:"\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u0440\u0430\u0437\u0433\u043e\u0432\u043e\u0440",endq:"\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u044d\u0442\u043e\u0442 \u0440\u0430\u0437\u0433\u043e\u0432\u043e\u0440 \u0438 \u043d\u0430\u0447\u0430\u0442\u044c \u043d\u043e\u0432\u044b\u0439?",endy:"\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c",endn:"\u041e\u0442\u043c\u0435\u043d\u0430"}
 };
 function et(){return ET[LG]||ET.en}
 var RT={en:"Try again",id:"Kirim ulang",it:"Riprova",es:"Reintentar",fr:"R\u00e9essayer",de:"Erneut versuchen",ru:"\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c"};
@@ -181,7 +192,8 @@ var btn=$("echat-btn"),panel=$("echat-panel"),
 body=$("echat-body"),form=$("echat-form"),
 input=$("echat-input"),closeBtn=$("echat-close"),
 sendBtn=$("echat-send"),badge=$("echat-badge"),
-announce=$("echat-announce");
+announce=$("echat-announce"),
+endBtn=$("echat-end"),endBar=$("echat-endbar");
 APPLY=function(){
 var S=STYLE||{},ks=["launcher","pos","enter","panel","open","bubble","msg"];
 ks.forEach(function(k){if(S[k])host.setAttribute("data-"+k,S[k]);else host.removeAttribute("data-"+k)});
@@ -274,7 +286,7 @@ body.innerHTML=html;
 body.scrollTop=body.scrollHeight;if(typeof updateDown==='function')updateDown();
 renderedN=msgs.length;syncSend();
 }
-function syncSend(){if(sendBtn)sendBtn.disabled=loading||!input.value.trim()}
+function syncSend(){if(sendBtn)sendBtn.disabled=loading||!input.value.trim();if(endBtn)endBtn.disabled=loading||!msgs.length}
 function labels(){
 var t=et();
 $("echat-btn-label").textContent=t.open;
@@ -284,6 +296,8 @@ var sb=$("echat-sub");if(sb)sb.textContent=t.sub;
 $("echat-note").textContent=t.note;
 var hs=hi&&hi.querySelector("span");if(hs)hs.textContent=t.hi;
 closeBtn.setAttribute("aria-label",t.close);
+endBtn.setAttribute("aria-label",t.end);endBtn.title=t.end;
+$("echat-endq").textContent=t.endq;$("echat-endy").textContent=t.endy;$("echat-endn").textContent=t.endn;
 input.placeholder=t.ph;
 $("echat-send").setAttribute("aria-label",t.send);$("echat-send").title=t.send;
 panel.setAttribute("aria-label",t.title);
@@ -299,10 +313,27 @@ body.scrollTop=body.scrollHeight;updateDown();
 unread=0;updateBadge();
 if(msgs.length||!(window.matchMedia&&matchMedia("(pointer:coarse)").matches))input.focus();
 }
-function close(){panel.classList.add("hide")}
+function close(){panel.classList.add("hide");endBar.classList.remove("on")}
+// Akhiri percakapan: riwayat, nama, dan ringkasan di browser dihapus, lalu dibuat ID percakapan baru
+// (cookie ikut diganti, jadi semua subdomain mulai dari awal). Percakapan lama tetap tersimpan di dashboard.
+function newCid(){var ra=new Uint8Array(8);if(window.crypto&&crypto.getRandomValues)crypto.getRandomValues(ra);else for(var i=0;i<8;i++)ra[i]=Math.floor(Math.random()*256);return Array.prototype.map.call(ra,function(b){return("0"+b.toString(16)).slice(-2)}).join("")}
+function endChat(){
+if(loading)return;
+endBar.classList.remove("on");
+msgs=[];knownName="";arc=null;renderedN=-1;unread=0;updateBadge();
+try{["hist","name","arc"].forEach(function(k){sessionStorage.removeItem("echat:"+k)})}catch(e){}
+cid=newCid();try{sessionStorage.setItem("echat:cid",cid)}catch(e){}
+ckSet("echat_cid",cid);
+input.value="";
+render();sayAria(et().intro);
+if(!(window.matchMedia&&matchMedia("(pointer:coarse)").matches))input.focus();
+}
 window.emaWidget={open:open,close:close};
 btn.addEventListener("click",function(){panel.classList.contains("hide")?open():close()});
 closeBtn.addEventListener("click",close);
+endBtn.addEventListener("click",function(){if(!endBtn.disabled)endBar.classList.toggle("on")});
+$("echat-endn").addEventListener("click",function(){endBar.classList.remove("on")});
+$("echat-endy").addEventListener("click",endChat);
 document.addEventListener("keydown",function(e){if(e.key==="Escape")close()});
 
 labels();
