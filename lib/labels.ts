@@ -24,7 +24,7 @@ export const LABEL_BUTTONS = [
 /** Nama warna -> kode warna. Portal punya daftar yang sama (hanya nama yang dikirim ke portal). */
 export const LABEL_COLORS = { merah: "#EE4D2D", emas: "#a8802f", hijau: "#1f8a4c", hitam: "#1a1a1a" } as const;
 export type LabelColor = keyof typeof LABEL_COLORS;
-export type LabelItem = { on: boolean; text: string; color: LabelColor; texts: InfoTexts };
+export type LabelItem = { on: boolean; text: string; color: LabelColor; anim: boolean; texts: InfoTexts };
 export type Labels = Record<string, LabelItem>;
 
 export const isColor = (c: string): c is LabelColor => c in LABEL_COLORS;
@@ -39,27 +39,23 @@ export function cleanLabels(raw: unknown): Labels {
       on: !!x?.on && !!text,
       text,
       color: x?.color && isColor(x.color) ? x.color : "merah",
+      anim: !!x?.anim && !!text, // kilau halus pada label ini (toggle per label)
       texts: text ? cleanInfoTexts(x?.texts, MAX_LABEL_TR) : {},
     };
   }
   return out;
 }
 
-export async function getLabelState(): Promise<{ items: Labels; anim: boolean }> {
+export async function getLabels(): Promise<Labels> {
   const raw = await db().get<unknown>(LABEL_KEY);
   try {
-    const o = (typeof raw === "string" ? JSON.parse(raw) : raw) as { items?: unknown; anim?: unknown } | null;
-    return { items: cleanLabels(o?.items), anim: o?.anim === true };
+    const o = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return cleanLabels((o as { items?: unknown } | null)?.items);
   } catch {
-    return { items: cleanLabels(null), anim: false };
+    return cleanLabels(null);
   }
 }
 
-export async function getLabels(): Promise<Labels> {
-  return (await getLabelState()).items;
-}
-
-/** `anim`: toggle "Tampilkan animasi" (satu untuk semua label). Portal menambah kelas animasi pada label bila true. */
-export async function setLabels(items: Labels, anim = false) {
-  await db().set(LABEL_KEY, JSON.stringify({ items, anim, v: Date.now() }));
+export async function setLabels(items: Labels) {
+  await db().set(LABEL_KEY, JSON.stringify({ items, v: Date.now() }));
 }

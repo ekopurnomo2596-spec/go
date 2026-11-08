@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { flash, type Flash } from "@/lib/flash";
 import { previewLabelTranslations, saveLabels } from "../../actions";
 
@@ -8,31 +8,28 @@ const COLORS = { merah: "#EE4D2D", emas: "#a8802f", hijau: "#1f8a4c", hitam: "#1
 const LANGS = ["en", "id", "it", "es", "fr", "de", "ru"] as const;
 type Lang = (typeof LANGS)[number];
 type Tx = Partial<Record<Lang, string>>;
-type Item = { on: boolean; text: string; color: keyof typeof COLORS; texts: Tx };
+type Item = { on: boolean; text: string; color: keyof typeof COLORS; anim: boolean; texts: Tx };
 const MAX = 14;
-// CSS label asli milik portal (satu file yang sama dipakai portal), supaya pratinjau persis sama.
-const PORTAL_CSS = "https://emahairshop.com/label.css";
+// Pratinjau = halaman portal ASLI (CSS dan markup asli) di dalam iframe. Label yang belum disimpan dikirim lewat postMessage.
+const PORTAL = "https://emahairshop.com";
 const norm = (s: string) => s.replace(/\s+/g, " ").trim();
 
 export function LabelForm({
   buttons,
   initial,
-  initialAnim,
 }: {
   buttons: { key: string; name: string }[];
   initial: Record<string, Partial<Item>>;
-  initialAnim: boolean;
 }) {
   const ref = useRef<HTMLFormElement>(null);
   const [saving, startSave] = useTransition();
   const [trans, startTrans] = useTransition();
   const [lang, setLang] = useState<Lang>("id");
-  const [anim, setAnim] = useState(initialAnim);
   const [v, setV] = useState<Record<string, Item>>(() =>
     Object.fromEntries(
       buttons.map((b) => {
         const i = initial[b.key];
-        return [b.key, { on: !!i?.on, text: i?.text ?? "", color: i?.color ?? "merah", texts: i?.texts ?? {} }];
+        return [b.key, { on: !!i?.on, text: i?.text ?? "", color: i?.color ?? "merah", anim: !!i?.anim, texts: i?.texts ?? {} }];
       }),
     ),
   );
@@ -45,7 +42,28 @@ export function LabelForm({
   const live = (k: string) => v[k].on && !!norm(v[k].text);
   const stale = (k: string) => live(k) && tFor[k] !== norm(v[k].text);
   const needKeys = buttons.filter((b) => stale(b.key)).map((b) => b.key);
-  const shown = (k: string) => (!stale(k) && v[k].texts[lang]) || norm(v[k].text);
+
+  const fr = useRef<HTMLIFrameElement>(null);
+  const payload = {
+    type: "lblpv",
+    lang,
+    labels: Object.fromEntries(
+      buttons.filter((b) => live(b.key)).map((b) => [b.key, { t: norm(v[b.key].text), c: v[b.key].color, a: v[b.key].anim ? 1 : 0, x: stale(b.key) ? {} : v[b.key].texts }]),
+    ),
+  };
+  const send = () => fr.current?.contentWindow?.postMessage(payload, PORTAL);
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  useEffect(() => {
+    send();
+  });
+  useEffect(() => {
+    const h = (e: MessageEvent) => {
+      if (e.origin === PORTAL && (e.data as { type?: string } | null)?.type === "lblpv-ready") sendRef.current();
+    };
+    window.addEventListener("message", h);
+    return () => window.removeEventListener("message", h);
+  }, []);
 
   const translate = () => {
     if (!ref.current || trans || !needKeys.length) return;
@@ -121,23 +139,19 @@ export function LabelForm({
         .lb-tr label { display: flex; align-items: center; gap: 8px; }
         .lb-tr b { width: 22px; font-size: 11px; text-transform: uppercase; opacity: 0.6; }
         .lb-tr input[type="text"] { width: 100%; min-width: 0; height: 32px; font-size: 13px; }
-        .lb-anim { margin-top: 4px; padding: 14px 0; border-bottom: 1px solid #e5e5e5; }
-        .lb-anim small { display: block; font-size: 12px; font-weight: 400; opacity: 0.65; }
+        .lb-anim { font-size: 13px; }
         .lb-pv { margin-top: 20px; }
         .lb-pv h3 { margin: 0 0 8px; font-size: 14px; }
         .lb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
         .lb-chips button { height: 30px; padding: 0 10px; font: inherit; font-size: 12px; font-weight: 600; text-transform: uppercase; color: #111; background: #fff; border: 1px solid #e0e0e0; border-radius: 0; cursor: pointer; }
         .lb-chips button[aria-pressed="true"] { background: #111; color: #fff; border-color: #111; }
-        .lb-list { border: 1px solid #e5e5e5; background: #fff; }
-        .lb-list div { position: relative; display: flex; align-items: center; min-height: 56px; padding: 14px 16px; border-bottom: 1px solid #e5e5e5; font-size: 15px; font-weight: 600; color: #111; }
-        .lb-list div:last-child { border-bottom: 0; }
+        .lb-frame { display: block; width: 100%; max-width: 480px; height: 660px; margin: 0 auto; border: 1px solid #e5e5e5; background: #fafafa; }
         .lb-act { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; }
         .lb-act .lb-btns { display: flex; gap: 10px; margin-inline-start: auto; }
         .lb-btn2 { height: 38px; padding: 0 16px; font: inherit; font-size: 14px; font-weight: 600; color: #111; background: #fff; border: 1px solid #111; border-radius: 0; cursor: pointer; }
         .lb-btn2:disabled { opacity: 0.45; cursor: default; }
       `}</style>
 
-      <link rel="stylesheet" href={PORTAL_CSS} precedence="default" />
       {buttons.map((b) => {
         const it = v[b.key];
         const hasTr = Object.keys(it.texts).length > 0;
@@ -170,6 +184,11 @@ export function LabelForm({
                 ))}
               </div>
             </div>
+            <label className="switch lb-anim" htmlFor={`anim-${b.key}`}>
+              <span>Tampilkan animasi (kilau halus)</span>
+              <input id={`anim-${b.key}`} name={`anim_${b.key}`} type="checkbox" checked={it.anim} onChange={(e) => set(b.key, { anim: e.target.checked })} />
+              <i aria-hidden="true" />
+            </label>
             <input type="hidden" name={`texts_${b.key}`} value={JSON.stringify(it.texts)} />
             {live(b.key) && (
               <div className={"lb-state" + (stale(b.key) ? " warn" : "")}>
@@ -199,17 +218,6 @@ export function LabelForm({
         );
       })}
 
-      <div className="lb-anim">
-        <label className="switch" htmlFor="anim">
-          <span>
-            Tampilkan animasi
-            <small>Kilau halus pada semua label di portal.</small>
-          </span>
-          <input id="anim" name="anim" type="checkbox" checked={anim} onChange={(e) => setAnim(e.target.checked)} />
-          <i aria-hidden="true" />
-        </label>
-      </div>
-
       <div className="lb-pv">
         <h3>Pratinjau di portal</h3>
         <div className="lb-chips" role="group" aria-label="Bahasa pratinjau">
@@ -219,18 +227,7 @@ export function LabelForm({
             </button>
           ))}
         </div>
-        <div className="lb-list">
-          {buttons.map((b) => (
-            <div key={b.key} data-lbl={b.key}>
-              {b.name}
-              {live(b.key) && (
-                <span className={anim ? "xlb xlb-a" : "xlb"} style={{ background: COLORS[v[b.key].color as keyof typeof COLORS] }}>
-                  {shown(b.key)}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
+        <iframe ref={fr} className="lb-frame" src={`${PORTAL}/?lblpv=1`} title="Pratinjau portal" onLoad={() => send()} />
         <p className="lb-state" style={{ margin: "8px 0 0" }}>
           Label yang belum diterjemahkan tampil dengan teks aslinya. Maksimal {MAX} karakter. Perubahan muncul di portal dalam beberapa detik setelah disimpan.
         </p>
