@@ -98,7 +98,7 @@ export function LabelForm({
         .lb-row { display: grid; gap: 10px; padding: 14px 0; border-bottom: 1px solid #e5e5e5; }
         .lb-row:first-child { padding-top: 0; }
         .lb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 600; font-size: 14px; }
-        .lb-tag { display: inline-block; margin-inline-start: 8px; padding: 3px 6px; border-radius: 0; color: #fff; font-size: 11px; font-weight: 600; line-height: 1.2; vertical-align: middle; white-space: nowrap; }
+        .lb-tag { position: absolute; top: 0; right: 0; padding: 3px 6px; border-radius: 0; color: #fff; font-size: 11px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
         .lb-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
         .lb-form input[type="text"] { box-sizing: border-box; height: 38px; padding: 0 12px; font: inherit; font-size: 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 0; outline: none; }
         .lb-form input[type="text"]:focus { border-color: #3b6ef0; box-shadow: 0 0 0 3px rgba(59, 110, 240, 0.15); }
@@ -123,7 +123,7 @@ export function LabelForm({
         .lb-chips button { height: 30px; padding: 0 10px; font: inherit; font-size: 12px; font-weight: 600; text-transform: uppercase; color: #111; background: #fff; border: 1px solid #e0e0e0; border-radius: 0; cursor: pointer; }
         .lb-chips button[aria-pressed="true"] { background: #111; color: #fff; border-color: #111; }
         .lb-list { border: 1px solid #e5e5e5; background: #fff; }
-        .lb-list div { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #e5e5e5; font-size: 15px; font-weight: 600; color: #111; }
+        .lb-list div { position: relative; display: flex; align-items: center; min-height: 56px; padding: 14px 16px; border-bottom: 1px solid #e5e5e5; font-size: 15px; font-weight: 600; color: #111; }
         .lb-list div:last-child { border-bottom: 0; }
         .lb-act { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; }
         .lb-act .lb-btns { display: flex; gap: 10px; margin-inline-start: auto; }
