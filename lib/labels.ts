@@ -45,16 +45,21 @@ export function cleanLabels(raw: unknown): Labels {
   return out;
 }
 
-export async function getLabels(): Promise<Labels> {
+export async function getLabelState(): Promise<{ items: Labels; anim: boolean }> {
   const raw = await db().get<unknown>(LABEL_KEY);
   try {
-    const o = typeof raw === "string" ? JSON.parse(raw) : raw;
-    return cleanLabels((o as { items?: unknown } | null)?.items);
+    const o = (typeof raw === "string" ? JSON.parse(raw) : raw) as { items?: unknown; anim?: unknown } | null;
+    return { items: cleanLabels(o?.items), anim: o?.anim === true };
   } catch {
-    return cleanLabels(null);
+    return { items: cleanLabels(null), anim: false };
   }
 }
 
-export async function setLabels(items: Labels) {
-  await db().set(LABEL_KEY, JSON.stringify({ items, v: Date.now() }));
+export async function getLabels(): Promise<Labels> {
+  return (await getLabelState()).items;
+}
+
+/** `anim`: toggle "Tampilkan animasi" (satu untuk semua label). Portal menambah kelas animasi pada label bila true. */
+export async function setLabels(items: Labels, anim = false) {
+  await db().set(LABEL_KEY, JSON.stringify({ items, anim, v: Date.now() }));
 }

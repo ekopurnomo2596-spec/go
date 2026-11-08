@@ -10,19 +10,24 @@ type Lang = (typeof LANGS)[number];
 type Tx = Partial<Record<Lang, string>>;
 type Item = { on: boolean; text: string; color: keyof typeof COLORS; texts: Tx };
 const MAX = 14;
+// CSS label asli milik portal (satu file yang sama dipakai portal), supaya pratinjau persis sama.
+const PORTAL_CSS = "https://emahairshop.com/label.css";
 const norm = (s: string) => s.replace(/\s+/g, " ").trim();
 
 export function LabelForm({
   buttons,
   initial,
+  initialAnim,
 }: {
   buttons: { key: string; name: string }[];
   initial: Record<string, Partial<Item>>;
+  initialAnim: boolean;
 }) {
   const ref = useRef<HTMLFormElement>(null);
   const [saving, startSave] = useTransition();
   const [trans, startTrans] = useTransition();
   const [lang, setLang] = useState<Lang>("id");
+  const [anim, setAnim] = useState(initialAnim);
   const [v, setV] = useState<Record<string, Item>>(() =>
     Object.fromEntries(
       buttons.map((b) => {
@@ -98,7 +103,6 @@ export function LabelForm({
         .lb-row { display: grid; gap: 10px; padding: 14px 0; border-bottom: 1px solid #e5e5e5; }
         .lb-row:first-child { padding-top: 0; }
         .lb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 600; font-size: 14px; }
-        .lb-tag { position: absolute; top: 0; right: 0; padding: 3px 6px; border-radius: 0; color: #fff; font-size: 11px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
         .lb-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
         .lb-form input[type="text"] { box-sizing: border-box; height: 38px; padding: 0 12px; font: inherit; font-size: 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 0; outline: none; }
         .lb-form input[type="text"]:focus { border-color: #3b6ef0; box-shadow: 0 0 0 3px rgba(59, 110, 240, 0.15); }
@@ -117,6 +121,8 @@ export function LabelForm({
         .lb-tr label { display: flex; align-items: center; gap: 8px; }
         .lb-tr b { width: 22px; font-size: 11px; text-transform: uppercase; opacity: 0.6; }
         .lb-tr input[type="text"] { width: 100%; min-width: 0; height: 32px; font-size: 13px; }
+        .lb-anim { margin-top: 4px; padding: 14px 0; border-bottom: 1px solid #e5e5e5; }
+        .lb-anim small { display: block; font-size: 12px; font-weight: 400; opacity: 0.65; }
         .lb-pv { margin-top: 20px; }
         .lb-pv h3 { margin: 0 0 8px; font-size: 14px; }
         .lb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
@@ -131,6 +137,7 @@ export function LabelForm({
         .lb-btn2:disabled { opacity: 0.45; cursor: default; }
       `}</style>
 
+      <link rel="stylesheet" href={PORTAL_CSS} precedence="default" />
       {buttons.map((b) => {
         const it = v[b.key];
         const hasTr = Object.keys(it.texts).length > 0;
@@ -192,6 +199,17 @@ export function LabelForm({
         );
       })}
 
+      <div className="lb-anim">
+        <label className="switch" htmlFor="anim">
+          <span>
+            Tampilkan animasi
+            <small>Kilau halus pada semua label di portal.</small>
+          </span>
+          <input id="anim" name="anim" type="checkbox" checked={anim} onChange={(e) => setAnim(e.target.checked)} />
+          <i aria-hidden="true" />
+        </label>
+      </div>
+
       <div className="lb-pv">
         <h3>Pratinjau di portal</h3>
         <div className="lb-chips" role="group" aria-label="Bahasa pratinjau">
@@ -203,10 +221,10 @@ export function LabelForm({
         </div>
         <div className="lb-list">
           {buttons.map((b) => (
-            <div key={b.key}>
+            <div key={b.key} data-lbl={b.key}>
               {b.name}
               {live(b.key) && (
-                <span className="lb-tag" style={{ background: COLORS[v[b.key].color as keyof typeof COLORS] }}>
+                <span className={anim ? "xlb xlb-a" : "xlb"} style={{ background: COLORS[v[b.key].color as keyof typeof COLORS] }}>
                   {shown(b.key)}
                 </span>
               )}

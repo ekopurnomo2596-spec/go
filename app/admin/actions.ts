@@ -927,7 +927,7 @@ export async function saveLabels(formData: FormData): Promise<Flash> {
     }
     items[b.key] = { on, text, color: isColor(color) ? color : "merah", texts };
   }
-  await setLabels(cleanLabels(items));
+  await setLabels(cleanLabels(items), formData.get("anim") === "on");
   revalidatePath("/admin/label");
   const n = Object.values(items).filter((i) => i.on && i.text).length;
   return ok(n ? `Label disimpan. ${n} tombol di portal menampilkan label dalam 7 bahasa.` : "Label disimpan. Tidak ada label yang tampil di portal.");
