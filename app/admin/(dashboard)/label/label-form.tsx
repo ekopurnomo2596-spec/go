@@ -143,6 +143,7 @@ export function LabelForm({
         .lb-tr input[type="text"] { width: 100%; min-width: 0; height: 32px; font-size: 13px; }
         @media (max-width: 640px) { .lb-tr { grid-template-columns: repeat(2, 1fr); } }
         .lb-anim { font-size: 13px; cursor: default; }
+        .lb-on { cursor: default; }
         .lb-anim-sw { display: flex; margin: 0; cursor: pointer; }
         .lb-pv { margin-top: 20px; }
         .lb-pv h3 { margin: 0 0 8px; font-size: 14px; }
@@ -163,11 +164,13 @@ export function LabelForm({
           <div className="lb-row" key={b.key}>
             <div className="lb-head">
               <span>{b.name}</span>
-              <label className="switch" htmlFor={`on-${b.key}`}>
+              <div className="switch lb-on">
                 <span>Tampil</span>
-                <input id={`on-${b.key}`} name={`on_${b.key}`} type="checkbox" checked={it.on} onChange={(e) => set(b.key, { on: e.target.checked })} />
-                <i aria-hidden="true" />
-              </label>
+                <label className="lb-anim-sw" htmlFor={`on-${b.key}`} aria-label={`Tampilkan label ${b.name}`}>
+                  <input id={`on-${b.key}`} name={`on_${b.key}`} type="checkbox" checked={it.on} onChange={(e) => set(b.key, { on: e.target.checked })} />
+                  <i aria-hidden="true" />
+                </label>
+              </div>
             </div>
             <div className="lb-ctl">
               <input
