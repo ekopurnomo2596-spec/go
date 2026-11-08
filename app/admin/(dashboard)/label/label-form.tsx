@@ -1,28 +1,88 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { flash, type Flash } from "@/lib/flash";
-import { saveLabels } from "../../actions";
+import { previewLabelTranslations, saveLabels } from "../../actions";
 
 const COLORS = { merah: "#EE4D2D", emas: "#a8802f", hijau: "#1f8a4c", hitam: "#1a1a1a" } as const;
+const LANGS = ["en", "id", "it", "es", "fr", "de", "ru"] as const;
+type Lang = (typeof LANGS)[number];
+type Tx = Partial<Record<Lang, string>>;
+type Item = { on: boolean; text: string; color: keyof typeof COLORS; texts: Tx };
 const MAX = 14;
-type Item = { on: boolean; text: string; color: keyof typeof COLORS };
+const norm = (s: string) => s.replace(/\s+/g, " ").trim();
 
-export function LabelForm({ buttons, initial }: { buttons: { key: string; name: string }[]; initial: Record<string, Item> }) {
-  const [pending, start] = useTransition();
+export function LabelForm({
+  buttons,
+  initial,
+}: {
+  buttons: { key: string; name: string }[];
+  initial: Record<string, Partial<Item>>;
+}) {
+  const ref = useRef<HTMLFormElement>(null);
+  const [saving, startSave] = useTransition();
+  const [trans, startTrans] = useTransition();
+  const [lang, setLang] = useState<Lang>("id");
   const [v, setV] = useState<Record<string, Item>>(() =>
-    Object.fromEntries(buttons.map((b) => [b.key, initial[b.key] ?? { on: false, text: "", color: "merah" }])),
+    Object.fromEntries(
+      buttons.map((b) => {
+        const i = initial[b.key];
+        return [b.key, { on: !!i?.on, text: i?.text ?? "", color: i?.color ?? "merah", texts: i?.texts ?? {} }];
+      }),
+    ),
+  );
+  // Teks yang menjadi dasar terjemahan tiap label. Awalnya teks tersimpan (kalau sudah punya terjemahan).
+  const [tFor, setTFor] = useState<Record<string, string>>(() =>
+    Object.fromEntries(buttons.map((b) => [b.key, Object.keys(initial[b.key]?.texts ?? {}).length ? norm(initial[b.key]?.text ?? "") : ""])),
   );
   const set = (k: string, p: Partial<Item>) => setV((s) => ({ ...s, [k]: { ...s[k], ...p } }));
 
+  const live = (k: string) => v[k].on && !!norm(v[k].text);
+  const stale = (k: string) => live(k) && tFor[k] !== norm(v[k].text);
+  const needKeys = buttons.filter((b) => stale(b.key)).map((b) => b.key);
+  const shown = (k: string) => (!stale(k) && v[k].texts[lang]) || norm(v[k].text);
+
+  const translate = () => {
+    if (!ref.current || trans || !needKeys.length) return;
+    const fd = new FormData(ref.current);
+    const snap: Record<string, string> = {};
+    for (const k of needKeys) {
+      fd.set(`need_${k}`, "1");
+      snap[k] = norm(v[k].text);
+    }
+    startTrans(async () => {
+      let r: Flash & { texts?: Record<string, Tx> };
+      try {
+        r = await previewLabelTranslations(fd);
+      } catch {
+        r = { kind: "err", text: "Gagal menerjemahkan. Periksa koneksi lalu coba lagi." };
+      }
+      if (r.texts) {
+        const got = r.texts;
+        setV((s) => {
+          const n = { ...s };
+          for (const k of Object.keys(got)) n[k] = { ...n[k], texts: got[k] };
+          return n;
+        });
+        setTFor((s) => {
+          const n = { ...s };
+          for (const k of Object.keys(got)) n[k] = snap[k];
+          return n;
+        });
+      }
+      flash(r);
+    });
+  };
+
   return (
     <form
+      ref={ref}
       className="lb-form"
       onSubmit={(e) => {
         e.preventDefault();
-        if (pending) return;
+        if (saving || trans || needKeys.length) return;
         const fd = new FormData(e.currentTarget);
-        start(async () => {
+        startSave(async () => {
           let r: Flash;
           try {
             r = await saveLabels(fd);
@@ -38,32 +98,46 @@ export function LabelForm({ buttons, initial }: { buttons: { key: string; name: 
         .lb-row { display: grid; gap: 10px; padding: 14px 0; border-bottom: 1px solid #e5e5e5; }
         .lb-row:first-child { padding-top: 0; }
         .lb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 600; font-size: 14px; }
-        .lb-tag { display: inline-block; margin-inline-start: 8px; padding: 3px 6px; border-radius: 0; color: #fff; font-size: 11px; font-weight: 600; line-height: 1.2; vertical-align: middle; }
+        .lb-tag { display: inline-block; margin-inline-start: 8px; padding: 3px 6px; border-radius: 0; color: #fff; font-size: 11px; font-weight: 600; line-height: 1.2; vertical-align: middle; white-space: nowrap; }
         .lb-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-        .lb-ctl input[type="text"] { flex: 1; min-width: 140px; height: 38px; box-sizing: border-box; padding: 0 12px; font: inherit; font-size: 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 0; outline: none; }
-        .lb-ctl input[type="text"]:focus { border-color: #3b6ef0; box-shadow: 0 0 0 3px rgba(59, 110, 240, 0.15); }
+        .lb-form input[type="text"] { box-sizing: border-box; height: 38px; padding: 0 12px; font: inherit; font-size: 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 0; outline: none; }
+        .lb-form input[type="text"]:focus { border-color: #3b6ef0; box-shadow: 0 0 0 3px rgba(59, 110, 240, 0.15); }
+        .lb-ctl input[type="text"] { flex: 1; min-width: 140px; }
         .lb-sw { display: flex; gap: 8px; }
         .lb-sw label { position: relative; width: 26px; height: 26px; cursor: pointer; }
         .lb-sw input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
         .lb-sw i { position: absolute; inset: 0; border-radius: 0; box-shadow: 0 0 0 1px #e0e0e0; }
         .lb-sw input:checked + i { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #111; }
         .lb-sw input:focus-visible + i { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3b6ef0; }
-        .lb-act { display: flex; justify-content: flex-end; padding-top: 16px; }
+        .lb-state { font-size: 12px; opacity: 0.65; }
+        .lb-state.warn { color: #b45309; opacity: 1; }
+        .lb-det { font-size: 13px; }
+        .lb-det summary { cursor: pointer; opacity: 0.75; }
+        .lb-tr { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+        .lb-tr label { display: flex; align-items: center; gap: 8px; }
+        .lb-tr b { width: 22px; font-size: 11px; text-transform: uppercase; opacity: 0.6; }
+        .lb-tr input[type="text"] { width: 100%; min-width: 0; height: 32px; font-size: 13px; }
+        .lb-pv { margin-top: 20px; }
+        .lb-pv h3 { margin: 0 0 8px; font-size: 14px; }
+        .lb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .lb-chips button { height: 30px; padding: 0 10px; font: inherit; font-size: 12px; font-weight: 600; text-transform: uppercase; color: #111; background: #fff; border: 1px solid #e0e0e0; border-radius: 0; cursor: pointer; }
+        .lb-chips button[aria-pressed="true"] { background: #111; color: #fff; border-color: #111; }
+        .lb-list { border: 1px solid #e5e5e5; background: #fff; }
+        .lb-list div { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #e5e5e5; font-size: 15px; font-weight: 600; color: #111; }
+        .lb-list div:last-child { border-bottom: 0; }
+        .lb-act { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; }
+        .lb-act .lb-btns { display: flex; gap: 10px; margin-inline-start: auto; }
+        .lb-btn2 { height: 38px; padding: 0 16px; font: inherit; font-size: 14px; font-weight: 600; color: #111; background: #fff; border: 1px solid #111; border-radius: 0; cursor: pointer; }
+        .lb-btn2:disabled { opacity: 0.45; cursor: default; }
       `}</style>
 
       {buttons.map((b) => {
         const it = v[b.key];
+        const hasTr = Object.keys(it.texts).length > 0;
         return (
           <div className="lb-row" key={b.key}>
             <div className="lb-head">
-              <span>
-                {b.name}
-                {it.on && it.text && (
-                  <span className="lb-tag" style={{ background: COLORS[it.color] }}>
-                    {it.text}
-                  </span>
-                )}
-              </span>
+              <span>{b.name}</span>
               <label className="switch" htmlFor={`on-${b.key}`}>
                 <span>Tampil</span>
                 <input id={`on-${b.key}`} name={`on_${b.key}`} type="checkbox" checked={it.on} onChange={(e) => set(b.key, { on: e.target.checked })} />
@@ -89,17 +163,74 @@ export function LabelForm({ buttons, initial }: { buttons: { key: string; name: 
                 ))}
               </div>
             </div>
+            <input type="hidden" name={`texts_${b.key}`} value={JSON.stringify(it.texts)} />
+            {live(b.key) && (
+              <div className={"lb-state" + (stale(b.key) ? " warn" : "")}>
+                {stale(b.key) ? "Belum diterjemahkan ke 7 bahasa." : "Sudah diterjemahkan ke 7 bahasa."}
+              </div>
+            )}
+            {hasTr && !stale(b.key) && (
+              <details className="lb-det">
+                <summary>Lihat atau ubah terjemahan</summary>
+                <div className="lb-tr">
+                  {LANGS.map((l) => (
+                    <label key={l}>
+                      <b>{l}</b>
+                      <input
+                        type="text"
+                        value={it.texts[l] ?? ""}
+                        maxLength={20}
+                        aria-label={`Label ${b.name} bahasa ${l}`}
+                        onChange={(e) => set(b.key, { texts: { ...it.texts, [l]: e.target.value } })}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </details>
+            )}
           </div>
         );
       })}
 
-      <p style={{ fontSize: 12, opacity: 0.6, margin: "12px 0 0" }}>Maksimal {MAX} karakter per label. Satu teks dipakai untuk semua bahasa portal. Perubahan tampil di portal dalam beberapa detik.</p>
+      <div className="lb-pv">
+        <h3>Pratinjau di portal</h3>
+        <div className="lb-chips" role="group" aria-label="Bahasa pratinjau">
+          {LANGS.map((l) => (
+            <button key={l} type="button" aria-pressed={lang === l} onClick={() => setLang(l)}>
+              {l}
+            </button>
+          ))}
+        </div>
+        <div className="lb-list">
+          {buttons.map((b) => (
+            <div key={b.key}>
+              {b.name}
+              {live(b.key) && (
+                <span className="lb-tag" style={{ background: COLORS[v[b.key].color as keyof typeof COLORS] }}>
+                  {shown(b.key)}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+        <p className="lb-state" style={{ margin: "8px 0 0" }}>
+          Label yang belum diterjemahkan tampil dengan teks aslinya. Maksimal {MAX} karakter. Perubahan muncul di portal dalam beberapa detik setelah disimpan.
+        </p>
+      </div>
 
       <div className="lb-act">
-        <button type="submit" className={pending ? "is-loading" : ""} disabled={pending} aria-busy={pending}>
-          Simpan
-          {pending && <span className="spin" aria-hidden="true" />}
-        </button>
+        <span className={"lb-state" + (needKeys.length ? " warn" : "")}>
+          {needKeys.length ? `${needKeys.length} label perlu diterjemahkan dulu sebelum disimpan.` : "Siap disimpan."}
+        </span>
+        <div className="lb-btns">
+          <button type="button" className="lb-btn2" onClick={translate} disabled={trans || saving || !needKeys.length} aria-busy={trans}>
+            {trans ? "Menerjemahkan..." : "Terjemahkan dan pratinjau"}
+          </button>
+          <button type="submit" className={saving ? "is-loading" : ""} disabled={saving || trans || needKeys.length > 0} aria-busy={saving}>
+            Simpan
+            {saving && <span className="spin" aria-hidden="true" />}
+          </button>
+        </div>
       </div>
     </form>
   );

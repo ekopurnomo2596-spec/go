@@ -8,7 +8,7 @@ import { createSession, destroySession, passwordOk, requireAdmin } from "@/lib/a
 import { db } from "@/lib/redis";
 import { getTindakan } from "@/lib/tindakan";
 import { checkAll, clearCheck, markManualOk } from "@/lib/linkcheck";
-import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, translateInfo, validKey } from "@/lib/ai";
+import { AiError, askAi, clearHistory, deleteEntry, deleteKey, getKey, setKey, testKey, translateInfo, translateLabel, validKey } from "@/lib/ai";
 import {
   deleteChatKey,
   getChatKey,
@@ -35,8 +35,8 @@ import type { Flash } from "@/lib/flash";
 import { MAX_CHAT_LIMIT, cleanHideRules, clearWebConvs, deleteWebConv, setChatEnabled, setChatHide, setChatLimit, setChatStyle, validWebId } from "@/lib/webchat";
 import { cleanStyle } from "@/lib/chatstyle";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
-import { LABEL_BUTTONS, MAX_LABEL, cleanLabels, isColor, setLabels, type Labels } from "@/lib/labels";
-import { INFO_LANGS, MAX_TEXT, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
+import { LABEL_BUTTONS, MAX_LABEL, MAX_LABEL_TR, cleanLabels, isColor, setLabels, type Labels } from "@/lib/labels";
+import { INFO_LANGS, MAX_TEXT, cleanInfoTexts, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
 import { RemoteError, getSvcUsage, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
   deleteLinkData,
@@ -876,18 +876,59 @@ export async function savePengumuman(formData: FormData): Promise<Flash> {
   return ok("Pengumuman disimpan dan tampil di portal dalam 7 bahasa." + note);
 }
 
+type LabelTr = Flash & { texts?: Record<string, InfoTexts> };
+
+/** Jatah AI per jam dipakai bersama Pengumuman (kunci rl:ai, maks. 30). */
+async function aiSlot(): Promise<boolean> {
+  const rl = "rl:ai";
+  const n = await db().incr(rl);
+  if (n === 1) await db().expire(rl, 3600);
+  return n <= 30;
+}
+
+/** Terjemahkan label yang teksnya baru/berubah. TIDAK menyimpan apa pun: hasilnya hanya untuk pratinjau. */
+export async function previewLabelTranslations(formData: FormData): Promise<LabelTr> {
+  await requireAdmin();
+  const todo = LABEL_BUTTONS.filter((b) => formData.get(`need_${b.key}`) === "1")
+    .map((b) => ({ key: b.key, name: b.name, text: str(formData, `text_${b.key}`).replace(/\s+/g, " ").slice(0, MAX_LABEL) }))
+    .filter((x) => x.text);
+  if (!todo.length) return ok("Tidak ada teks baru yang perlu diterjemahkan.");
+  const texts: Record<string, InfoTexts> = {};
+  const fails: string[] = [];
+  for (const x of todo) {
+    if (!(await aiSlot())) {
+      fails.push(`${x.name}: terlalu banyak permintaan AI, coba lagi dalam satu jam`);
+      continue;
+    }
+    try {
+      texts[x.key] = await translateLabel(x.text);
+    } catch (e) {
+      fails.push(`${x.name}: ${e instanceof AiError ? e.message : "kesalahan tak dikenal"}`);
+    }
+  }
+  const n = Object.keys(texts).length;
+  if (!n) return err("Terjemahan gagal. " + fails.join("; "));
+  return { ...ok(`${n} label diterjemahkan ke 7 bahasa. Periksa pratinjau, lalu simpan.` + (fails.length ? " Gagal: " + fails.join("; ") : "")), texts };
+}
+
 export async function saveLabels(formData: FormData): Promise<Flash> {
   await requireAdmin();
   const items: Labels = {};
   for (const b of LABEL_BUTTONS) {
-    const text = str(formData, `text_${b.key}`).replace(/\s+/g, " ").slice(0, MAX_LABEL);
+    const text = str(formData, `text_${b.key}`).replace(/\s+/g, " ").trim().slice(0, MAX_LABEL);
     const color = str(formData, `color_${b.key}`);
     const on = formData.get(`on_${b.key}`) === "on";
     if (on && !text) return err(`Label tombol "${b.name}" aktif tapi teksnya kosong.`);
-    items[b.key] = { on, text, color: isColor(color) ? color : "merah" };
+    let texts: InfoTexts = {};
+    try {
+      texts = text ? cleanInfoTexts(JSON.parse(str(formData, `texts_${b.key}`) || "{}"), MAX_LABEL_TR) : {};
+    } catch {
+      texts = {};
+    }
+    items[b.key] = { on, text, color: isColor(color) ? color : "merah", texts };
   }
   await setLabels(cleanLabels(items));
   revalidatePath("/admin/label");
   const n = Object.values(items).filter((i) => i.on && i.text).length;
-  return ok(n ? `Label disimpan. ${n} tombol di portal menampilkan label.` : "Label disimpan. Tidak ada label yang tampil di portal.");
+  return ok(n ? `Label disimpan. ${n} tombol di portal menampilkan label dalam 7 bahasa.` : "Label disimpan. Tidak ada label yang tampil di portal.");
 }

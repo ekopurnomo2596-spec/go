@@ -20,7 +20,7 @@ export default async function LabelPage() {
 
       <div className="panel">
         <h2>
-          Tombol portal <small>{labels ? `${Object.values(labels).filter((l) => l.on).length} label tampil` : "belum bisa dibaca"}</small>
+          Tombol portal <small>{labels ? `${LABEL_BUTTONS.filter((b) => labels[b.key]?.on).length} label tampil` : "belum bisa dibaca"}</small>
         </h2>
         <LabelForm buttons={[...LABEL_BUTTONS]} initial={labels ?? {}} />
       </div>
