@@ -38,14 +38,14 @@ export function LabelForm({ buttons, initial }: { buttons: { key: string; name: 
         .lb-row { display: grid; gap: 10px; padding: 14px 0; border-bottom: 1px solid #e5e5e5; }
         .lb-row:first-child { padding-top: 0; }
         .lb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 600; font-size: 14px; }
-        .lb-tag { display: inline-block; margin-inline-start: 8px; padding: 3px 6px; border-radius: 3px; color: #fff; font-size: 11px; font-weight: 600; line-height: 1.2; vertical-align: middle; }
+        .lb-tag { display: inline-block; margin-inline-start: 8px; padding: 3px 6px; border-radius: 0; color: #fff; font-size: 11px; font-weight: 600; line-height: 1.2; vertical-align: middle; }
         .lb-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-        .lb-ctl input[type="text"] { flex: 1; min-width: 140px; height: 38px; box-sizing: border-box; padding: 0 12px; font: inherit; font-size: 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; outline: none; }
+        .lb-ctl input[type="text"] { flex: 1; min-width: 140px; height: 38px; box-sizing: border-box; padding: 0 12px; font: inherit; font-size: 14px; background: #fff; border: 1px solid #e0e0e0; border-radius: 0; outline: none; }
         .lb-ctl input[type="text"]:focus { border-color: #3b6ef0; box-shadow: 0 0 0 3px rgba(59, 110, 240, 0.15); }
         .lb-sw { display: flex; gap: 8px; }
         .lb-sw label { position: relative; width: 26px; height: 26px; cursor: pointer; }
         .lb-sw input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
-        .lb-sw i { position: absolute; inset: 0; border-radius: 6px; box-shadow: 0 0 0 1px #e0e0e0; }
+        .lb-sw i { position: absolute; inset: 0; border-radius: 0; box-shadow: 0 0 0 1px #e0e0e0; }
         .lb-sw input:checked + i { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #111; }
         .lb-sw input:focus-visible + i { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3b6ef0; }
         .lb-act { display: flex; justify-content: flex-end; padding-top: 16px; }
