@@ -142,7 +142,8 @@ export function LabelForm({
         .lb-tr b { font-size: 11px; text-transform: uppercase; opacity: 0.6; }
         .lb-tr input[type="text"] { width: 100%; min-width: 0; height: 32px; font-size: 13px; }
         @media (max-width: 640px) { .lb-tr { grid-template-columns: repeat(2, 1fr); } }
-        .lb-anim { font-size: 13px; }
+        .lb-anim { font-size: 13px; cursor: default; }
+        .lb-anim-sw { display: flex; margin: 0; cursor: pointer; }
         .lb-pv { margin-top: 20px; }
         .lb-pv h3 { margin: 0 0 8px; font-size: 14px; }
         .lb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
@@ -187,11 +188,13 @@ export function LabelForm({
                 ))}
               </div>
             </div>
-            <label className="switch lb-anim" htmlFor={`anim-${b.key}`}>
+            <div className="switch lb-anim">
               <span>Tampilkan animasi (kilau halus)</span>
-              <input id={`anim-${b.key}`} name={`anim_${b.key}`} type="checkbox" checked={it.anim} onChange={(e) => set(b.key, { anim: e.target.checked })} />
-              <i aria-hidden="true" />
-            </label>
+              <label className="lb-anim-sw" htmlFor={`anim-${b.key}`} aria-label={`Tampilkan animasi label ${b.name}`}>
+                <input id={`anim-${b.key}`} name={`anim_${b.key}`} type="checkbox" checked={it.anim} onChange={(e) => set(b.key, { anim: e.target.checked })} />
+                <i aria-hidden="true" />
+              </label>
+            </div>
             <input type="hidden" name={`texts_${b.key}`} value={JSON.stringify(it.texts)} />
             {live(b.key) && (
               <div className={"lb-state" + (stale(b.key) ? " warn" : "")}>
