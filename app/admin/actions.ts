@@ -185,6 +185,7 @@ export async function undoTindakan(formData: FormData): Promise<Flash> {
 export async function resetAllStats(): Promise<Flash> {
   await requireAdmin();
   for (const l of await listLinks()) await resetStatsData(l.slug);
+  await db().del("recent:all");
   // Pengunjung unik (uv:<tanggal>) dan penanda "sudah dihitung" (seen:*) disimpan terpisah dari data per tautan
   for (const match of ["uv:*", "seen:*"]) {
     let cursor: string | number = 0;

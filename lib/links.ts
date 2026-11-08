@@ -422,6 +422,20 @@ export async function getRecentClicksToday(limit = 10): Promise<Click[]> {
     .filter((x): x is Click => !!x && dayOf(x.t) === today);
 }
 
+/** Buang entri dari daftar klik terbaru lintas-tautan (recent:all, dipakai "Klik terakhir" di Analisa). */
+async function purgeRecentAll(drop: (c: Click) => boolean) {
+  const raw = (await db().lrange<unknown>("recent:all", 0, -1)) ?? [];
+  const all = raw
+    .map((x) => (typeof x === "string" ? safeParse(x) : (x as Click)))
+    .filter((x): x is Click => !!x);
+  const kept = all.filter((c) => !drop(c));
+  if (kept.length === all.length) return;
+  const p = db().pipeline();
+  p.del("recent:all");
+  if (kept.length) p.rpush("recent:all", ...kept);
+  await p.exec();
+}
+
 export async function deleteLinkData(slug: string) {
   const p = db().pipeline();
   p.del(`link:${slug}`);
@@ -431,6 +445,7 @@ export async function deleteLinkData(slug: string) {
   p.del(`seen:${jakartaDay(0)}:${slug}`, `seen:${jakartaDay(1)}:${slug}`);
   await p.exec();
   await purgeBreakdown(slug, bdAllDays());
+  await purgeRecentAll((c) => c.s === slug);
 }
 
 export async function resetStatsData(slug: string) {
@@ -439,6 +454,7 @@ export async function resetStatsData(slug: string) {
   p.del(`seen:${jakartaDay(0)}:${slug}`, `seen:${jakartaDay(1)}:${slug}`);
   await p.exec();
   await purgeBreakdown(slug, bdAllDays());
+  await purgeRecentAll((c) => c.s === slug);
 }
 
 /** Hapus sebagian data statistik: per hari, per negara, atau satu klik. Angka total ikut disesuaikan. */
@@ -536,4 +552,11 @@ export async function removeStats(slug: string, sel: { days?: string[]; country?
     await q.exec();
     if (sel.country) await purgeCountryPairs(slug, sel.country);
   }
+
+  // sinkronkan daftar "Klik terakhir" di Analisa
+  await purgeRecentAll(
+    (c) =>
+      c.s === slug &&
+      (sel.t !== undefined ? c.t === sel.t : sel.country ? c.c === sel.country : daySet.has(dayOf(c.t))),
+  );
 }
