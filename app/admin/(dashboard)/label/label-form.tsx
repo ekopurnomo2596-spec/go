@@ -134,11 +134,14 @@ export function LabelForm({
         .lb-state { font-size: 12px; opacity: 0.65; }
         .lb-state.warn { color: #b45309; opacity: 1; }
         .lb-det { font-size: 13px; }
-        .lb-det summary { cursor: pointer; opacity: 0.75; }
-        .lb-tr { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
-        .lb-tr label { display: flex; align-items: center; gap: 8px; }
-        .lb-tr b { width: 22px; font-size: 11px; text-transform: uppercase; opacity: 0.6; }
+        .lb-det summary { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-size: 13px; font-weight: 600; cursor: pointer; opacity: 0.75; }
+        .lb-det summary::before { content: ""; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform 0.2s; }
+        .lb-det[open] summary::before { transform: rotate(45deg); }
+        .lb-tr { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+        .lb-tr label { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+        .lb-tr b { font-size: 11px; text-transform: uppercase; opacity: 0.6; }
         .lb-tr input[type="text"] { width: 100%; min-width: 0; height: 32px; font-size: 13px; }
+        @media (max-width: 640px) { .lb-tr { grid-template-columns: repeat(2, 1fr); } }
         .lb-anim { font-size: 13px; }
         .lb-pv { margin-top: 20px; }
         .lb-pv h3 { margin: 0 0 8px; font-size: 14px; }
