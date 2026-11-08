@@ -326,7 +326,7 @@ export async function translateLabel(text: string): Promise<InfoTexts> {
   if (!key) throw new AiError("Token AI belum diisi.");
   const prompt = [
     "Terjemahkan label kecil di tombol toko online ini ke 7 bahasa. Teks aslinya biasanya Bahasa Indonesia, tapi bisa bahasa lain.",
-    "Label harus tetap sangat singkat (usahakan maksimal 14 karakter) dan berfungsi sebagai lencana, misalnya BARU, PROMO -20%, DISKON. Pertahankan angka, tanda baca, nama merek, dan gaya huruf persis seperti aslinya: kalau aslinya HURUF BESAR semua, hasilnya huruf besar semua; kalau aslinya Huruf Awal Kapital (misalnya "Berita Terbaru"), hasilnya juga hanya huruf awal tiap kata yang kapital (misalnya "Latest News"), BUKAN huruf besar semua. Jangan menambah kata atau emoji.",
+    "Label harus tetap sangat singkat (usahakan maksimal 14 karakter) dan berfungsi sebagai lencana, misalnya BARU, PROMO -20%, DISKON. Pertahankan angka, tanda baca, nama merek, dan gaya huruf persis seperti aslinya: kalau aslinya HURUF BESAR semua, hasilnya huruf besar semua; kalau aslinya Huruf Awal Kapital (misalnya 'Berita Terbaru'), hasilnya juga hanya huruf awal tiap kata yang kapital (misalnya 'Latest News'), BUKAN huruf besar semua. Jangan menambah kata atau emoji.",
     "Kode bahasa: en (Inggris), id (Indonesia), it (Italia), es (Spanyol), fr (Prancis), de (Jerman), ru (Rusia).",
     'Format: {"en":"...","id":"...","it":"...","es":"...","fr":"...","de":"...","ru":"..."}',
     "Untuk bahasa asli teks, isi dengan teks aslinya. Tiap nilai hanya berisi terjemahan, tanpa catatan.",
