@@ -35,6 +35,7 @@ import type { Flash } from "@/lib/flash";
 import { MAX_CHAT_LIMIT, cleanHideRules, clearWebConvs, deleteWebConv, setChatEnabled, setChatHide, setChatLimit, setChatStyle, validWebId } from "@/lib/webchat";
 import { cleanStyle } from "@/lib/chatstyle";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
+import { LABEL_BUTTONS, MAX_LABEL, cleanLabels, isColor, setLabels, type Labels } from "@/lib/labels";
 import { INFO_LANGS, MAX_TEXT, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
 import { RemoteError, getSvcUsage, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
@@ -873,4 +874,20 @@ export async function savePengumuman(formData: FormData): Promise<Flash> {
   if (!on) return ok("Pengumuman disimpan. Tidak ditampilkan di portal.");
   if (start && start > Date.now()) return ok("Pengumuman disimpan dan akan tampil sesuai jadwal." + note);
   return ok("Pengumuman disimpan dan tampil di portal dalam 7 bahasa." + note);
+}
+
+export async function saveLabels(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const items: Labels = {};
+  for (const b of LABEL_BUTTONS) {
+    const text = str(formData, `text_${b.key}`).replace(/\s+/g, " ").slice(0, MAX_LABEL);
+    const color = str(formData, `color_${b.key}`);
+    const on = formData.get(`on_${b.key}`) === "on";
+    if (on && !text) return err(`Label tombol "${b.name}" aktif tapi teksnya kosong.`);
+    items[b.key] = { on, text, color: isColor(color) ? color : "merah" };
+  }
+  await setLabels(cleanLabels(items));
+  revalidatePath("/admin/label");
+  const n = Object.values(items).filter((i) => i.on && i.text).length;
+  return ok(n ? `Label disimpan. ${n} tombol di portal menampilkan label.` : "Label disimpan. Tidak ada label yang tampil di portal.");
 }

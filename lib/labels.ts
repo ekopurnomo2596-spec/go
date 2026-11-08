@@ -1,0 +1,52 @@
+import { db } from "./redis";
+
+/**
+ * Label kecil di tombol portal emahairshop.com (mis. "BARU", "PROMO -20%").
+ * Disimpan di database yang sama dengan portal (key `portal:labels`, teks JSON).
+ * Portal membacanya lewat middleware.js dan /api/labels, lalu menempelkannya ke tombol
+ * yang atribut `data-lbl`-nya sama dengan `key` di bawah.
+ */
+export const LABEL_KEY = "portal:labels";
+export const MAX_LABEL = 14;
+
+export const LABEL_BUTTONS = [
+  { key: "shop", name: "Shop Wholesale" },
+  { key: "review", name: "Customer Reviews" },
+  { key: "blog", name: "Blog" },
+  { key: "help", name: "Help Center" },
+  { key: "contact", name: "Contact Us" },
+  { key: "about", name: "About Us" },
+] as const;
+
+/** Nama warna -> kode warna. Portal punya daftar yang sama (hanya nama yang dikirim ke portal). */
+export const LABEL_COLORS = { merah: "#EE4D2D", emas: "#a8802f", hijau: "#1f8a4c", hitam: "#1a1a1a" } as const;
+export type LabelColor = keyof typeof LABEL_COLORS;
+export type LabelItem = { on: boolean; text: string; color: LabelColor };
+export type Labels = Record<string, LabelItem>;
+
+export const isColor = (c: string): c is LabelColor => c in LABEL_COLORS;
+
+export function cleanLabels(raw: unknown): Labels {
+  const out: Labels = {};
+  const src = raw && typeof raw === "object" ? (raw as Record<string, Partial<LabelItem>>) : {};
+  for (const b of LABEL_BUTTONS) {
+    const x = src[b.key];
+    const text = typeof x?.text === "string" ? x.text.replace(/\s+/g, " ").trim().slice(0, MAX_LABEL) : "";
+    out[b.key] = { on: !!x?.on && !!text, text, color: x?.color && isColor(x.color) ? x.color : "merah" };
+  }
+  return out;
+}
+
+export async function getLabels(): Promise<Labels> {
+  const raw = await db().get<unknown>(LABEL_KEY);
+  try {
+    const o = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return cleanLabels((o as { items?: unknown } | null)?.items);
+  } catch {
+    return cleanLabels(null);
+  }
+}
+
+export async function setLabels(items: Labels) {
+  await db().set(LABEL_KEY, JSON.stringify({ items, v: Date.now() }));
+}

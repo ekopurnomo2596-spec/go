@@ -48,3 +48,7 @@ Saat lokal, negara selalu tercatat "Tidak diketahui" karena header negara hanya 
 - Perlu variabel `CRON_SECRET` di Vercel (isi acak), lalu deploy ulang.
 - Yang diperiksa hanya halaman bisa dibuka (status di bawah 400), bukan isi halamannya.
 - Tautan yang tujuannya memblokir bot (mis. InfinityFree, wa.me, media sosial) bisa diberi tanda **Jangan dicek otomatis** di form Ubah. Statusnya jadi "Cek manual": klik **Buka** untuk mencoba, lalu **Tandai OK** kalau normal.
+
+## Label tombol portal
+- Halaman **Label tombol** (`/admin/label`): beri label kecil (mis. "BARU", "PROMO -20%") dengan 4 pilihan warna pada tombol Shop Wholesale, Customer Reviews, Blog, Help Center, Contact Us, dan About Us di portal.
+- Disimpan di Redis key `portal:labels`. Portal membacanya lewat `middleware.js` dan `/api/labels`, tanpa token atau env tambahan (database sama dengan Pengumuman).
