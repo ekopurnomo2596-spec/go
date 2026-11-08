@@ -326,7 +326,7 @@ export async function translateLabel(text: string): Promise<InfoTexts> {
   if (!key) throw new AiError("Token AI belum diisi.");
   const prompt = [
     "Terjemahkan label kecil di tombol toko online ini ke 7 bahasa. Teks aslinya biasanya Bahasa Indonesia, tapi bisa bahasa lain.",
-    "Label harus tetap sangat singkat (usahakan maksimal 14 karakter) dan berfungsi sebagai lencana, misalnya BARU, PROMO -20%, DISKON. Pertahankan angka, tanda baca, nama merek, dan gaya huruf (kalau aslinya HURUF BESAR, hasilnya juga huruf besar). Jangan menambah kata atau emoji.",
+    "Label harus tetap sangat singkat (usahakan maksimal 14 karakter) dan berfungsi sebagai lencana, misalnya BARU, PROMO -20%, DISKON. Pertahankan angka, tanda baca, nama merek, dan gaya huruf persis seperti aslinya: kalau aslinya HURUF BESAR semua, hasilnya huruf besar semua; kalau aslinya Huruf Awal Kapital (misalnya "Berita Terbaru"), hasilnya juga hanya huruf awal tiap kata yang kapital (misalnya "Latest News"), BUKAN huruf besar semua. Jangan menambah kata atau emoji.",
     "Kode bahasa: en (Inggris), id (Indonesia), it (Italia), es (Spanyol), fr (Prancis), de (Jerman), ru (Rusia).",
     'Format: {"en":"...","id":"...","it":"...","es":"...","fr":"...","de":"...","ru":"..."}',
     "Untuk bahasa asli teks, isi dengan teks aslinya. Tiap nilai hanya berisi terjemahan, tanpa catatan.",
@@ -336,5 +336,17 @@ export async function translateLabel(text: string): Promise<InfoTexts> {
   ].join("\n");
   const out = cleanInfoTexts(parseJson(await callGemini(key, prompt, 1000)), 20);
   if (Object.keys(out).length < 2) throw new AiError("Hasil terjemahan tidak bisa dipakai. Coba lagi.");
+  // Model sering membesarkan semua huruf. Gaya huruf dipaksa mengikuti teks asli.
+  for (const k of Object.keys(out) as (keyof InfoTexts)[]) if (out[k]) out[k] = matchCase(text, out[k] as string);
   return out;
+}
+
+/** Samakan gaya huruf hasil terjemahan dengan teks asli: HURUF BESAR / huruf kecil / Huruf Awal Kapital. */
+function matchCase(src: string, out: string): string {
+  if (!/\p{L}/u.test(src)) return out;
+  if (src === src.toUpperCase()) return out.toUpperCase();
+  if (src === src.toLowerCase()) return out.toLowerCase();
+  // Campuran (mis. "Berita Terbaru"): kata yang semuanya kapital jadi huruf awal saja, kecuali singkatan yang memang kapital di teks asli.
+  const keep = new Set((src.match(/\p{L}+/gu) ?? []).filter((w) => w.length > 1 && w === w.toUpperCase()));
+  return out.replace(/\p{L}+/gu, (w) => (w.length > 1 && w === w.toUpperCase() && !keep.has(w) ? w.charAt(0) + w.slice(1).toLowerCase() : w));
 }
