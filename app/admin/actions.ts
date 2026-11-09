@@ -37,7 +37,8 @@ import { cleanStyle } from "@/lib/chatstyle";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
 import { LABEL_BUTTONS, MAX_LABEL, MAX_LABEL_TR, cleanLabels, isColor, setLabels, type Labels } from "@/lib/labels";
 import { INFO_LANGS, MAX_TEXT, cleanInfoTexts, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
-import { MAX_PELANGGAN, cleanPelanggan, countPelanggan, deletePelanggan, getPelanggan, savePelanggan, validPelId } from "@/lib/pelanggan";
+import { MAX_BELI, MAX_PELANGGAN, addPembelian, cleanPelanggan, countPelanggan, deletePelanggan, getPelanggan, parseTanggal, removePembelian, savePelanggan, validPelId } from "@/lib/pelanggan";
+import { jakartaDay } from "@/lib/format";
 import { RemoteError, getSvcUsage, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
   deleteLinkData,
@@ -971,4 +972,34 @@ export async function deletePelangganAction(formData: FormData): Promise<Flash> 
 
   revalidatePath("/admin/pelanggan");
   return ok("Pelanggan dihapus.");
+}
+
+export async function addPembelianAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  if (!validPelId(id)) return err("Data pelanggan tidak valid.");
+  const raw = str(formData, "tanggal");
+  if (!raw) return err("Tanggal belum diisi.");
+  const tgl = parseTanggal(raw);
+  if (!tgl) return err("Tanggal tidak valid. Pakai format DD/MM/YYYY dan pastikan tanggalnya ada di kalender (Maret hanya sampai tanggal 31).");
+  if (tgl > jakartaDay(0)) return err("Tanggal pembelian tidak boleh di masa depan.");
+
+  const r = await addPembelian(id, tgl);
+  if (r === "tidak-ada") return err("Data pelanggan tidak ditemukan. Mungkin sudah dihapus.");
+  if (r === "sudah-ada") return err("Tanggal itu sudah tercatat.");
+  if (r === "penuh") return err(`Riwayat penuh (maksimal ${MAX_BELI} tanggal).`);
+
+  revalidatePath("/admin/pelanggan");
+  return ok("Tanggal pembelian ditambahkan.");
+}
+
+export async function deletePembelianAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  const tgl = parseTanggal(str(formData, "tanggal"));
+  if (!validPelId(id) || !tgl) return err("Data tidak valid.");
+  if (!(await removePembelian(id, tgl))) return err("Tanggal tidak ditemukan. Mungkin sudah dihapus.");
+
+  revalidatePath("/admin/pelanggan");
+  return ok("Tanggal pembelian dihapus.");
 }

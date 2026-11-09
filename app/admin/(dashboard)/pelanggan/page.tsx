@@ -2,8 +2,9 @@ import { requireAdmin } from "@/lib/auth";
 import { countryName } from "@/lib/format";
 import { Flag } from "@/lib/flag";
 import { RefIcon } from "@/lib/sumber-icon";
-import { STATUS, listPelanggan, waDigits, type Pelanggan } from "@/lib/pelanggan";
+import { STATUS, fmtTgl, listPelanggan, waDigits, type Pelanggan } from "@/lib/pelanggan";
 import { PelangganDialog } from "./pelanggan-form";
+import { PembelianDialog } from "./pembelian-dialog";
 import { PelangganFilters } from "./pelanggan-filters";
 
 export const dynamic = "force-dynamic";
@@ -128,6 +129,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
                   <th>Pelanggan</th>
                   <th>Kontak</th>
                   <th>Status</th>
+                  <th>Pembelian</th>
                   <th aria-label="Aksi" />
                 </tr>
               </thead>
@@ -190,7 +192,13 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
                         <span className={"pl-st " + p.status}>{statusName(p.status)}</span>
                       </td>
                       <td>
+                        <div className="pl-lbl">Pembelian</div>
+                        <div>{p.beli.length ? `${p.beli.length} kali` : "Belum ada"}</div>
+                        {p.beli.length > 0 && <div className="pl-sm">Terakhir {fmtTgl(p.beli[0])}</div>}
+                      </td>
+                      <td>
                         <div className="pl-ac">
+                          <PembelianDialog p={p} />
                           <PelangganDialog initial={p} />
                         </div>
                       </td>
