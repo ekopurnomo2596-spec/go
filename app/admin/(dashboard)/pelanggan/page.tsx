@@ -92,7 +92,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
 
         <form className="pl-search" method="get" action="/admin/pelanggan" role="search">
           <input type="text" name="q" defaultValue={q} placeholder="Cari nama, negara, email, nomor, Instagram, catatan" aria-label="Cari pelanggan" autoComplete="off" />
-          <StatusFilter defaultValue={s} />
+          <StatusFilter defaultValue={s ?? ""} />
           <button type="submit">Cari</button>
           {(q || s) && (
             <Link href="/admin/pelanggan" className="btn ghost">
