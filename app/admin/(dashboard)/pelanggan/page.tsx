@@ -63,8 +63,8 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
         .pl-search input:focus, .pl-search select:focus,
         .pl-search input:focus-visible, .pl-search select:focus-visible {
           outline: none !important;
-          border-color: var(--gold);
-          box-shadow: 0 0 0 4px var(--glow);
+          border-color: var(--line);
+          box-shadow: 0 0 0 3px var(--glow);
         }
         .pl-lbl { display: none; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 4px; }
         .pl-ct { display: grid; gap: 6px; font-size: 13px; }
