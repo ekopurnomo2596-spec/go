@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { countryName } from "@/lib/format";
 import { Flag } from "@/lib/flag";
@@ -7,7 +6,7 @@ import { STATUS, listPelanggan, waDigits, type Pelanggan } from "@/lib/pelanggan
 import { deletePelangganAction } from "../../actions";
 import { ActionForm } from "../forms";
 import { PelangganDialog } from "./pelanggan-form";
-import { StatusFilter } from "./status-filter";
+import { PelangganFilters } from "./pelanggan-filters";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Pelanggan" };
@@ -92,16 +91,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
           Daftar pelanggan <small>{rows.length === all.length ? `${all.length} orang` : `${rows.length} dari ${all.length} orang`}</small>
         </h2>
 
-        <form className="pl-search" method="get" action="/admin/pelanggan" role="search">
-          <input type="text" name="q" defaultValue={q} placeholder="Cari nama, negara, email, nomor, Instagram, catatan" aria-label="Cari pelanggan" autoComplete="off" />
-          <StatusFilter defaultValue={s ?? ""} />
-          <button type="submit">Cari</button>
-          {(q || s) && (
-            <Link href="/admin/pelanggan" className="btn ghost">
-              Reset
-            </Link>
-          )}
-        </form>
+        <PelangganFilters initialQ={q} initialS={s ?? ""} />
 
         {error ? (
           <p className="empty">{error}</p>
