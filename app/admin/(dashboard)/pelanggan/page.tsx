@@ -60,8 +60,12 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
         .pl-search { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
         .pl-search input, .pl-search select { padding: 9px 12px; font: inherit; font-size: 14px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
         .pl-search input { flex: 1 1 200px; min-width: 0; }
-        .pl-search input:focus, .pl-search select:focus { outline: none; border-color: var(--gold); }
-        .pl-search input:focus-visible, .pl-search select:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--glow); }
+        .pl-search input:focus, .pl-search select:focus,
+        .pl-search input:focus-visible, .pl-search select:focus-visible {
+          outline: none !important;
+          border-color: var(--gold);
+          box-shadow: 0 0 0 4px var(--glow);
+        }
         .pl-lbl { display: none; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 4px; }
         .pl-ct { display: grid; gap: 6px; font-size: 13px; }
         .pl-ct span { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -77,6 +81,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
         .pl-st.pembeli, .pl-st.langganan { border-color: #22c55e; color: #1f8a4c; }
         .pl-ac { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
         .pl-ac .btn, .pl-ac button { padding: 7px 12px; font-size: 13px; }
+        .pelanggan-table td { vertical-align: middle; }
 
         /* Mobile: ubah tabel jadi kartu bertumpuk supaya tidak sempit dan teks tidak pecah per-huruf. */
         @media (max-width: 640px) {
