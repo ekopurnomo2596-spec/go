@@ -94,6 +94,8 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
           .pelanggan-table .pl-ac { justify-content: stretch; }
           .pelanggan-table .pl-ac .editbtn { flex: 1; text-align: center; }
           .pl-lbl { display: block; }
+          .pl-search { flex-direction: column; align-items: stretch; }
+          .pl-search input, .pl-search select { width: 100%; flex: none; }
         }
       `}</style>
 
@@ -133,6 +135,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
                   return (
                     <tr key={p.id}>
                       <td>
+                        <div className="pl-lbl">Pelanggan</div>
                         <div className="pl-nm">{p.nama}</div>
                         {p.negara && (
                           <div className="pl-sm pl-country">
