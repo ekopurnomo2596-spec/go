@@ -35,12 +35,14 @@ function realDate(y: number, m: number, d: number): string | null {
   return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
-/** Terima "24/03/2026", "24-3-2026", "24.03.2026", atau "2026-03-24". Hasil: "2026-03-24", atau null kalau tanggalnya tidak ada. */
+/** Terima "24/03/2026", "24-3-2026", "24.03.2026", "24032026", atau "2026-03-24". Hasil: "2026-03-24", atau null kalau tanggalnya tidak ada. */
 export function parseTanggal(raw: string): string | null {
   const s = raw.trim();
   let m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
   if (m) return realDate(+m[1], +m[2], +m[3]);
   m = /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/.exec(s);
+  if (m) return realDate(+m[3], +m[2], +m[1]);
+  m = /^(\d{2})(\d{2})(\d{4})$/.exec(s); // 09092005, tanpa pemisah
   if (m) return realDate(+m[3], +m[2], +m[1]);
   return null;
 }

@@ -5,6 +5,12 @@ import { flash, type Flash } from "@/lib/flash";
 import { deletePelangganAction, deletePembelianAction, savePelangganAction } from "../../actions";
 import { COUNTRY_CODES, STATUS, fmtTgl, type Pelanggan } from "@/lib/pelanggan-info";
 
+/** Ketik angka saja, garis miringnya ditambah otomatis: 09092005 menjadi 09/09/2005. */
+const maskTgl = (v: string) => {
+  const d = v.replace(/\D/g, "").slice(0, 8);
+  return d.length > 4 ? `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}` : d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
+};
+
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 function useCountries() {
@@ -134,6 +140,7 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
   const [pending, start] = useTransition();
   const [delPending, startDel] = useTransition();
   const [beliPending, startBeli] = useTransition();
+  const [beli, setBeli] = useState("");
   const editing = !!initial;
   const busy = pending || delPending || beliPending;
 
@@ -182,7 +189,10 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
 
   return (
     <>
-      <button type="button" className={editing ? "editbtn" : "btn"} onClick={() => setOpen(true)}>
+      <button type="button" className={editing ? "editbtn" : "btn"} onClick={() => {
+          setBeli("");
+          setOpen(true);
+        }}>
         {editing ? "Ubah" : "+ Tambah data pelanggan"}
       </button>
       {open && (
@@ -302,7 +312,7 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
 
               <div className="pl-f">
                 <label htmlFor="pl-beli">{editing ? "Tambah tanggal pembelian" : "Tanggal pembelian"}</label>
-                <input id="pl-beli" name="beli_baru" type="text" inputMode="numeric" placeholder="DD/MM/YYYY" autoComplete="off" maxLength={10} />
+                <input id="pl-beli" name="beli_baru" type="text" inputMode="numeric" placeholder="DD/MM/YYYY" autoComplete="off" maxLength={10} value={beli} onChange={(e) => setBeli(maskTgl(e.target.value))} />
                 <p className="pl-hint">Boleh dikosongkan. Contoh: 24/03/2026</p>
                 {initial && initial.beli.length > 0 && (
                   <ul className="pl-beli" aria-label="Tanggal pembelian tercatat">
