@@ -110,7 +110,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
         {error ? (
           <p className="empty">{error}</p>
         ) : rows.length === 0 ? (
-          <p className="empty">{all.length === 0 ? "Belum ada pelanggan. Klik "Tambah data pelanggan" untuk mulai." : "Tidak ada yang cocok dengan pencarian."}</p>
+          <p className="empty">{all.length === 0 ? 'Belum ada pelanggan. Klik "Tambah data pelanggan" untuk mulai.' : "Tidak ada yang cocok dengan pencarian."}</p>
         ) : (
           <div className="tablewrap">
             <table>
