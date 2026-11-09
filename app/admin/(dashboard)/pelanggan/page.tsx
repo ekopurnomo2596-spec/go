@@ -91,15 +91,20 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
         @media (max-width: 640px) {
           .pelanggan-table, .pelanggan-table tbody { display: block; width: 100%; }
           .pelanggan-table thead { display: none; }
-          .pelanggan-table tr { display: block; padding: 14px 0; border-bottom: 1px solid var(--line); }
+          .pelanggan-table tr { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; column-gap: 8px; row-gap: 8px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
           .pelanggan-table tbody tr:last-child { border-bottom: 0; }
           .pelanggan-table td { display: block; padding: 0; border: 0; }
-          .pelanggan-table td + td { margin-top: 10px; }
-          .pelanggan-table td.pl-nomor { width: auto; font-size: 12px; font-weight: 600; }
-          .pelanggan-table td.pl-nomor::before { content: "No. "; }
+          .pelanggan-table td.pl-nomor { grid-column: 1; grid-row: 1; width: auto; font-size: 13px; font-weight: 600; }
+          .pelanggan-table td.pl-nomor::after { content: "."; }
+          .pelanggan-table td:nth-child(2) { grid-column: 2; grid-row: 1; }
+          .pelanggan-table td:nth-child(4) { grid-column: 3; grid-row: 1; justify-self: end; }
+          .pelanggan-table td:nth-child(3) { grid-column: 2 / -1; grid-row: 2; }
+          .pelanggan-table td:nth-child(5) { grid-column: 2 / -1; grid-row: 3; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+          .pelanggan-table td:nth-child(5) .pl-lbl { display: block; margin: 0; }
+          .pelanggan-table td:nth-child(5) .pl-sm { margin-top: 0; }
+          .pelanggan-table td:nth-child(6) { grid-column: 2 / -1; grid-row: 4; }
           .pelanggan-table .pl-ac { justify-content: stretch; }
           .pelanggan-table .pl-ac .editbtn { flex: 1; text-align: center; }
-          .pl-lbl { display: block; }
           .pl-search { flex-direction: column; align-items: stretch; }
           .pl-search input, .pl-search select { width: 100%; flex: none; }
         }
