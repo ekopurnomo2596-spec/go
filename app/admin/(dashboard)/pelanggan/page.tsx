@@ -85,6 +85,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
         .pl-ac { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
         .pl-ac .btn, .pl-ac button { padding: 7px 12px; font-size: 13px; }
         .pelanggan-table td { vertical-align: middle; }
+        .pelanggan-table td.pl-nomor { width: 1%; padding-right: 0; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
         /* Mobile: ubah tabel jadi kartu bertumpuk supaya tidak sempit dan teks tidak pecah per-huruf. */
         @media (max-width: 640px) {
@@ -94,6 +95,8 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
           .pelanggan-table tbody tr:last-child { border-bottom: 0; }
           .pelanggan-table td { display: block; padding: 0; border: 0; }
           .pelanggan-table td + td { margin-top: 10px; }
+          .pelanggan-table td.pl-nomor { width: auto; font-size: 12px; font-weight: 600; }
+          .pelanggan-table td.pl-nomor::before { content: "No. "; }
           .pelanggan-table .pl-ac { justify-content: stretch; }
           .pelanggan-table .pl-ac .editbtn { flex: 1; text-align: center; }
           .pl-lbl { display: block; }
@@ -126,6 +129,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
             <table className="pelanggan-table">
               <thead>
                 <tr>
+                  <th>No</th>
                   <th>Pelanggan</th>
                   <th>Kontak</th>
                   <th>Status</th>
@@ -134,10 +138,11 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
                 </tr>
               </thead>
               <tbody>
-                {rows.map((p) => {
+                {rows.map((p, i) => {
                   const wd = p.wa ? waDigits(p.wa, p.negara) : "";
                   return (
                     <tr key={p.id}>
+                      <td className="pl-nomor">{i + 1}</td>
                       <td>
                         <div className="pl-lbl">Pelanggan</div>
                         <div className="pl-nm">{p.nama}</div>
