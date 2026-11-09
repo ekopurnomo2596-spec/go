@@ -103,22 +103,14 @@ export async function countPelanggan(): Promise<number> {
 }
 
 /** Simpan baru (prev = null) atau perbarui yang sudah ada. */
-export async function savePelanggan(prev: Pelanggan | null, data: PelInput): Promise<void> {
+export async function savePelanggan(prev: Pelanggan | null, data: PelInput, tglBaru?: string): Promise<void> {
   const now = Date.now();
   const id = prev?.id ?? crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-  const p: Pelanggan = { ...data, id, beli: prev?.beli ?? [], dibuat: prev?.dibuat ?? now, diubah: now };
+  const beli = [...(prev?.beli ?? [])];
+  if (tglBaru && !beli.includes(tglBaru) && beli.length < MAX_BELI) beli.push(tglBaru); // tanggal pembelian baru dari form Ubah
+  beli.sort().reverse();
+  const p: Pelanggan = { ...data, id, beli, dibuat: prev?.dibuat ?? now, diubah: now };
   await db().hset(PEL_KEY, { [id]: JSON.stringify(p) });
-}
-
-/** Catat satu tanggal pembelian. Urutan daftar pelanggan tidak berubah (field `diubah` tidak disentuh). */
-export async function addPembelian(id: string, tgl: string): Promise<"ok" | "tidak-ada" | "sudah-ada" | "penuh"> {
-  const p = await getPelanggan(id);
-  if (!p) return "tidak-ada";
-  if (p.beli.includes(tgl)) return "sudah-ada";
-  if (p.beli.length >= MAX_BELI) return "penuh";
-  const next: Pelanggan = { ...p, beli: [...p.beli, tgl].sort().reverse() };
-  await db().hset(PEL_KEY, { [id]: JSON.stringify(next) });
-  return "ok";
 }
 
 export async function removePembelian(id: string, tgl: string): Promise<boolean> {

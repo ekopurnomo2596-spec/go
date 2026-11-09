@@ -37,7 +37,7 @@ import { cleanStyle } from "@/lib/chatstyle";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
 import { LABEL_BUTTONS, MAX_LABEL, MAX_LABEL_TR, cleanLabels, isColor, setLabels, type Labels } from "@/lib/labels";
 import { INFO_LANGS, MAX_TEXT, cleanInfoTexts, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
-import { MAX_BELI, MAX_PELANGGAN, addPembelian, cleanPelanggan, countPelanggan, deletePelanggan, getPelanggan, parseTanggal, removePembelian, savePelanggan, validPelId } from "@/lib/pelanggan";
+import { MAX_BELI, MAX_PELANGGAN, cleanPelanggan, countPelanggan, deletePelanggan, getPelanggan, parseTanggal, removePembelian, savePelanggan, validPelId } from "@/lib/pelanggan";
 import { jakartaDay } from "@/lib/format";
 import { RemoteError, getSvcUsage, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
@@ -951,14 +951,26 @@ export async function savePelangganAction(formData: FormData): Promise<Flash> {
   });
   if (!r.ok) return err(r.error);
 
+  // Tanggal pembelian baru (opsional). Diperiksa dulu supaya tidak ada yang tersimpan kalau tanggalnya salah.
+  let tglBaru: string | undefined;
+  const rawTgl = str(formData, "beli_baru");
+  if (rawTgl) {
+    const t = parseTanggal(rawTgl);
+    if (!t) return err("Tanggal pembelian tidak valid. Pakai format DD/MM/YYYY dan pastikan tanggalnya ada di kalender (Maret hanya sampai tanggal 31).");
+    if (t > jakartaDay(0)) return err("Tanggal pembelian tidak boleh di masa depan.");
+    tglBaru = t;
+  }
+
   let prev: Awaited<ReturnType<typeof getPelanggan>> = null;
   if (id) {
     prev = validPelId(id) ? await getPelanggan(id) : null;
     if (!prev) return err("Data pelanggan tidak ditemukan. Mungkin sudah dihapus.");
+    if (tglBaru && prev.beli.includes(tglBaru)) return err("Tanggal pembelian itu sudah tercatat.");
+    if (tglBaru && prev.beli.length >= MAX_BELI) return err(`Riwayat penuh (maksimal ${MAX_BELI} tanggal).`);
   } else if ((await countPelanggan()) >= MAX_PELANGGAN) {
     return err(`Daftar penuh (maksimal ${MAX_PELANGGAN} pelanggan).`);
   }
-  await savePelanggan(prev, r.data);
+  await savePelanggan(prev, r.data, tglBaru);
 
   revalidatePath("/admin/pelanggan");
   return ok(prev ? "Data pelanggan diperbarui." : "Pelanggan ditambahkan.");
@@ -972,25 +984,6 @@ export async function deletePelangganAction(formData: FormData): Promise<Flash> 
 
   revalidatePath("/admin/pelanggan");
   return ok("Pelanggan dihapus.");
-}
-
-export async function addPembelianAction(formData: FormData): Promise<Flash> {
-  await requireAdmin();
-  const id = str(formData, "id");
-  if (!validPelId(id)) return err("Data pelanggan tidak valid.");
-  const raw = str(formData, "tanggal");
-  if (!raw) return err("Tanggal belum diisi.");
-  const tgl = parseTanggal(raw);
-  if (!tgl) return err("Tanggal tidak valid. Pakai format DD/MM/YYYY dan pastikan tanggalnya ada di kalender (Maret hanya sampai tanggal 31).");
-  if (tgl > jakartaDay(0)) return err("Tanggal pembelian tidak boleh di masa depan.");
-
-  const r = await addPembelian(id, tgl);
-  if (r === "tidak-ada") return err("Data pelanggan tidak ditemukan. Mungkin sudah dihapus.");
-  if (r === "sudah-ada") return err("Tanggal itu sudah tercatat.");
-  if (r === "penuh") return err(`Riwayat penuh (maksimal ${MAX_BELI} tanggal).`);
-
-  revalidatePath("/admin/pelanggan");
-  return ok("Tanggal pembelian ditambahkan.");
 }
 
 export async function deletePembelianAction(formData: FormData): Promise<Flash> {

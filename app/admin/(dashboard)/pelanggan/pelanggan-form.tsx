@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { flash, type Flash } from "@/lib/flash";
-import { deletePelangganAction, savePelangganAction } from "../../actions";
-import { COUNTRY_CODES, STATUS, type Pelanggan } from "@/lib/pelanggan-info";
+import { deletePelangganAction, deletePembelianAction, savePelangganAction } from "../../actions";
+import { COUNTRY_CODES, STATUS, fmtTgl, type Pelanggan } from "@/lib/pelanggan-info";
 
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
@@ -133,8 +133,9 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [delPending, startDel] = useTransition();
+  const [beliPending, startBeli] = useTransition();
   const editing = !!initial;
-  const busy = pending || delPending;
+  const busy = pending || delPending || beliPending;
 
   useEffect(() => {
     if (!open) return;
@@ -159,6 +160,23 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
       }
       flash(r);
       if (r.kind === "ok") setOpen(false);
+    });
+  }
+
+  function removeBeli(tgl: string) {
+    if (!initial || busy) return;
+    if (!window.confirm(`Hapus tanggal pembelian ${fmtTgl(tgl)}?`)) return;
+    startBeli(async () => {
+      let r: Flash;
+      try {
+        const fd = new FormData();
+        fd.set("id", initial.id);
+        fd.set("tanggal", tgl);
+        r = await deletePembelianAction(fd);
+      } catch {
+        r = { kind: "err", text: "Gagal menghapus. Periksa koneksi lalu coba lagi." };
+      }
+      flash(r);
     });
   }
 
@@ -204,6 +222,9 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
               .pl-cb-list li.hi { background: var(--bg); }
               .pl-cb-list li.sel { font-weight: 600; }
               .pl-cb-list li.pl-cb-empty { cursor: default; color: var(--muted); }
+              .pl-beli { list-style: none; margin: 4px 0 0; padding: 0; border-top: 1px solid var(--line); }
+              .pl-beli li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--line); font-size: 14px; }
+              .pl-beli button { padding: 4px 10px; font-size: 12px; }
             `}</style>
             <div className="modal-head">
               <strong>{editing ? "Ubah pelanggan" : "Tambah pelanggan"}</strong>
@@ -275,6 +296,24 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
                 <label htmlFor="pl-catatan">Catatan</label>
                 <textarea id="pl-catatan" name="catatan" defaultValue={initial?.catatan ?? ""} maxLength={1000} placeholder="Contoh: minta harga weft 22 inci, follow up minggu depan." />
                 <p className="pl-hint">Hanya nama yang wajib diisi. Kolom lain boleh dikosongkan.</p>
+              </div>
+
+              <div className="pl-f">
+                <label htmlFor="pl-beli">{editing ? "Tambah tanggal pembelian" : "Tanggal pembelian"}</label>
+                <input id="pl-beli" name="beli_baru" type="text" inputMode="numeric" placeholder="DD/MM/YYYY" autoComplete="off" maxLength={10} />
+                <p className="pl-hint">Boleh dikosongkan. Contoh: 24/03/2026</p>
+                {initial && initial.beli.length > 0 && (
+                  <ul className="pl-beli" aria-label="Tanggal pembelian tercatat">
+                    {initial.beli.map((t) => (
+                      <li key={t}>
+                        <span>{fmtTgl(t)}</span>
+                        <button type="button" className="danger" onClick={() => removeBeli(t)} disabled={busy}>
+                          Hapus
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
               <div className="pl-act">
