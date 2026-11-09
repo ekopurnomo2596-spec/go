@@ -3,15 +3,13 @@ import { requireAdmin } from "@/lib/auth";
 import { countryName, formatTime } from "@/lib/format";
 import { Flag } from "@/lib/flag";
 import { RefIcon } from "@/lib/sumber-icon";
-import { COUNTRY_CODES, STATUS, getPelanggan, listPelanggan, validPelId, waDigits, type Pelanggan } from "@/lib/pelanggan";
+import { STATUS, listPelanggan, waDigits, type Pelanggan } from "@/lib/pelanggan";
 import { deletePelangganAction } from "../../actions";
 import { ActionForm } from "../forms";
-import { PelangganForm } from "./pelanggan-form";
+import { PelangganDialog } from "./pelanggan-form";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Pelanggan" };
-
-const COUNTRIES = COUNTRY_CODES.map((code) => ({ code, name: countryName(code) })).sort((a, b) => a.name.localeCompare(b.name, "id"));
 
 // Email dan telepon: ikon bergaris. WhatsApp dan Instagram: logo merek dari RefIcon.
 const OUT = {
@@ -35,19 +33,18 @@ function Ic({ n }: { n: "Email" | "Telepon" | "WhatsApp" | "Instagram" }) {
 
 function matches(p: Pelanggan, q: string): boolean {
   if (!q) return true;
-  const hay = [p.nama, p.perusahaan, p.email, p.wa, p.hp, p.ig, p.catatan, p.negara ? countryName(p.negara) : ""].join(" ").toLowerCase();
+  const hay = [p.nama, p.email, p.wa, p.hp, p.ig, p.catatan, p.negara ? countryName(p.negara) : ""].join(" ").toLowerCase();
   return q
     .toLowerCase()
     .split(/\s+/)
     .every((w) => hay.includes(w));
 }
 
-export default async function PelangganPage({ searchParams }: { searchParams: Promise<{ q?: string; s?: string; edit?: string }> }) {
+export default async function PelangganPage({ searchParams }: { searchParams: Promise<{ q?: string; s?: string }> }) {
   await requireAdmin();
   const sp = await searchParams;
   const q = (sp.q ?? "").trim().slice(0, 100);
   const s = STATUS.some((x) => x.id === sp.s) ? sp.s : "";
-  const editId = sp.edit && validPelId(sp.edit) ? sp.edit : "";
 
   let all: Pelanggan[] = [];
   let error = "";
@@ -56,7 +53,6 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
   } catch {
     error = "Gagal membaca data pelanggan.";
   }
-  const editing = editId ? (all.find((p) => p.id === editId) ?? (await getPelanggan(editId).catch(() => null))) : null;
   const rows = all.filter((p) => (!s || p.status === s) && matches(p, q));
   const statusName = (id: string) => STATUS.find((x) => x.id === id)?.name ?? id;
 
@@ -85,18 +81,8 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
           <h1>Pelanggan</h1>
           <div className="an-sub">Catatan kontak pelanggan dan calon pelanggan</div>
         </div>
+        <PelangganDialog />
       </div>
-
-      <section className="panel">
-        <h2>{editing ? "Ubah pelanggan" : "Tambah pelanggan"}</h2>
-        {editId && !editing ? (
-          <p className="empty">
-            Data tidak ditemukan. <Link href="/admin/pelanggan">Kembali ke daftar</Link>.
-          </p>
-        ) : (
-          <PelangganForm key={editing?.id ?? "baru"} initial={editing ?? undefined} countries={COUNTRIES} />
-        )}
-      </section>
 
       <section className="panel">
         <h2>
@@ -124,7 +110,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
         {error ? (
           <p className="empty">{error}</p>
         ) : rows.length === 0 ? (
-          <p className="empty">{all.length === 0 ? "Belum ada pelanggan. Tambahkan lewat form di atas." : "Tidak ada yang cocok dengan pencarian."}</p>
+          <p className="empty">{all.length === 0 ? "Belum ada pelanggan. Klik "Tambah data pelanggan" untuk mulai." : "Tidak ada yang cocok dengan pencarian."}</p>
         ) : (
           <div className="tablewrap">
             <table>
@@ -143,7 +129,6 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
                     <tr key={p.id}>
                       <td>
                         <div className="pl-nm">{p.nama}</div>
-                        {p.perusahaan && <div className="pl-sm">{p.perusahaan}</div>}
                         {p.negara && (
                           <div className="pl-sm">
                             <Flag code={p.negara} /> {countryName(p.negara)}
@@ -194,9 +179,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
                       </td>
                       <td>
                         <div className="pl-ac">
-                          <Link href={`/admin/pelanggan?edit=${p.id}`} className="btn ghost">
-                            Ubah
-                          </Link>
+                          <PelangganDialog initial={p} />
                           <ActionForm action={deletePelangganAction} btnClass="danger" confirm={`Hapus "${p.nama}" dari daftar pelanggan?`} label="Hapus">
                             <input type="hidden" name="id" value={p.id} />
                           </ActionForm>

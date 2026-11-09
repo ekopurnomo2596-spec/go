@@ -940,7 +940,6 @@ export async function savePelangganAction(formData: FormData): Promise<Flash> {
   const id = str(formData, "id");
   const r = cleanPelanggan({
     nama: str(formData, "nama"),
-    perusahaan: str(formData, "perusahaan"),
     negara: str(formData, "negara"),
     email: str(formData, "email"),
     wa: str(formData, "wa"),
