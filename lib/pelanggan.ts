@@ -50,15 +50,15 @@ export function cleanPelanggan(raw: Record<string, string>): { ok: true; data: P
   const email = (raw.email ?? "").trim().toLowerCase().slice(0, 120);
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "Format email tidak valid." };
 
-  const phone = (v: string, label: string) => {
+  const phone = (v: string, label: string): { v: string; err?: string } => {
     const t = v.replace(/[^\d+\-\s()]/g, "").replace(/\s+/g, " ").trim().slice(0, 25);
-    if (t && t.replace(/\D/g, "").length < 6) return { err: `Nomor ${label} terlalu pendek.` } as const;
-    return { v: t } as const;
+    if (t && t.replace(/\D/g, "").length < 6) return { v: "", err: `Nomor ${label} terlalu pendek.` };
+    return { v: t };
   };
   const wa = phone(raw.wa ?? "", "WhatsApp");
-  if ("err" in wa) return { ok: false, error: wa.err };
+  if (wa.err) return { ok: false, error: wa.err };
   const hp = phone(raw.hp ?? "", "telepon");
-  if ("err" in hp) return { ok: false, error: hp.err };
+  if (hp.err) return { ok: false, error: hp.err };
 
   // Instagram: terima "@nama", "nama", atau tautan profil
   let ig = (raw.ig ?? "").trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, "").replace(/[/?#].*$/, "").replace(/^@/, "");
