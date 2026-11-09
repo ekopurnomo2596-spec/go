@@ -35,7 +35,8 @@ export function PembelianDialog({ p }: { p: Pelanggan }) {
               .pb-modal .modal-x { padding: 0; }
               .pb-modal .modal-x svg { flex: none; }
               .pb-list { list-style: none; margin: 0 0 16px; padding: 0; border-top: 1px solid var(--line); }
-              .pb-list li { padding: 10px 2px; border-bottom: 1px solid var(--line); font-size: 14px; }
+              .pb-list li { display: flex; gap: 12px; padding: 10px 2px; border-bottom: 1px solid var(--line); font-size: 14px; }
+              .pb-no { min-width: 2ch; color: var(--muted); font-variant-numeric: tabular-nums; }
               .pb-act { display: flex; justify-content: flex-end; }
             `}</style>
             <div className="modal-head">
@@ -51,8 +52,11 @@ export function PembelianDialog({ p }: { p: Pelanggan }) {
               <p className="empty">Belum ada pembelian.</p>
             ) : (
               <ul className="pb-list">
-                {p.beli.map((t) => (
-                  <li key={t}>{fmtTgl(t)}</li>
+                {p.beli.map((t, i) => (
+                  <li key={t}>
+                    <span className="pb-no">{p.beli.length - i}.</span>
+                    <span>{fmtTgl(t)}</span>
+                  </li>
                 ))}
               </ul>
             )}

@@ -237,6 +237,7 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
               .pl-beli { list-style: none; margin: 4px 0 0; padding: 0; border-top: 1px solid var(--line); }
               .pl-beli li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 2px; border-bottom: 1px solid var(--line); font-size: 14px; }
               .pl-beli button { padding: 4px 10px; font-size: 12px; }
+              .pl-beli .pl-no { display: inline-block; min-width: 2.2ch; margin-right: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
             `}</style>
             <div className="modal-head">
               <strong>{editing ? "Ubah pelanggan" : "Tambah pelanggan"}</strong>
@@ -316,9 +317,12 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
                 <p className="pl-hint">Boleh dikosongkan. Contoh: 24/03/2026</p>
                 {initial && initial.beli.length > 0 && (
                   <ul className="pl-beli" aria-label="Tanggal pembelian tercatat">
-                    {initial.beli.map((t) => (
+                    {initial.beli.map((t, i) => (
                       <li key={t}>
-                        <span>{fmtTgl(t)}</span>
+                        <span>
+                          <span className="pl-no">{initial.beli.length - i}.</span>
+                          {fmtTgl(t)}
+                        </span>
                         <button type="button" className="danger" onClick={() => removeBeli(t)} disabled={busy}>
                           Hapus
                         </button>
