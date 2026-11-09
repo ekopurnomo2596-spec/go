@@ -28,12 +28,6 @@ export function PelangganFilters({ initialQ, initialS }: { initialQ: string; ini
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, s]);
 
-  const reset = () => {
-    setQ("");
-    setS("");
-    router.replace(pathname, { scroll: false });
-  };
-
   return (
     <div className="pl-search" role="search">
       <input
@@ -52,11 +46,6 @@ export function PelangganFilters({ initialQ, initialS }: { initialQ: string; ini
           </option>
         ))}
       </select>
-      {(q || s) && (
-        <button type="button" className="btn ghost" onClick={reset}>
-          Reset
-        </button>
-      )}
     </div>
   );
 }

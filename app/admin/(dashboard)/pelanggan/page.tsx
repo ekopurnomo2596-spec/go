@@ -60,6 +60,9 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
         .pl-search { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
         .pl-search input, .pl-search select { padding: 9px 12px; font: inherit; font-size: 14px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
         .pl-search input { flex: 1 1 200px; min-width: 0; }
+        .pl-search input:focus, .pl-search select:focus { outline: none; border-color: var(--gold); }
+        .pl-search input:focus-visible, .pl-search select:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--glow); }
+        .pl-lbl { display: none; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 4px; }
         .pl-ct { display: grid; gap: 6px; font-size: 13px; }
         .pl-ct span { display: flex; align-items: center; gap: 8px; min-width: 0; }
         .pl-ic { display: inline-flex; flex: none; }
@@ -85,6 +88,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
           .pelanggan-table td + td { margin-top: 10px; }
           .pelanggan-table .pl-ac { justify-content: stretch; }
           .pelanggan-table .pl-ac .editbtn { flex: 1; text-align: center; }
+          .pl-lbl { display: block; }
         }
       `}</style>
 
@@ -134,6 +138,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
                         {p.catatan && <div className="pl-note">{p.catatan}</div>}
                       </td>
                       <td>
+                        <div className="pl-lbl">Kontak</div>
                         <div className="pl-ct">
                           {p.email && (
                             <span>
@@ -171,6 +176,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
                         </div>
                       </td>
                       <td>
+                        <div className="pl-lbl">Status</div>
                         <span className={"pl-st " + p.status}>{statusName(p.status)}</span>
                       </td>
                       <td>
