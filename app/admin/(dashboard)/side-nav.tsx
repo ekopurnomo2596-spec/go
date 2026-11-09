@@ -20,7 +20,8 @@ export function SideNav() {
   const onInfo = path.startsWith("/admin/pengumuman");
   const onModelAi = path.startsWith("/admin/model-ai");
   const onLabel = path.startsWith("/admin/label");
-  const onDash = !onAnalisa && !onTindakan && !onTautan && !onStats && !onAi && !onChat && !onToken && !onInfo && !onModelAi && !onLabel;
+  const onPel = path.startsWith("/admin/pelanggan");
+  const onDash = !onAnalisa && !onTindakan && !onTautan && !onStats && !onAi && !onChat && !onToken && !onInfo && !onModelAi && !onLabel && !onPel;
   return (
     <>
       <Link href="/admin" onClick={closeMenu} className={"snavLink" + (onDash ? " active" : "")}>
@@ -34,6 +35,10 @@ export function SideNav() {
       <Link href="/admin/percakapan" onClick={closeMenu} className={"snavLink" + (onChat ? " active" : "")}>
         <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
         Percakapan
+      </Link>
+      <Link href="/admin/pelanggan" onClick={closeMenu} className={"snavLink" + (onPel ? " active" : "")}>
+        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8" /></svg>
+        Pelanggan
       </Link>
       <Link href="/admin/tindakan" onClick={closeMenu} className={"snavLink" + (onTindakan ? " active" : "")}>
         <svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h9" /></svg>

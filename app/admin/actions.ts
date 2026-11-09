@@ -37,6 +37,7 @@ import { cleanStyle } from "@/lib/chatstyle";
 import { TgError, clearPair, deleteTg, getTg, makeSecret, removeWebhook, sendVisitTest, sendWeeklyReport, setTg, setWebhook, startPair, validBotToken, type Pair, type TgKind } from "@/lib/telegram";
 import { LABEL_BUTTONS, MAX_LABEL, MAX_LABEL_TR, cleanLabels, isColor, setLabels, type Labels } from "@/lib/labels";
 import { INFO_LANGS, MAX_TEXT, cleanInfoTexts, getInfo, setInfo, validInfoUrl, type InfoTexts } from "@/lib/pengumuman";
+import { MAX_PELANGGAN, cleanPelanggan, countPelanggan, deletePelanggan, getPelanggan, savePelanggan, validPelId } from "@/lib/pelanggan";
 import { RemoteError, getSvcUsage, clearConvs, deleteConv, deleteCfg, getCfg, isSrc, ping, setCfg, srcName, validChatId, validToken, validUrl as validHttps, type Cfg } from "@/lib/remote";
 import {
   deleteLinkData,
@@ -932,4 +933,43 @@ export async function saveLabels(formData: FormData): Promise<Flash> {
   revalidatePath("/admin/label");
   const n = Object.values(items).filter((i) => i.on && i.text).length;
   return ok(n ? `Label disimpan. ${n} tombol di portal menampilkan label dalam 7 bahasa.` : "Label disimpan. Tidak ada label yang tampil di portal.");
+}
+
+export async function savePelangganAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  const r = cleanPelanggan({
+    nama: str(formData, "nama"),
+    perusahaan: str(formData, "perusahaan"),
+    negara: str(formData, "negara"),
+    email: str(formData, "email"),
+    wa: str(formData, "wa"),
+    hp: str(formData, "hp"),
+    ig: str(formData, "ig"),
+    status: str(formData, "status"),
+    catatan: str(formData, "catatan"),
+  });
+  if (!r.ok) return err(r.error);
+
+  let prev: Awaited<ReturnType<typeof getPelanggan>> = null;
+  if (id) {
+    prev = validPelId(id) ? await getPelanggan(id) : null;
+    if (!prev) return err("Data pelanggan tidak ditemukan. Mungkin sudah dihapus.");
+  } else if ((await countPelanggan()) >= MAX_PELANGGAN) {
+    return err(`Daftar penuh (maksimal ${MAX_PELANGGAN} pelanggan).`);
+  }
+  await savePelanggan(prev, r.data);
+
+  revalidatePath("/admin/pelanggan");
+  return ok(prev ? "Data pelanggan diperbarui." : "Pelanggan ditambahkan.");
+}
+
+export async function deletePelangganAction(formData: FormData): Promise<Flash> {
+  await requireAdmin();
+  const id = str(formData, "id");
+  if (!validPelId(id)) return err("Data pelanggan tidak valid.");
+  await deletePelanggan(id);
+
+  revalidatePath("/admin/pelanggan");
+  return ok("Pelanggan dihapus.");
 }
