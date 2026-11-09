@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { flash, type Flash } from "@/lib/flash";
-import { savePelangganAction } from "../../actions";
+import { deletePelangganAction, savePelangganAction } from "../../actions";
 import { COUNTRY_CODES, STATUS, type Pelanggan } from "@/lib/pelanggan-info";
 
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -132,7 +132,9 @@ function CountryPick({ defaultValue }: { defaultValue: string }) {
 export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
+  const [delPending, startDel] = useTransition();
   const editing = !!initial;
+  const busy = pending || delPending;
 
   useEffect(() => {
     if (!open) return;
@@ -143,6 +145,23 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
     };
   }, [open]);
 
+  function handleDelete() {
+    if (!initial || busy) return;
+    if (!window.confirm(`Hapus "${initial.nama}" dari daftar pelanggan?`)) return;
+    startDel(async () => {
+      let r: Flash;
+      try {
+        const fd = new FormData();
+        fd.set("id", initial.id);
+        r = await deletePelangganAction(fd);
+      } catch {
+        r = { kind: "err", text: "Gagal menghapus. Periksa koneksi lalu coba lagi." };
+      }
+      flash(r);
+      if (r.kind === "ok") setOpen(false);
+    });
+  }
+
   return (
     <>
       <button type="button" className={editing ? "editbtn" : "btn"} onClick={() => setOpen(true)}>
@@ -151,9 +170,9 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
       {open && (
         <div
           className="modal-back"
-          onClick={() => !pending && setOpen(false)}
+          onClick={() => !busy && setOpen(false)}
           onKeyDown={(e) => {
-            if (e.key === "Escape" && !e.defaultPrevented && !pending) setOpen(false);
+            if (e.key === "Escape" && !e.defaultPrevented && !busy) setOpen(false);
           }}
         >
           <div
@@ -177,7 +196,8 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
               }
               .pl-form textarea { min-height: 84px; resize: vertical; line-height: 1.5; }
               .pl-form input:focus, .pl-form select:focus, .pl-form textarea:focus { border-color: var(--gold); }
-              .pl-form .pl-act { display: flex; justify-content: flex-end; gap: 10px; align-items: center; }
+              .pl-form .pl-act { display: flex; justify-content: flex-end; gap: 10px; align-items: center; flex-wrap: wrap; }
+              .pl-form .pl-act .pl-del { margin-right: auto; }
               .pl-cb { position: relative; }
               .pl-cb-list { position: absolute; z-index: 5; left: 0; right: 0; top: calc(100% + 4px); max-height: 220px; overflow-y: auto; margin: 0; padding: 4px; list-style: none; background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 14px 40px rgba(0,0,0,.18); }
               .pl-cb-list li { padding: 8px 10px; border-radius: 8px; font-size: 14px; cursor: pointer; }
@@ -187,7 +207,7 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
             `}</style>
             <div className="modal-head">
               <strong>{editing ? "Ubah pelanggan" : "Tambah pelanggan"}</strong>
-              <button type="button" className="modal-x" aria-label="Tutup" onClick={() => !pending && setOpen(false)}>
+              <button type="button" className="modal-x" aria-label="Tutup" onClick={() => !busy && setOpen(false)}>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6 6l12 12M18 6 6 18" />
                 </svg>
@@ -258,10 +278,22 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
               </div>
 
               <div className="pl-act">
-                <button type="button" className="ghost" onClick={() => !pending && setOpen(false)}>
+                {editing && (
+                  <button
+                    type="button"
+                    className={"danger pl-del" + (delPending ? " is-loading" : "")}
+                    onClick={handleDelete}
+                    disabled={busy}
+                    aria-busy={delPending}
+                  >
+                    Hapus
+                    {delPending && <span className="spin" aria-hidden="true" />}
+                  </button>
+                )}
+                <button type="button" className="ghost" onClick={() => !busy && setOpen(false)} disabled={busy}>
                   Batal
                 </button>
-                <button type="submit" className={pending ? "is-loading" : ""} disabled={pending} aria-busy={pending}>
+                <button type="submit" className={pending ? "is-loading" : ""} disabled={busy} aria-busy={pending}>
                   {editing ? "Simpan perubahan" : "Tambah pelanggan"}
                   {pending && <span className="spin" aria-hidden="true" />}
                 </button>

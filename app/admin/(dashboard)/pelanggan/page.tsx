@@ -3,8 +3,6 @@ import { countryName } from "@/lib/format";
 import { Flag } from "@/lib/flag";
 import { RefIcon } from "@/lib/sumber-icon";
 import { STATUS, listPelanggan, waDigits, type Pelanggan } from "@/lib/pelanggan";
-import { deletePelangganAction } from "../../actions";
-import { ActionForm } from "../forms";
 import { PelangganDialog } from "./pelanggan-form";
 import { PelangganFilters } from "./pelanggan-filters";
 
@@ -76,6 +74,18 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
         .pl-st.pembeli, .pl-st.langganan { border-color: #22c55e; color: #1f8a4c; }
         .pl-ac { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
         .pl-ac .btn, .pl-ac button { padding: 7px 12px; font-size: 13px; }
+
+        /* Mobile: ubah tabel jadi kartu bertumpuk supaya tidak sempit dan teks tidak pecah per-huruf. */
+        @media (max-width: 640px) {
+          .pelanggan-table, .pelanggan-table tbody { display: block; width: 100%; }
+          .pelanggan-table thead { display: none; }
+          .pelanggan-table tr { display: block; padding: 14px 0; border-bottom: 1px solid var(--line); }
+          .pelanggan-table tbody tr:last-child { border-bottom: 0; }
+          .pelanggan-table td { display: block; padding: 0; border: 0; }
+          .pelanggan-table td + td { margin-top: 10px; }
+          .pelanggan-table .pl-ac { justify-content: stretch; }
+          .pelanggan-table .pl-ac .editbtn { flex: 1; text-align: center; }
+        }
       `}</style>
 
       <div className="top">
@@ -99,7 +109,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
           <p className="empty">{all.length === 0 ? 'Belum ada pelanggan. Klik "Tambah data pelanggan" untuk mulai.' : "Tidak ada yang cocok dengan pencarian."}</p>
         ) : (
           <div className="tablewrap">
-            <table>
+            <table className="pelanggan-table">
               <thead>
                 <tr>
                   <th>Pelanggan</th>
@@ -166,9 +176,6 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
                       <td>
                         <div className="pl-ac">
                           <PelangganDialog initial={p} />
-                          <ActionForm action={deletePelangganAction} btnClass="danger" confirm={`Hapus "${p.nama}" dari daftar pelanggan?`} label="Hapus">
-                            <input type="hidden" name="id" value={p.id} />
-                          </ActionForm>
                         </div>
                       </td>
                     </tr>
