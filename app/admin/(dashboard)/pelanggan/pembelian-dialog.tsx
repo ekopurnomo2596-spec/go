@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { fmtTgl, type Pelanggan } from "@/lib/pelanggan-info";
 
-/** Tombol "Riwayat" + jendela daftar tanggal pembelian (hanya lihat). Menambah dan menghapus tanggal lewat tombol Ubah. */
+/** Tombol "Riwayat" + jendela daftar tanggal pembelian (hanya lihat). */
 export function PembelianDialog({ p }: { p: Pelanggan }) {
   const [open, setOpen] = useState(false);
 
@@ -32,9 +32,10 @@ export function PembelianDialog({ p }: { p: Pelanggan }) {
           <div className="modal pb-modal" role="dialog" aria-modal="true" aria-label="Riwayat pembelian" onClick={(e) => e.stopPropagation()}>
             <style>{`
               .pb-modal { width: min(420px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; }
+              .pb-modal .modal-x { padding: 0; }
+              .pb-modal .modal-x svg { flex: none; }
               .pb-list { list-style: none; margin: 0 0 16px; padding: 0; border-top: 1px solid var(--line); }
               .pb-list li { padding: 10px 2px; border-bottom: 1px solid var(--line); font-size: 14px; }
-              .pb-hint { font-size: 12px; color: var(--muted); margin: 0 0 14px; }
               .pb-act { display: flex; justify-content: flex-end; }
             `}</style>
             <div className="modal-head">
@@ -56,7 +57,6 @@ export function PembelianDialog({ p }: { p: Pelanggan }) {
               </ul>
             )}
 
-            <p className="pb-hint">Untuk menambah atau menghapus tanggal, klik Ubah.</p>
             <div className="pb-act">
               <button type="button" className="ghost" onClick={() => setOpen(false)}>
                 Tutup

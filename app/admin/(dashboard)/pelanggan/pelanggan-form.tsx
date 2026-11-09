@@ -202,6 +202,8 @@ export function PelangganDialog({ initial }: { initial?: Pelanggan }) {
           >
             <style>{`
               .pl-modal { width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; }
+              .pl-modal .modal-x { padding: 0; }
+              .pl-modal .modal-x svg { flex: none; }
               .pl-form { display: flex; flex-direction: column; gap: 14px; }
               .pl-form .pl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
               @media (max-width: 560px) { .pl-form .pl-grid { grid-template-columns: 1fr; } }
