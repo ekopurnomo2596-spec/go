@@ -7,6 +7,7 @@ import { STATUS, listPelanggan, waDigits, type Pelanggan } from "@/lib/pelanggan
 import { deletePelangganAction } from "../../actions";
 import { ActionForm } from "../forms";
 import { PelangganDialog } from "./pelanggan-form";
+import { StatusFilter } from "./status-filter";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Pelanggan" };
@@ -91,14 +92,7 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
 
         <form className="pl-search" method="get" action="/admin/pelanggan" role="search">
           <input type="text" name="q" defaultValue={q} placeholder="Cari nama, negara, email, nomor, Instagram, catatan" aria-label="Cari pelanggan" autoComplete="off" />
-          <select name="s" defaultValue={s} aria-label="Filter status">
-            <option value="">Semua status</option>
-            {STATUS.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.name}
-              </option>
-            ))}
-          </select>
+          <StatusFilter defaultValue={s} />
           <button type="submit">Cari</button>
           {(q || s) && (
             <Link href="/admin/pelanggan" className="btn ghost">
