@@ -60,11 +60,13 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
         .pl-search { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
         .pl-search input, .pl-search select { padding: 9px 12px; font: inherit; font-size: 14px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; }
         .pl-search input { flex: 1 1 200px; min-width: 0; }
+        .pl-search input, .pl-search select,
         .pl-search input:focus, .pl-search select:focus,
-        .pl-search input:focus-visible, .pl-search select:focus-visible {
+        .pl-search input:focus-visible, .pl-search select:focus-visible,
+        .pl-search input:active, .pl-search select:active {
           outline: none !important;
-          border-color: var(--line);
-          box-shadow: 0 0 0 3px var(--glow);
+          box-shadow: none !important;
+          border: 1px solid var(--line) !important;
         }
         .pl-lbl { display: none; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 4px; }
         .pl-ct { display: grid; gap: 6px; font-size: 13px; }
