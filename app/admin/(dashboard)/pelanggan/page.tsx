@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
-import { countryName, formatTime } from "@/lib/format";
+import { countryName } from "@/lib/format";
 import { Flag } from "@/lib/flag";
 import { RefIcon } from "@/lib/sumber-icon";
 import { STATUS, listPelanggan, waDigits, type Pelanggan } from "@/lib/pelanggan";
@@ -70,6 +70,8 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
         .pl-ct a:hover { text-decoration: underline; }
         .pl-nm { font-weight: 600; }
         .pl-sm { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+        .pl-country { display: flex; align-items: center; gap: 6px; }
+        .pl-country .flag { flex: none; display: block; }
         .pl-note { color: var(--muted); font-size: 12.5px; margin-top: 6px; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 46ch; }
         .pl-st { display: inline-block; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--line); font-size: 12px; white-space: nowrap; }
         .pl-st.pembeli, .pl-st.langganan { border-color: #22c55e; color: #1f8a4c; }
@@ -124,12 +126,12 @@ export default async function PelangganPage({ searchParams }: { searchParams: Pr
                       <td>
                         <div className="pl-nm">{p.nama}</div>
                         {p.negara && (
-                          <div className="pl-sm">
-                            <Flag code={p.negara} /> {countryName(p.negara)}
+                          <div className="pl-sm pl-country">
+                            <Flag code={p.negara} />
+                            <span>{countryName(p.negara)}</span>
                           </div>
                         )}
                         {p.catatan && <div className="pl-note">{p.catatan}</div>}
-                        <div className="pl-sm">Diubah {formatTime(p.diubah)}</div>
                       </td>
                       <td>
                         <div className="pl-ct">
