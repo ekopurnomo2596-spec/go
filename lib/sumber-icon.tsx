@@ -61,7 +61,7 @@ const GOOGLE: [string, string][] = [
 // Ikon bergaris (bukan logo merek) untuk Bing, Langsung, Lainnya, dan domain lain.
 const STROKE: Record<string, string> = {
   Bing: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM16 16l4.5 4.5",
-  Langsung: "M5 12h14M13 6l6 6-6 6",
+  Langsung: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18",
   Lainnya: "M5 12h.01M12 12h.01M19 12h.01",
   web: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18",
 };
