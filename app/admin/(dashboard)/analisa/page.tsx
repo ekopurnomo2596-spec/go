@@ -39,6 +39,44 @@ function group(rows: [string, number][], label: (k: string) => string): [string,
   return [...m.entries()].sort((a, b) => b[1] - a[1]);
 }
 
+
+/** Kurva halus (monotone cubic) lewat semua titik, tanpa overshoot di bawah garis dasar. */
+function smoothPath(pts: readonly (readonly [number, number])[]): string {
+  const n = pts.length;
+  if (n === 0) return "";
+  if (n === 1) return `M${pts[0][0]},${pts[0][1]}`;
+  const dx: number[] = [];
+  const m: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    dx.push(pts[i + 1][0] - pts[i][0]);
+    m.push((pts[i + 1][1] - pts[i][1]) / (dx[i] || 1));
+  }
+  const t: number[] = [m[0]];
+  for (let i = 1; i < n - 1; i++) t.push(m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2);
+  t.push(m[n - 2]);
+  for (let i = 0; i < n - 1; i++) {
+    if (m[i] === 0) {
+      t[i] = 0;
+      t[i + 1] = 0;
+      continue;
+    }
+    const a = t[i] / m[i];
+    const b = t[i + 1] / m[i];
+    const h = Math.hypot(a, b);
+    if (h > 3) {
+      t[i] = (3 * a * m[i]) / h;
+      t[i + 1] = (3 * b * m[i]) / h;
+    }
+  }
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < n - 1; i++) {
+    const w = dx[i] / 3;
+    const f = (v: number) => Number(v.toFixed(2));
+    d += ` C${f(pts[i][0] + w)},${f(pts[i][1] + t[i] * w)} ${f(pts[i + 1][0] - w)},${f(pts[i + 1][1] - t[i + 1] * w)} ${pts[i + 1][0]},${pts[i + 1][1]}`;
+  }
+  return d;
+}
+
 type Row = { key: string; label: string; v: number; rest?: boolean };
 
 /** Ambil `max` teratas; sisanya digabung jadi "Lainnya" (seperti di demo). */
@@ -201,14 +239,15 @@ export default async function AnalisaPage({
   const py = (v: number) => Number((94 - (v / maxDay) * 88).toFixed(2));
   const drawn = series.map((x) => {
     const pts = x.data.map(([, v], i) => [px(i), py(v)] as const);
+    const curve = smoothPath(pts);
     const gpts = x.ghost?.map(([, v], i) => [px(i), py(v)] as const);
     return {
       ...x,
       pts,
       gpts,
-      line: pts.map(([X, Y], i) => `${i ? "L" : "M"}${X},${Y}`).join(" "),
-      gline: gpts ? gpts.map(([X, Y], i) => `${i ? "L" : "M"}${X},${Y}`).join(" ") : "",
-      area: pts.length ? `M${pts[0][0]},94 ${pts.map(([X, Y]) => `L${X},${Y}`).join(" ")} L${pts[pts.length - 1][0]},94 Z` : "",
+      line: curve,
+      gline: gpts ? smoothPath(gpts) : "",
+      area: pts.length > 1 ? `M${pts[0][0]},94 L${curve.slice(1)} L${pts[pts.length - 1][0]},94 Z` : "",
     };
   });
   const trendTotal = series.reduce((t, x) => t + x.data.reduce((u, [, v]) => u + v, 0), 0);
